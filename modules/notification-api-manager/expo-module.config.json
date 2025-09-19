@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["NotificationApiManagerModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.notificationapimanager.NotificationApiManagerModule"]
+  }
+}
