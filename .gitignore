@@ -57,3 +57,8 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Build directories anywhere in the project
+**/build/
+**/.gradle/
+**/DerivedData/
