@@ -1,50 +1,36 @@
-# Welcome to your Expo app 👋
+# Landline Application
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is an Android first mobile application designed to help users disconnect from constant notifications while maintaining emergency accessibility, mimicking the experience of traditional landline phones.
 
-## Get started
+## Overview
 
-1. Install dependencies
+The Landline Application offers the following features by creating a "landline mode" on your smartphone that limits distractions:
 
-   ```bash
-   npm install
-   ```
+- Intercepts and logs notifications without displaying them.
+- Provides a simple interface for making and receiving calls and texts.
+  - Whitelist specific contacts for calls and texts.
+  - Auto-reply to texts/calls/emails when in landline mode.
+  - Emergency bypass for important contacts.
+- Preserves battery life by reducing background activity.
+- Customizable settings for notification handling and app behavior.
 
-2. Start the app
+## Installation & Setup
 
-   ```bash
-   npx expo start
-   ```
+Check the [BUILD.md](BUILD.md) file for detailed instructions on setting up the development environment and running the application.
 
-In the output, you'll find options to open the app in a
+## Permissions Required
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Notification Access
+- Accessibility Service
+- Device Admin (for lock screen functionality)
+- Overlay Permission (for floating widgets)
+- Usage Access (for monitoring app usage)
+- Battery Optimization Exemption (to ensure background services run smoothly)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Modules
 
-## Get a fresh project
+- **notification-api-manager**: Manages notification access and handling.
 
-When you're ready, run:
+## Contributing
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.     
+We primarily use Jira for task management.
