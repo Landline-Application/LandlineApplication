@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permission to access notification policy (DND control) -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <!-- Permission to access Do Not Disturb settings -->
+    <uses-permission android:name="android.permission.ACCESS_DO_NOT_DISTURB" />
+</manifest>

@@ -1,0 +1,3 @@
+// DndManagerModuleEvents
+
+export type DndManagerModuleEvents = {}
