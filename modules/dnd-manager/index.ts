@@ -1,21 +1,22 @@
 // Reexport the native module. On web, it will be resolved to DndManagerModule.web.ts
 // and on native platforms to DndManagerModule.ts
 
-import DNDManagerModule from './src/DndManagerModule'
-export * from './src/DndManager.types'
+import { DndState as DndResult } from "./src/DndManager.types";
+import DNDManagerModule from "./src/DndManagerModule";
+export * from "./src/DndManager.types";
 
-export function openDNDSettings() {
-  DNDManagerModule.openDNDSettings()
+export function hasPermission(): boolean {
+  return DNDManagerModule.hasPermission();
 }
 
-export function getDNDSettings() {
-  return DNDManagerModule.getDNDSettings()
+export function requestPermission(): Promise<boolean> {
+  return DNDManagerModule.requestPermission();
 }
 
-export function getDNDStatus() {
-  return DNDManagerModule.getDNDStatus()
+export function getCurrentState(): DndResult {
+  return DNDManagerModule.getCurrentState();
 }
 
-export function requestDNDPermissions() {
-  return DNDManagerModule.requestDNDPermissions()
+export function setDNDEnabled(enabled: boolean): Promise<DndResult> {
+  return DNDManagerModule.setDNDEnabled(enabled);
 }
