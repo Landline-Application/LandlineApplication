@@ -1,13 +1,13 @@
-import { NativeModule, requireNativeModule } from 'expo'
+import { NativeModule, requireNativeModule } from "expo";
 
-import { DndManagerModuleEvents } from './DndManager.types'
+import { DndManagerModuleEvents, DndState } from "./DndManager.types";
 
 declare class DndManagerModule extends NativeModule<DndManagerModuleEvents> {
-  getDNDStatus(): Promise<boolean>
-  getDNDSettings(): Promise<{ enabled: boolean; mode: string }>
-  openDNDSettings(): Promise<boolean>
-  requestDNDPermissions(): Promise<boolean>
+  hasPermission(): boolean;
+  requestPermission(): Promise<boolean>;
+  getCurrentState(): DndState;
+  setDNDEnabled(enabled: boolean): Promise<DndState>;
 }
 
 // This call loads the native module object from the JSI.
-export default requireNativeModule<DndManagerModule>('DndManager')
+export default requireNativeModule<DndManagerModule>("DndManager");
