@@ -2,4 +2,4 @@
 // and on native platforms to NotificationApiManagerModule.ts
 export { default } from './src/NotificationApiManagerModule';
 export { default as NotificationApiManagerView } from './src/NotificationApiManagerView';
-export * from  './src/NotificationApiManager.types';
+export * from "./src/NotificationApiManagerModule";

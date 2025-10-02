@@ -1,19 +1,18 @@
-import type { StyleProp, ViewStyle } from 'react-native';
+export type NotificationApiManagerModuleType = {
+    hello(): string;
 
-export type OnLoadEventPayload = {
-  url: string;
-};
+    // Android 13+; true below 33
+    hasPostPermission(): boolean;
+    requestPostPermission(): Promise<boolean>;
 
-export type NotificationApiManagerModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
-};
+    // O+ channel mgmt
+    createChannel(id: string, name: string, importance: number): boolean;
 
-export type ChangeEventPayload = {
-  value: string;
-};
-
-export type NotificationApiManagerViewProps = {
-  url: string;
-  onLoad: (event: { nativeEvent: OnLoadEventPayload }) => void;
-  style?: StyleProp<ViewStyle>;
+    // Post a notification
+    notify(
+        title: string,
+        body: string,
+        channelId: string,
+        notificationId: number
+    ): boolean;
 };
