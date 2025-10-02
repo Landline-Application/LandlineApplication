@@ -1,13 +1,13 @@
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import { Button, Platform, StyleSheet } from "react-native";
+import { Button, Platform, StyleSheet, Alert } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 import {
   getCurrentState,
@@ -15,6 +15,8 @@ import {
   requestPermission,
   setDNDEnabled,
 } from "@/modules/dnd-manager";
+
+import * as Notif from "@/modules/notification-api-manager";
 
 export default function HomeScreen() {
   useEffect(() => {
@@ -32,6 +34,35 @@ export default function HomeScreen() {
       console.log("Set DND Result: ", result);
     });
   }, []);
+
+// ------------ Notifications demo --------------
+    const requestNotifPermissions = useCallback(async () => {
+        const already = Notif.hasPostPermission();
+        if (already) {
+            console.log("Notification permission already granted");
+            return;
+        }
+        console.log("Opening notification settings…");
+        Notif.openNotificationSettings();
+
+        // optional: check again a bit later
+        setTimeout(() => {
+            console.log("Permission after settings:", Notif.hasPostPermission());
+        }, 2000);
+    }, []);
+
+// Send a test notification
+    const sendTestNotification = useCallback(() => {
+        if (!Notif.hasPostPermission()) {
+            Alert.alert("Enable notifications first");
+            return;
+        }
+        // IMPORTANCE_DEFAULT = 3
+        Notif.createChannel("demo", "Demo", 3);
+        const id = Date.now() % 100000;
+        Notif.notify("Hello", "It works!", "demo", id);
+    }, []);
+// ------------------------------------------------
 
   async function requestPermissions() {
     const permissionGranted = await requestPermission();
@@ -76,8 +107,13 @@ export default function HomeScreen() {
         />
       }
     >
+        {/* DND buttons */}
       <Button title="Request DND Permissions" onPress={requestPermissions} />
       <Button title="Turn on DND" onPress={turnOnDND} />
+
+        {/* Notification buttons */}
+        <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
+        <Button title="Send Test Notification" onPress={sendTestNotification} />
 
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
