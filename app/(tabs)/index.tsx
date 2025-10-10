@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Button, Platform, StyleSheet } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
@@ -7,64 +7,8 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { useEffect } from "react";
-
-import {
-  getCurrentState,
-  hasPermission,
-  requestPermission,
-  setDNDEnabled,
-} from "@/modules/dnd-manager";
-
 export default function HomeScreen() {
-  useEffect(() => {
-    async function fetchDNDSettings() {
-      const permissions = hasPermission();
-      console.log("DND Permissions: ", permissions);
-
-      const dndState = getCurrentState();
-      console.log("Current DND State: ", dndState);
-    }
-
-    fetchDNDSettings();
-
-    setDNDEnabled(true).then((result) => {
-      console.log("Set DND Result: ", result);
-    });
-  }, []);
-
-  async function requestPermissions() {
-    const permissionGranted = await requestPermission();
-
-    if (permissionGranted) {
-      // Permission was already granted
-      console.log("DND permission already granted!");
-    } else {
-      // Settings screen was opened, need to check again later
-      console.log(
-        "Please grant DND permission in the settings that just opened"
-      );
-
-      // Later, manually check again:
-      setTimeout(() => {
-        const nowHasPermission = hasPermission();
-        if (nowHasPermission) {
-          console.log("Permission granted!");
-        } else {
-          console.log("Permission not granted");
-        }
-      }, 3000);
-    }
-  }
-
-  function turnOnDND() {
-    const dndState = getCurrentState();
-    console.log("Current DND State before turn on: ", dndState);
-
-    setDNDEnabled(true).then((result) => {
-      console.log("Set DND Result: ", result);
-    });
-  }
+  const router = useRouter();
 
   return (
     <ParallaxScrollView
@@ -76,13 +20,19 @@ export default function HomeScreen() {
         />
       }
     >
-      <Button title="Request DND Permissions" onPress={requestPermissions} />
-      <Button title="Turn on DND" onPress={turnOnDND} />
-
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">DND Manager Test</ThemedText>
+        <Button
+          title="Open DND Test Page"
+          onPress={() => router.push("/dnd-test")}
+        />
+      </ThemedView>
+
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
