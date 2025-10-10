@@ -1,13 +1,13 @@
 import { Image } from "expo-image";
-import { Link, router } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Alert, Button, Platform, StyleSheet } from "react-native";
+import { useCallback, useEffect } from "react";
 
 import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { useCallback, useEffect } from "react";
 
 import {
   getCurrentState,
@@ -97,6 +97,8 @@ export default function HomeScreen() {
       console.log("Set DND Result: ", result);
     });
   }
+export default function HomeScreen() {
+  const router = useRouter();
 
   async function resetTermsAcceptance() {
     try {
@@ -162,6 +164,15 @@ export default function HomeScreen() {
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">DND Manager Test</ThemedText>
+        <Button
+          title="Open DND Test Page"
+          onPress={() => router.push("/dnd-test")}
+        />
+      </ThemedView>
+
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
