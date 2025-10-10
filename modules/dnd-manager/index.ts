@@ -1,5 +1,4 @@
 import DNDManagerModule from "./src/DndManagerModule";
-export * from "./src/DndManager.types";
 
 import type {
   AppInfo,
@@ -7,6 +6,7 @@ import type {
   InterruptionFilterConstants,
   NotificationPermissionResult,
 } from "./src/DndManager.types";
+export * from "./src/DndManager.types";
 
 export function hasPermission(): boolean {
   return DNDManagerModule.hasPermission();
@@ -29,19 +29,19 @@ export function setInterruptionFilter(filter: number): Promise<DndState> {
 }
 
 export function getAllInstalledApps(
-  includeSystemApps: boolean = false
+  includeSystemApps: boolean = false,
 ): Promise<AppInfo[]> {
   return DNDManagerModule.getAllInstalledApps(includeSystemApps);
 }
 
 export function getAppNotificationStatus(
-  packageName: string
+  packageName: string,
 ): Promise<NotificationPermissionResult> {
   return DNDManagerModule.getAppNotificationStatus(packageName);
 }
 
 export function openAppNotificationSettings(
-  packageName: string
+  packageName: string,
 ): Promise<boolean> {
   return DNDManagerModule.openAppNotificationSettings(packageName);
 }
