@@ -112,6 +112,15 @@ export default function HomeScreen() {
       </ThemedView>
 
       <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Native Module Tests</ThemedText>
+        <ThemedView style={styles.buttonGroup}>
+          <Button
+            title="Open Auto-Reply Test Page"
+            onPress={() => router.push("/auto-reply-test")}
+          />
+        </ThemedView>
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
           Edit{" "}
@@ -185,6 +194,9 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+  },
+  buttonGroup: {
+    gap: 8,
   },
   reactLogo: {
     height: 178,
