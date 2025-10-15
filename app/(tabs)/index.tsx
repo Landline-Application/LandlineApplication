@@ -32,6 +32,7 @@ interface NotificationSummary {
   calls: number;
 }
 
+// Redirect to landline screen as the main entry point
 export default function HomeScreen() {
   const [isActive, setIsActive] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
