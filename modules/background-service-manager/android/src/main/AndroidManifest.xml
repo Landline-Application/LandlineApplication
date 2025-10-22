@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Foreground service permission (required for API 28+) -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  
+  <!-- Foreground service type for special use cases (API 34+) -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  
+  <!-- Wake lock for keeping service running (use sparingly) -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  
+  <!-- Request ignore battery optimizations (user must explicitly grant) -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+</manifest>
+
