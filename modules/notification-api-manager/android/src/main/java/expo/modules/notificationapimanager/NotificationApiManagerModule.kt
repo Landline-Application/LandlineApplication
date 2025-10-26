@@ -86,5 +86,109 @@ class NotificationApiManagerModule : Module() {
             NotificationManagerCompat.from(ctx).notify(notificationId, builder.build())
             true
         }
+
+        // ============================================================
+        // NOTIFICATION LISTENER SERVICE (for Landline Mode)
+        // ============================================================
+
+        /**
+         * Check if Notification Listener permission is granted
+         * This is required to capture notifications during Landline mode
+         */
+        Function("hasNotificationListenerPermission") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val enabledListeners = Settings.Secure.getString(
+                ctx.contentResolver,
+                "enabled_notification_listeners"
+            )
+            val packageName = ctx.packageName
+            enabledListeners != null && enabledListeners.contains(packageName)
+        }
+
+        /**
+         * Open Notification Access settings to grant permission
+         */
+        AsyncFunction("requestNotificationListenerPermission") {
+            val ctx = appContext.reactContext ?: return@AsyncFunction false
+            try {
+                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                ctx.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        /**
+         * Set Landline mode active/inactive
+         * When active, notifications will be logged by the NotificationListenerService
+         */
+        Function("setLandlineMode") { isActive: Boolean ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("is_landline_mode_active", isActive).apply()
+            true
+        }
+
+        /**
+         * Check if Landline mode is currently active
+         */
+        Function("isLandlineModeActive") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.getBoolean("is_landline_mode_active", false)
+        }
+
+        /**
+         * Get all logged notifications
+         * Returns array of notification objects
+         */
+        Function("getLoggedNotifications") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<Map<String, Any?>>()
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            val logsString = prefs.getString("notification_logs", "") ?: ""
+            
+            if (logsString.isEmpty()) {
+                return@Function emptyList<Map<String, Any?>>()
+            }
+
+            // Parse the log entries
+            val notifications = mutableListOf<Map<String, Any?>>()
+            val lines = logsString.split("\n")
+            
+            for (line in lines) {
+                if (line.isEmpty()) continue
+                
+                val parts = line.split("|")
+                if (parts.size >= 7) {
+                    val notification = mapOf<String, Any?>(
+                        "timestamp" to (parts[0].toLongOrNull() as Any?),
+                        "packageName" to (parts[1] as Any),
+                        "appName" to (parts[2] as Any),
+                        "title" to (parts[3] as Any),
+                        "text" to (parts[4] as Any),
+                        "postTime" to (parts[5].toLongOrNull() as Any?),
+                        "id" to (parts[6].toIntOrNull() as Any?)
+                    )
+                    notifications.add(notification)
+                }
+            }
+            
+            // Return most recent first
+            notifications.reversed()
+        }
+
+        /**
+         * Clear all logged notifications
+         */
+        Function("clearLoggedNotifications") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            prefs.edit().remove("notification_logs").apply()
+            true
+        }
     }
 }
