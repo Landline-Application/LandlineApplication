@@ -2,12 +2,12 @@ import { LandlineColors } from '@/constants/theme';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -136,8 +136,8 @@ export default function LandlineActiveScreen() {
     Alert.alert('Help', 'Help documentation and user guide would go here');
   };
 
-  const handleSettings = () => {
-    Alert.alert('Settings', 'App settings and preferences would go here');
+  const handleWidgetDemo = () => {
+    router.push('/widget-demo');
   };
 
   const handleScrollToNext = () => {
@@ -230,7 +230,7 @@ export default function LandlineActiveScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom row: App Profile, Help, Settings */}
+        {/* Bottom row: App Profile, Help, Widget */}
         <View style={styles.bottomRow}>
           <TouchableOpacity style={styles.navButton} onPress={handleAppProfile}>
             <Text style={styles.navButtonText}>Profile</Text>
@@ -240,8 +240,8 @@ export default function LandlineActiveScreen() {
             <Text style={styles.navButtonText}>Help</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navButton} onPress={handleSettings}>
-            <Text style={styles.navButtonText}>Settings</Text>
+          <TouchableOpacity style={styles.navButton} onPress={handleWidgetDemo}>
+            <Text style={styles.navButtonText}>Widget</Text>
           </TouchableOpacity>
         </View>
 

@@ -8,6 +8,10 @@
     "scheme": "landlineapplication",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "modules": [
+      "./modules/dnd-manager",
+      "./modules/notification-api-manager"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.LandlineApplication"
@@ -21,7 +25,18 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.LandlineApplication"
+      "package": "com.anonymous.LandlineApplication",
+      "permissions": [
+        "android.permission.ACCESS_NOTIFICATION_POLICY",
+        "android.permission.BIND_APPWIDGET",
+        "android.permission.RECEIVE_SMS",
+        "android.permission.SEND_SMS",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.CALL_PHONE",
+        "android.permission.READ_CONTACTS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+      ]
     },
     "web": {
       "output": "static",
