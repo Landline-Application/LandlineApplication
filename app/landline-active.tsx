@@ -1,14 +1,10 @@
-import { LandlineColors } from '@/constants/theme';
-import { router } from 'expo-router';
 import React, { useState } from 'react';
-import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { LandlineColors } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface NotificationCategory {
@@ -42,53 +38,45 @@ export default function LandlineActiveScreen() {
     Alert.alert(
       `${category} Notifications`,
       `Would show detailed list of ${category.toLowerCase()} notifications`,
-      [{ text: 'OK' }]
+      [{ text: 'OK' }],
     );
   };
 
   const handleClearLog = () => {
-    Alert.alert(
-      'Clear Log',
-      'Are you sure you want to clear all notifications?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            setNotifications({
-              texts: 0,
-              emails: 0,
-              calls: 0,
-              apps: 0,
-              instagram: 0,
-              messages: 0,
-              missedCalls: 0,
-              voicemail: 0,
-              youtube: 0,
-            });
-          },
+    Alert.alert('Clear Log', 'Are you sure you want to clear all notifications?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          setNotifications({
+            texts: 0,
+            emails: 0,
+            calls: 0,
+            apps: 0,
+            instagram: 0,
+            messages: 0,
+            missedCalls: 0,
+            voicemail: 0,
+            youtube: 0,
+          });
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeactivate = () => {
-    Alert.alert(
-      'Deactivate Landline Mode',
-      'Are you sure you want to deactivate Landline mode?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Deactivate',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: UI ONLY - No actual deactivation logic
-            router.replace('/landline');
-          },
+    Alert.alert('Deactivate Landline Mode', 'Are you sure you want to deactivate Landline mode?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Deactivate',
+        style: 'destructive',
+        onPress: () => {
+          // TODO: UI ONLY - No actual deactivation logic
+          router.replace('/landline');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   // Group notifications by category for display
@@ -136,8 +124,8 @@ export default function LandlineActiveScreen() {
     Alert.alert('Help', 'Help documentation and user guide would go here');
   };
 
-  const handleSettings = () => {
-    Alert.alert('Settings', 'App settings and preferences would go here');
+  const handleWidgetDemo = () => {
+    router.push('/widget-demo');
   };
 
   const handleScrollToNext = () => {
@@ -208,7 +196,9 @@ export default function LandlineActiveScreen() {
                 onPress={() => handleViewPress('All Apps')}
                 disabled={notifications.apps === 0}
               >
-                <Text style={[styles.viewButtonText, { opacity: notifications.apps > 0 ? 1 : 0.5 }]}>
+                <Text
+                  style={[styles.viewButtonText, { opacity: notifications.apps > 0 ? 1 : 0.5 }]}
+                >
                   View
                 </Text>
               </TouchableOpacity>
@@ -230,7 +220,7 @@ export default function LandlineActiveScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom row: App Profile, Help, Settings */}
+        {/* Bottom row: App Profile, Help, Widget */}
         <View style={styles.bottomRow}>
           <TouchableOpacity style={styles.navButton} onPress={handleAppProfile}>
             <Text style={styles.navButtonText}>Profile</Text>
@@ -240,8 +230,8 @@ export default function LandlineActiveScreen() {
             <Text style={styles.navButtonText}>Help</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navButton} onPress={handleSettings}>
-            <Text style={styles.navButtonText}>Settings</Text>
+          <TouchableOpacity style={styles.navButton} onPress={handleWidgetDemo}>
+            <Text style={styles.navButtonText}>Widget</Text>
           </TouchableOpacity>
         </View>
 

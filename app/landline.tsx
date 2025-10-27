@@ -1,14 +1,10 @@
-import { LandlineColors } from '@/constants/theme';
-import { router } from 'expo-router';
 import React, { useState } from 'react';
-import {
-    Dimensions,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from 'react-native';
+
+import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { LandlineColors } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -80,17 +76,11 @@ export default function LandlineScreen() {
             </Text>
 
             <View style={styles.confirmationButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancelActivation}
-              >
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelActivation}>
                 <Text style={styles.cancelButtonText}>No</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirmActivation}
-              >
+              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmActivation}>
                 <Text style={styles.confirmButtonText}>YES</Text>
               </TouchableOpacity>
             </View>
