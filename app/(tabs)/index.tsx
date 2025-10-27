@@ -387,15 +387,10 @@ export default function HomeScreen() {
               <Text style={styles.statusCardTitle}>Notification Access</Text>
             </View>
             <Text style={styles.statusCardText}>
-              {hasPermission
-                ? 'Landline can capture notifications'
-                : 'Required for Landline Mode'}
+              {hasPermission ? 'Landline can capture notifications' : 'Required for Landline Mode'}
             </Text>
             {!hasPermission && (
-              <TouchableOpacity
-                style={styles.statusCardButton}
-                onPress={handleRequestPermission}
-              >
+              <TouchableOpacity style={styles.statusCardButton} onPress={handleRequestPermission}>
                 <Text style={styles.statusCardButtonText}>Grant Access</Text>
               </TouchableOpacity>
             )}
