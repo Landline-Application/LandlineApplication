@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,18 @@ import {
   ScrollView,
   StatusBar,
   Platform,
-} from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+  ColorValue,
+} from "react-native";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
-  withSpring,
   useSharedValue,
   interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
+  Extrapolation,
+} from "react-native-reanimated";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 interface OnboardingSlide {
   id: number;
@@ -32,38 +32,43 @@ interface OnboardingSlide {
 const slides: OnboardingSlide[] = [
   {
     id: 1,
-    title: 'Welcome to Landline',
-    description: 'Stay focused and manage your notifications intelligently with our powerful features.',
-    emoji: '📱',
-    gradientColors: ['#667eea', '#764ba2'],
+    title: "Welcome to Landline",
+    description:
+      "Stay focused and manage your notifications intelligently with our powerful features.",
+    emoji: "📱",
+    gradientColors: ["#667eea", "#764ba2"],
   },
   {
     id: 2,
-    title: 'Landline Mode',
-    description: 'Activate Landline mode to silence distractions while capturing all your notifications for later.',
-    emoji: '🔕',
-    gradientColors: ['#f093fb', '#f5576c'],
+    title: "Landline Mode",
+    description:
+      "Activate Landline mode to silence distractions while capturing all your notifications for later.",
+    emoji: "🔕",
+    gradientColors: ["#f093fb", "#f5576c"],
   },
   {
     id: 3,
-    title: 'Never Miss Important Updates',
-    description: 'Review all notifications you received while in Landline mode, clearly marked and easy to access.',
-    emoji: '📬',
-    gradientColors: ['#4facfe', '#00f2fe'],
+    title: "Never Miss Important Updates",
+    description:
+      "Review all notifications you received while in Landline mode, clearly marked and easy to access.",
+    emoji: "📬",
+    gradientColors: ["#4facfe", "#00f2fe"],
   },
   {
     id: 4,
-    title: 'Background Services',
-    description: 'Our smart background services keep the app running efficiently while minimizing battery usage.',
-    emoji: '⚡',
-    gradientColors: ['#43e97b', '#38f9d7'],
+    title: "Background Services",
+    description:
+      "Our smart background services keep the app running efficiently while minimizing battery usage.",
+    emoji: "⚡",
+    gradientColors: ["#43e97b", "#38f9d7"],
   },
   {
     id: 5,
-    title: 'Grant Permissions',
-    description: 'To work properly, we need notification access and the ability to run in the background.',
-    emoji: '🔐',
-    gradientColors: ['#fa709a', '#fee140'],
+    title: "Grant Permissions",
+    description:
+      "To work properly, we need notification access and the ability to run in the background.",
+    emoji: "🔐",
+    gradientColors: ["#fa709a", "#fee140"],
   },
 ];
 
@@ -87,18 +92,18 @@ export default function OnboardingScreen() {
       });
     } else {
       // Navigate to main app
-      router.replace('/(tabs)');
+      router.replace("/(tabs)");
     }
   };
 
   const handleSkip = () => {
-    router.replace('/(tabs)');
+    router.replace("/(tabs)");
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* Skip button */}
       {currentIndex < slides.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
@@ -116,10 +121,10 @@ export default function OnboardingScreen() {
         scrollEventThrottle={16}
         decelerationRate="fast"
       >
-        {slides.map((slide, index) => (
+        {slides.map((slide, _index) => (
           <View key={slide.id} style={styles.slide}>
             <LinearGradient
-              colors={slide.gradientColors}
+              colors={slide.gradientColors as [ColorValue, ColorValue]}
               style={styles.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -128,7 +133,7 @@ export default function OnboardingScreen() {
                 <View style={styles.emojiContainer}>
                   <Text style={styles.emoji}>{slide.emoji}</Text>
                 </View>
-                
+
                 <Text style={styles.title}>{slide.title}</Text>
                 <Text style={styles.description}>{slide.description}</Text>
 
@@ -143,13 +148,13 @@ export default function OnboardingScreen() {
 
                 {slide.id === 5 && (
                   <View style={styles.permissionsList}>
-                    <PermissionItem 
-                      icon="🔔" 
+                    <PermissionItem
+                      icon="🔔"
                       title="Notification Access"
                       description="Read and log notifications"
                     />
-                    <PermissionItem 
-                      icon="⚙️" 
+                    <PermissionItem
+                      icon="⚙️"
                       title="Background Services"
                       description="Run efficiently in background"
                     />
@@ -164,6 +169,7 @@ export default function OnboardingScreen() {
       {/* Pagination dots */}
       <View style={styles.pagination}>
         {slides.map((_, index) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
           const dotStyle = useAnimatedStyle(() => {
             const inputRange = [
               (index - 1) * width,
@@ -175,14 +181,14 @@ export default function OnboardingScreen() {
               scrollX.value,
               inputRange,
               [0.8, 1.4, 0.8],
-              Extrapolate.CLAMP
+              Extrapolation.CLAMP,
             );
 
             const opacity = interpolate(
               scrollX.value,
               inputRange,
               [0.4, 1, 0.4],
-              Extrapolate.CLAMP
+              Extrapolation.CLAMP,
             );
 
             return {
@@ -191,25 +197,20 @@ export default function OnboardingScreen() {
             };
           });
 
-          return (
-            <Animated.View
-              key={index}
-              style={[styles.dot, dotStyle]}
-            />
-          );
+          return <Animated.View key={index} style={[styles.dot, dotStyle]} />;
         })}
       </View>
 
       {/* Next/Get Started button */}
       <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
         <LinearGradient
-          colors={['#667eea', '#764ba2']}
+          colors={["#667eea", "#764ba2"]}
           style={styles.nextButtonGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
           <Text style={styles.nextButtonText}>
-            {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+            {currentIndex === slides.length - 1 ? "Get Started" : "Next"}
           </Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -230,7 +231,15 @@ function FeatureItem({ text }: { text: string }) {
 }
 
 // Permission item component
-function PermissionItem({ icon, title, description }: { icon: string; title: string; description: string }) {
+function PermissionItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+}) {
   return (
     <View style={styles.permissionItem}>
       <View style={styles.permissionIcon}>
@@ -247,20 +256,20 @@ function PermissionItem({ icon, title, description }: { icon: string; title: str
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 30,
     right: 20,
     zIndex: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
   skipText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   slide: {
     width,
@@ -268,13 +277,13 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
     paddingTop: 100,
     paddingBottom: 200,
@@ -283,9 +292,9 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 40,
   },
   emoji: {
@@ -293,28 +302,28 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
     marginBottom: 20,
     letterSpacing: 0.5,
   },
   description: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
     lineHeight: 26,
     marginBottom: 30,
   },
   featureList: {
-    width: '100%',
+    width: "100%",
     marginTop: 20,
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     padding: 16,
     borderRadius: 12,
   },
@@ -322,31 +331,31 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   checkmarkText: {
-    color: '#4facfe',
+    color: "#4facfe",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   featureText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     flex: 1,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   permissionsList: {
-    width: '100%',
+    width: "100%",
     marginTop: 20,
   },
   permissionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     padding: 20,
     borderRadius: 16,
   },
@@ -354,9 +363,9 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
   },
   permissionIconText: {
@@ -366,37 +375,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   permissionTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   permissionDescription: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
   pagination: {
-    flexDirection: 'row',
-    position: 'absolute',
+    flexDirection: "row",
+    position: "absolute",
     bottom: 140,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginHorizontal: 6,
   },
   nextButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 40,
     right: 40,
     borderRadius: 30,
-    overflow: 'hidden',
+    overflow: "hidden",
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -404,13 +413,12 @@ const styles = StyleSheet.create({
   nextButtonGradient: {
     paddingVertical: 18,
     paddingHorizontal: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   nextButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 1,
   },
 });
-
