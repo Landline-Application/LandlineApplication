@@ -1,13 +1,13 @@
 import { Image } from "expo-image";
-import { Link } from "expo-router";
-import { Button, Platform, StyleSheet, Alert } from "react-native";
+import { Link, router } from "expo-router";
+import { Alert, Button, Platform, StyleSheet } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import {
   getCurrentState,
@@ -107,7 +107,15 @@ export default function HomeScreen() {
         />
       }
     >
-      {/* DND buttons */}
+        {/* Onboarding button */}
+        <ThemedView style={styles.stepContainer}>
+          <Button 
+            title="🎉 View Onboarding Flow" 
+            onPress={() => router.push('/onboarding')} 
+          />
+        </ThemedView>
+
+        {/* DND buttons */}
       <Button title="Request DND Permissions" onPress={requestPermissions} />
       <Button title="Turn on DND" onPress={turnOnDND} />
 

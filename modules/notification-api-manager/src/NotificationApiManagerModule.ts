@@ -6,6 +6,12 @@ import { requireNativeModule } from "expo-modules-core";
  * - requestPostPermission(): Promise<boolean>
  * - createChannel(id, name, importance): boolean
  * - notify(title, body, channelId, notificationId): boolean
+ * - hasNotificationListenerPermission(): boolean
+ * - requestNotificationListenerPermission(): Promise<boolean>
+ * - setLandlineMode(isActive: boolean): boolean
+ * - isLandlineModeActive(): boolean
+ * - getLoggedNotifications(): Array
+ * - clearLoggedNotifications(): boolean
  */
 type NotificationApiNativeModule = {
     hasPostPermission(): boolean;
@@ -17,12 +23,22 @@ type NotificationApiNativeModule = {
         channelId: string,
         notificationId: number
     ): boolean;
+    // Notification Listener (Landline Mode)
+    hasNotificationListenerPermission(): boolean;
+    requestNotificationListenerPermission(): Promise<boolean>;
+    setLandlineMode(isActive: boolean): boolean;
+    isLandlineModeActive(): boolean;
+    getLoggedNotifications(): any[];
+    clearLoggedNotifications(): boolean;
 };
 
 const Native: NotificationApiNativeModule =
     requireNativeModule("NotificationApiManager");
 
-// JS-friendly exports (same names you use in your screen)
+// ============================================================
+// NOTIFICATION PERMISSION
+// ============================================================
+
 export function hasPostPermission() {
     return Native.hasPostPermission();
 }
@@ -44,9 +60,43 @@ export function notify(
     return Native.notify(title, body, channelId, notificationId);
 }
 
+// ============================================================
+// NOTIFICATION LISTENER (Landline Mode)
+// ============================================================
+
+export function hasNotificationListenerPermission() {
+    return Native.hasNotificationListenerPermission();
+}
+
+export function requestNotificationListenerPermission() {
+    return Native.requestNotificationListenerPermission();
+}
+
+export function setLandlineMode(isActive: boolean) {
+    return Native.setLandlineMode(isActive);
+}
+
+export function isLandlineModeActive() {
+    return Native.isLandlineModeActive();
+}
+
+export function getLoggedNotifications() {
+    return Native.getLoggedNotifications();
+}
+
+export function clearLoggedNotifications() {
+    return Native.clearLoggedNotifications();
+}
+
 export default {
     hasPostPermission,
     requestPostPermission,
     createChannel,
     notify,
+    hasNotificationListenerPermission,
+    requestNotificationListenerPermission,
+    setLandlineMode,
+    isLandlineModeActive,
+    getLoggedNotifications,
+    clearLoggedNotifications,
 };
