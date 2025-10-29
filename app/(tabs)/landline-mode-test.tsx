@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Alert, Platform, View, Text } from 'react-native';
+import { StyleSheet, ScrollView, Alert, Platform,  } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
