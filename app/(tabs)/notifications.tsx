@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import * as NotificationApiManager from '@/modules/notification-api-manager';
+} from "react-native";
+import { router } from "expo-router";
+import NotificationApiManager from "@/modules/notification-api-manager";
 
 interface Notification {
   timestamp: number;
@@ -48,13 +48,25 @@ export default function NotificationsScreen() {
       const pkg = notif.packageName.toLowerCase();
       const title = notif.title.toLowerCase();
 
-      if (pkg.includes('messaging') || pkg.includes('sms') || pkg.includes('mms')) {
+      if (
+        pkg.includes("messaging") ||
+        pkg.includes("sms") ||
+        pkg.includes("mms")
+      ) {
         counts.texts++;
-      } else if (pkg.includes('mail') || pkg.includes('gmail') || pkg.includes('outlook')) {
+      } else if (
+        pkg.includes("mail") ||
+        pkg.includes("gmail") ||
+        pkg.includes("outlook")
+      ) {
         counts.emails++;
-      } else if (pkg.includes('phone') || pkg.includes('dialer') || title.includes('missed call')) {
+      } else if (
+        pkg.includes("phone") ||
+        pkg.includes("dialer") ||
+        title.includes("missed call")
+      ) {
         counts.calls++;
-      } else if (pkg.includes('voicemail') || title.includes('voicemail')) {
+      } else if (pkg.includes("voicemail") || title.includes("voicemail")) {
         counts.voicemails++;
       } else {
         counts.apps++;
@@ -62,54 +74,75 @@ export default function NotificationsScreen() {
     });
 
     return [
-      { category: 'Texts', count: counts.texts, icon: '💬', color: '#4CAF50' },
-      { category: 'Emails', count: counts.emails, icon: '📧', color: '#2196F3' },
-      { category: 'Missed Calls', count: counts.calls, icon: '📞', color: '#F44336' },
-      { category: 'Voicemails', count: counts.voicemails, icon: '🎙️', color: '#FF9800' },
-      { category: 'App Notifications', count: counts.apps, icon: '🔔', color: '#9C27B0' },
+      { category: "Texts", count: counts.texts, icon: "💬", color: "#4CAF50" },
+      {
+        category: "Emails",
+        count: counts.emails,
+        icon: "📧",
+        color: "#2196F3",
+      },
+      {
+        category: "Missed Calls",
+        count: counts.calls,
+        icon: "📞",
+        color: "#F44336",
+      },
+      {
+        category: "Voicemails",
+        count: counts.voicemails,
+        icon: "🎙️",
+        color: "#FF9800",
+      },
+      {
+        category: "App Notifications",
+        count: counts.apps,
+        icon: "🔔",
+        color: "#9C27B0",
+      },
     ];
   };
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       const notifs = await NotificationApiManager.getLoggedNotifications();
       setNotifications(notifs);
       setCategories(categorizeNotifications(notifs));
     } catch (error) {
-      console.error('Failed to load notifications:', error);
-      Alert.alert('Error', 'Failed to load notifications');
+      console.error("Failed to load notifications:", error);
+      Alert.alert("Error", "Failed to load notifications");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadNotifications();
-  }, []);
+  }, [loadNotifications]);
 
   const handleClearAll = async () => {
     Alert.alert(
-      'Clear All Notifications',
-      'Are you sure you want to clear all logged notifications?',
+      "Clear All Notifications",
+      "Are you sure you want to clear all logged notifications?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Clear',
-          style: 'destructive',
+          text: "Clear",
+          style: "destructive",
           onPress: async () => {
             try {
-              await NotificationApiManager.clearLoggedNotifications();
+              void NotificationApiManager.clearLoggedNotifications();
               setNotifications([]);
               setCategories(categorizeNotifications([]));
-              Alert.alert('Success', 'All notifications cleared');
+              Alert.alert("Success", "All notifications cleared");
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
-              Alert.alert('Error', 'Failed to clear notifications');
+              Alert.alert("Error", "Failed to clear notifications");
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -119,27 +152,39 @@ export default function NotificationsScreen() {
       const title = notif.title.toLowerCase();
 
       switch (category) {
-        case 'Texts':
-          return pkg.includes('messaging') || pkg.includes('sms') || pkg.includes('mms');
-        case 'Emails':
-          return pkg.includes('mail') || pkg.includes('gmail') || pkg.includes('outlook');
-        case 'Missed Calls':
-          return pkg.includes('phone') || pkg.includes('dialer') || title.includes('missed call');
-        case 'Voicemails':
-          return pkg.includes('voicemail') || title.includes('voicemail');
-        case 'App Notifications':
+        case "Texts":
+          return (
+            pkg.includes("messaging") ||
+            pkg.includes("sms") ||
+            pkg.includes("mms")
+          );
+        case "Emails":
+          return (
+            pkg.includes("mail") ||
+            pkg.includes("gmail") ||
+            pkg.includes("outlook")
+          );
+        case "Missed Calls":
+          return (
+            pkg.includes("phone") ||
+            pkg.includes("dialer") ||
+            title.includes("missed call")
+          );
+        case "Voicemails":
+          return pkg.includes("voicemail") || title.includes("voicemail");
+        case "App Notifications":
           return !(
-            pkg.includes('messaging') ||
-            pkg.includes('sms') ||
-            pkg.includes('mms') ||
-            pkg.includes('mail') ||
-            pkg.includes('gmail') ||
-            pkg.includes('outlook') ||
-            pkg.includes('phone') ||
-            pkg.includes('dialer') ||
-            pkg.includes('voicemail') ||
-            title.includes('missed call') ||
-            title.includes('voicemail')
+            pkg.includes("messaging") ||
+            pkg.includes("sms") ||
+            pkg.includes("mms") ||
+            pkg.includes("mail") ||
+            pkg.includes("gmail") ||
+            pkg.includes("outlook") ||
+            pkg.includes("phone") ||
+            pkg.includes("dialer") ||
+            pkg.includes("voicemail") ||
+            title.includes("missed call") ||
+            title.includes("voicemail")
           );
         default:
           return false;
@@ -147,14 +192,14 @@ export default function NotificationsScreen() {
     });
 
     router.push({
-      pathname: '/notification-detail',
+      pathname: "/notification-detail",
       params: { category, notifications: JSON.stringify(filtered) },
     });
   };
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [loadNotifications]);
 
   if (loading) {
     return (
@@ -173,7 +218,8 @@ export default function NotificationsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
         <Text style={styles.headerSubtitle}>
-          {totalCount} {totalCount === 1 ? 'notification' : 'notifications'} logged
+          {totalCount} {totalCount === 1 ? "notification" : "notifications"}{" "}
+          logged
         </Text>
       </View>
 
@@ -181,7 +227,11 @@ export default function NotificationsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#667eea"]}
+          />
         }
       >
         {totalCount === 0 ? (
@@ -221,7 +271,10 @@ export default function NotificationsScreen() {
             <View style={styles.recentSection}>
               <Text style={styles.sectionTitle}>Recent Notifications</Text>
               {notifications.slice(0, 5).map((notif, index) => (
-                <View key={`${notif.id}-${index}`} style={styles.notificationItem}>
+                <View
+                  key={`${notif.id}-${index}`}
+                  style={styles.notificationItem}
+                >
                   <View style={styles.notificationHeader}>
                     <Text style={styles.notificationApp} numberOfLines={1}>
                       {notif.appName}
@@ -248,8 +301,13 @@ export default function NotificationsScreen() {
             </View>
 
             {/* Clear All Button */}
-            <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-              <Text style={styles.clearButtonText}>Clear All Notifications</Text>
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClearAll}
+            >
+              <Text style={styles.clearButtonText}>
+                Clear All Notifications
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -266,7 +324,7 @@ function formatTime(timestamp: number): string {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return 'Just now';
+  if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
@@ -278,36 +336,36 @@ function formatTime(timestamp: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
+    backgroundColor: "#f5f7fa",
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f7fa',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f7fa",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e8ed',
+    borderBottomColor: "#e1e8ed",
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontWeight: "bold",
+    color: "#1a1a1a",
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   scrollView: {
     flex: 1,
@@ -316,8 +374,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyIcon: {
@@ -326,40 +384,40 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontWeight: "bold",
+    color: "#1a1a1a",
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     paddingHorizontal: 40,
     lineHeight: 24,
   },
   categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
   categoryCard: {
-    width: '48%',
-    backgroundColor: '#fff',
+    width: "48%",
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   categoryIcon: {
@@ -367,83 +425,82 @@ const styles = StyleSheet.create({
   },
   categoryCount: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: "600",
+    color: "#1a1a1a",
     marginBottom: 4,
   },
   categorySubtext: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   recentSection: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontWeight: "bold",
+    color: "#1a1a1a",
     marginBottom: 16,
   },
   notificationItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   notificationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   notificationApp: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#667eea',
+    fontWeight: "600",
+    color: "#667eea",
     flex: 1,
     marginRight: 8,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   notificationTitle: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#1a1a1a',
+    fontWeight: "500",
+    color: "#1a1a1a",
     marginBottom: 4,
   },
   notificationText: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     lineHeight: 20,
   },
   moreText: {
-    textAlign: 'center',
-    color: '#667eea',
+    textAlign: "center",
+    color: "#667eea",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 12,
   },
   clearButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#ff4444',
+    borderColor: "#ff4444",
     marginBottom: 20,
   },
   clearButtonText: {
-    color: '#ff4444',
+    color: "#ff4444",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
-
