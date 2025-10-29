@@ -28,7 +28,7 @@ type NotificationApiNativeModule = {
     requestNotificationListenerPermission(): Promise<boolean>;
     setLandlineMode(isActive: boolean): boolean;
     isLandlineModeActive(): boolean;
-    getLoggedNotifications(): any[];
+    getLoggedNotifications(): Promise<any[]>;
     clearLoggedNotifications(): boolean;
 };
 
