@@ -18,7 +18,8 @@ type TabType = "terms" | "privacy";
 
 export default function TermsAndPrivacyScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("terms");
-  const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
+  const [hasScrolledTerms, setHasScrolledTerms] = useState(false);
+  const [hasScrolledPrivacy, setHasScrolledPrivacy] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,13 +30,18 @@ export default function TermsAndPrivacyScreen() {
       layoutMeasurement.height + contentOffset.y >=
       contentSize.height - paddingToBottom;
 
-    if (isCloseToBottom && !hasScrolledToEnd) {
-      setHasScrolledToEnd(true);
+    if (isCloseToBottom) {
+      // Update the appropriate scroll state based on active tab
+      if (activeTab === "terms" && !hasScrolledTerms) {
+        setHasScrolledTerms(true);
+      } else if (activeTab === "privacy" && !hasScrolledPrivacy) {
+        setHasScrolledPrivacy(true);
+      }
     }
   };
 
   const handleAccept = async () => {
-    if (!agreedToTerms || !hasScrolledToEnd) return;
+    if (!agreedToTerms || !hasScrolledTerms || !hasScrolledPrivacy) return;
 
     setIsLoading(true);
     try {
@@ -50,7 +56,8 @@ export default function TermsAndPrivacyScreen() {
     }
   };
 
-  const isAcceptButtonEnabled = agreedToTerms && hasScrolledToEnd;
+  const isAcceptButtonEnabled = agreedToTerms && hasScrolledTerms && hasScrolledPrivacy;
+  const hasScrolledCurrentTab = activeTab === "terms" ? hasScrolledTerms : hasScrolledPrivacy;
 
   return (
     <View style={styles.container}>
@@ -79,33 +86,41 @@ export default function TermsAndPrivacyScreen() {
             style={[styles.tab, activeTab === "terms" && styles.activeTab]}
             onPress={() => {
               setActiveTab("terms");
-              setHasScrolledToEnd(false);
             }}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "terms" && styles.activeTabText,
-              ]}
-            >
-              Terms of Use
-            </Text>
+            <View style={styles.tabTextContainer}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "terms" && styles.activeTabText,
+                ]}
+              >
+                Terms of Use
+              </Text>
+              {hasScrolledTerms && (
+                <Text style={styles.checkmarkIndicator}>✓</Text>
+              )}
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === "privacy" && styles.activeTab]}
             onPress={() => {
               setActiveTab("privacy");
-              setHasScrolledToEnd(false);
             }}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "privacy" && styles.activeTabText,
-              ]}
-            >
-              Privacy Policy
-            </Text>
+            <View style={styles.tabTextContainer}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "privacy" && styles.activeTabText,
+                ]}
+              >
+                Privacy Policy
+              </Text>
+              {hasScrolledPrivacy && (
+                <Text style={styles.checkmarkIndicator}>✓</Text>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -127,7 +142,7 @@ export default function TermsAndPrivacyScreen() {
             </View>
           </ScrollView>
 
-          {!hasScrolledToEnd && (
+          {!hasScrolledCurrentTab && (
             <View style={styles.scrollPrompt}>
               <Text style={styles.scrollPromptText}>
                 ↓ Scroll to read all content
@@ -181,8 +196,10 @@ export default function TermsAndPrivacyScreen() {
         {/* Requirement hint */}
         {!isAcceptButtonEnabled && (
           <Text style={styles.hintText}>
-            {!hasScrolledToEnd
-              ? "Please scroll to the end of the document"
+            {!hasScrolledTerms
+              ? "Please scroll to the end of Terms of Use"
+              : !hasScrolledPrivacy
+              ? "Please scroll to the end of Privacy Policy"
               : "Please check the agreement box"}
           </Text>
         )}
@@ -251,6 +268,16 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#fff",
+  },
+  tabTextContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  checkmarkIndicator: {
+    fontSize: 12,
+    color: "#43e97b",
+    fontWeight: "bold",
   },
   contentContainer: {
     flex: 1,
