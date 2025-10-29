@@ -1,22 +1,22 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  ColorValue,
   Dimensions,
-  TouchableOpacity,
+  Platform,
   ScrollView,
   StatusBar,
-  Platform,
-  ColorValue,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  interpolate,
-  Extrapolation,
 } from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
