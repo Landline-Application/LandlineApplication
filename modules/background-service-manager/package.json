@@ -1,0 +1,18 @@
+{
+  "name": "background-service-manager",
+  "version": "1.0.0",
+  "description": "Background service manager for handling Android background operations",
+  "main": "index.ts",
+  "scripts": {},
+  "keywords": [
+    "expo",
+    "react-native",
+    "android",
+    "background-service",
+    "foreground-service",
+    "workmanager"
+  ],
+  "author": "Landline Application Team",
+  "license": "MIT"
+}
+

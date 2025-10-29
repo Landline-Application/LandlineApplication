@@ -3,13 +3,13 @@ import { requireNativeModule } from "expo-modules-core";
 /**
  * This shape must match what your Kotlin module exposes:
  * - hasPostPermission(): boolean
- * - openNotificationSettings(): boolean
+ * - requestPostPermission(): Promise<boolean>
  * - createChannel(id, name, importance): boolean
  * - notify(title, body, channelId, notificationId): boolean
  */
 type NotificationApiNativeModule = {
     hasPostPermission(): boolean;
-    openNotificationSettings(): boolean;
+    requestPostPermission(): Promise<boolean>;
     createChannel(id: string, name: string, importance: number): boolean;
     notify(
         title: string,
@@ -27,8 +27,8 @@ export function hasPostPermission() {
     return Native.hasPostPermission();
 }
 
-export function openNotificationSettings() {
-    return Native.openNotificationSettings();
+export function requestPostPermission() {
+    return Native.requestPostPermission();
 }
 
 export function createChannel(id: string, name: string, importance: number) {
@@ -46,7 +46,7 @@ export function notify(
 
 export default {
     hasPostPermission,
-    openNotificationSettings,
+    requestPostPermission,
     createChannel,
     notify,
 };
