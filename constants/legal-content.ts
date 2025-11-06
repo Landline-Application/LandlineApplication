@@ -123,14 +123,25 @@ We do not sell, trade, or otherwise transfer your personal information to third 
 You have the right to:
 • Access the data we collect about you
 • Request deletion of your data
+• Export your data for backup purposes
 • Opt-out of data collection where applicable
 • Revoke notification access permissions at any time
 • Disable background services through App settings
+
+6.1 Data Deletion
+You can permanently delete all your data from the App at any time through the Settings screen. This will remove:
+• Terms of Use acceptance records
+• All captured notification logs
+• Landline mode settings and preferences
+• All other app data
+
+This action is permanent and cannot be undone. We recommend exporting your data before deletion if you wish to keep a backup.
 
 7. DATA RETENTION
 
 • Notification data is retained only as long as necessary for the App to function
 • You can clear notification history at any time through the App
+• You can delete ALL your data permanently through Settings > Delete All My Data
 • Uninstalling the App removes all locally stored data
 
 8. SECURITY
