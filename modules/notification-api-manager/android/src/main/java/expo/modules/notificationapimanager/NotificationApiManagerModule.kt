@@ -190,32 +190,5 @@ class NotificationApiManagerModule : Module() {
             prefs.edit().remove("notification_logs").apply()
             true
         }
-
-        /**
-         * Clear ALL user data stored in native storage
-         * This includes:
-         * - Landline mode state (landline_mode_prefs)
-         * - All notification logs (landline_notifications)
-         * 
-         * Used for data deletion functionality
-         */
-        AsyncFunction("clearAllData") {
-            val ctx = appContext.reactContext ?: return@AsyncFunction false
-            
-            try {
-                // Clear Landline mode preferences
-                val modePrefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
-                modePrefs.edit().clear().apply()
-                
-                // Clear notification logs
-                val notifPrefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
-                notifPrefs.edit().clear().apply()
-                
-                true
-            } catch (e: Exception) {
-                android.util.Log.e("NotificationApiManager", "Error clearing all data: ${e.message}", e)
-                false
-            }
-        }
     }
 }
