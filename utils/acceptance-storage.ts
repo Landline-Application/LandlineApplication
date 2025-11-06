@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageManager } from './storage/storage-manager';
+import { STORAGE_KEYS } from './storage/storage-keys';
 
-const ACCEPTANCE_KEY = '@landline_terms_acceptance';
 const TERMS_VERSION = '1.0.0';
 
 export interface AcceptanceRecord {
@@ -14,9 +14,10 @@ export interface AcceptanceRecord {
  */
 export async function hasAcceptedTerms(): Promise<boolean> {
   try {
-    const value = await AsyncStorage.getItem(ACCEPTANCE_KEY);
-    if (value !== null) {
-      const record: AcceptanceRecord = JSON.parse(value);
+    const record = await StorageManager.getItem<AcceptanceRecord>(
+      STORAGE_KEYS.TERMS_ACCEPTANCE
+    );
+    if (record !== null) {
       // Check if user accepted the current version
       return record.accepted && record.version === TERMS_VERSION;
     }
@@ -37,7 +38,7 @@ export async function saveTermsAcceptance(): Promise<void> {
       timestamp: new Date().toISOString(),
       version: TERMS_VERSION,
     };
-    await AsyncStorage.setItem(ACCEPTANCE_KEY, JSON.stringify(record));
+    await StorageManager.setItem(STORAGE_KEYS.TERMS_ACCEPTANCE, record);
   } catch (error) {
     console.error('Error saving terms acceptance:', error);
     throw error;
@@ -49,11 +50,9 @@ export async function saveTermsAcceptance(): Promise<void> {
  */
 export async function getAcceptanceRecord(): Promise<AcceptanceRecord | null> {
   try {
-    const value = await AsyncStorage.getItem(ACCEPTANCE_KEY);
-    if (value !== null) {
-      return JSON.parse(value);
-    }
-    return null;
+    return await StorageManager.getItem<AcceptanceRecord>(
+      STORAGE_KEYS.TERMS_ACCEPTANCE
+    );
   } catch (error) {
     console.error('Error getting acceptance record:', error);
     return null;
@@ -65,7 +64,7 @@ export async function getAcceptanceRecord(): Promise<AcceptanceRecord | null> {
  */
 export async function clearAcceptance(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(ACCEPTANCE_KEY);
+    await StorageManager.removeItem(STORAGE_KEYS.TERMS_ACCEPTANCE);
   } catch (error) {
     console.error('Error clearing acceptance:', error);
     throw error;
