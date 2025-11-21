@@ -283,43 +283,9 @@ export default function OnboardingScreen() {
 
       {/* Pagination dots */}
       <View style={styles.pagination}>
-<<<<<<< HEAD
         {slides.map((_, index) => (
           <PaginationDot key={index} index={index} scrollX={scrollX} />
         ))}
-=======
-        {slides.map((_, index) => {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          const dotStyle = useAnimatedStyle(() => {
-            const inputRange = [
-              (index - 1) * width,
-              index * width,
-              (index + 1) * width,
-            ];
-
-            const scale = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.8, 1.4, 0.8],
-              Extrapolation.CLAMP,
-            );
-
-            const opacity = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.4, 1, 0.4],
-              Extrapolation.CLAMP,
-            );
-
-            return {
-              transform: [{ scale }],
-              opacity,
-            };
-          });
-
-          return <Animated.View key={index} style={[styles.dot, dotStyle]} />;
-        })}
->>>>>>> origin/main
       </View>
 
       {/* Next/Get Started button */}
@@ -331,11 +297,7 @@ export default function OnboardingScreen() {
           end={{ x: 1, y: 0 }}
         >
           <Text style={styles.nextButtonText}>
-<<<<<<< HEAD
             {currentIndex === slides.length - 1 ? (isLoading ? 'Creating Account...' : 'Sign Up') : 'Next'}
-=======
-            {currentIndex === slides.length - 1 ? "Get Started" : "Next"}
->>>>>>> origin/main
           </Text>
         </LinearGradient>
       </TouchableOpacity>
