@@ -39,7 +39,6 @@ export default function HomeScreen() {
     });
   }, []);
 
-<<<<<<< HEAD
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
@@ -58,16 +57,6 @@ export default function HomeScreen() {
     );
   };
 
-// ------------ Notifications demo --------------
-    const requestNotifPermissions = useCallback(async () => {
-        const already = Notif.hasPostPermission();
-        if (already) {
-            console.log("Notification permission already granted");
-            return;
-        }
-        console.log("Opening notification settings…");
-        Notif.openNotificationSettings();
-=======
   // ------------ Notifications demo --------------
   const requestNotifPermissions = useCallback(async () => {
     const already = Notif.hasPostPermission();
@@ -77,7 +66,6 @@ export default function HomeScreen() {
     }
     console.log("Opening notification settings…");
     Notif.openNotificationSettings();
->>>>>>> origin/main
 
     // optional: check again a bit later
     setTimeout(() => {
