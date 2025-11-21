@@ -1,3 +1,6 @@
+import { useAuth } from '@/contexts/auth-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 
 import {
@@ -73,18 +76,78 @@ const slides: OnboardingSlide[] = [
     emoji: '🔐',
     gradientColors: ['#fa709a', '#fee140'],
   },
+  {
+    id: 6,
+    title: 'Create Your Account',
+    description: 'Sign up with your email to get started and sync your preferences across devices.',
+    emoji: '👤',
+    gradientColors: ['#667eea', '#764ba2'],
+  },
 ];
 
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
+  const { signUp } = useAuth();
+  
+  // Signup form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     scrollX.value = offsetX;
     const index = Math.round(offsetX / width);
     setCurrentIndex(index);
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSignup = async () => {
+    // Validate inputs
+    if (!email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters long');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Use the auth context to sign up
+      await signUp(email, password);
+      
+      Alert.alert('Success', 'Account created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)'),
+        },
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNext = () => {
@@ -163,6 +226,57 @@ export default function OnboardingScreen() {
                     />
                   </View>
                 )}
+
+                {slide.id === 6 && (
+                  <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.signupForm}
+                  >
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Email Address</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="your.email@example.com"
+                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Password</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="At least 8 characters"
+                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        autoCapitalize="none"
+                      />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Confirm Password</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Re-enter your password"
+                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry
+                        autoCapitalize="none"
+                      />
+                    </View>
+
+                    <Text style={styles.termsText}>
+                      By signing up, you agree to our Terms of Service and Privacy Policy
+                    </Text>
+                  </KeyboardAvoidingView>
+                )}
               </View>
             </LinearGradient>
           </View>
@@ -209,7 +323,7 @@ export default function OnboardingScreen() {
           end={{ x: 1, y: 0 }}
         >
           <Text style={styles.nextButtonText}>
-            {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+            {currentIndex === slides.length - 1 ? (isLoading ? 'Creating Account...' : 'Sign Up') : 'Next'}
           </Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -249,6 +363,42 @@ function PermissionItem({
         <Text style={styles.permissionDescription}>{description}</Text>
       </View>
     </View>
+  );
+}
+
+// Pagination dot component
+function PaginationDot({ index, scrollX }: { index: number; scrollX: ReturnType<typeof useSharedValue> }) {
+  const dotStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
+
+    const scale = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.8, 1.4, 0.8],
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.4, 1, 0.4],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.dot, dotStyle]}
+    />
   );
 }
 
@@ -419,5 +569,37 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  signupForm: {
+    width: '100%',
+    marginTop: 20,
+  },
+  inputContainer: {
+    marginBottom: 20,
+    width: '100%',
+  },
+  inputLabel: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#fff',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  termsText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 18,
+    paddingHorizontal: 10,
   },
 });
