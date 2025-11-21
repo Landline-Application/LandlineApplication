@@ -300,11 +300,7 @@ export default function OnboardingScreen() {
           end={{ x: 1, y: 0 }}
         >
           <Text style={styles.nextButtonText}>
-            {currentIndex === slides.length - 1
-              ? isLoading
-                ? "Creating Account..."
-                : "Sign Up"
-              : "Next"}
+            {currentIndex === slides.length - 1 ? (isLoading ? 'Creating Account...' : 'Sign Up') : 'Next'}
           </Text>
         </LinearGradient>
       </TouchableOpacity>
