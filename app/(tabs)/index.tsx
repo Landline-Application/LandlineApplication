@@ -1,25 +1,28 @@
 import { Image } from "expo-image";
 import { Link, router } from "expo-router";
-import { Alert, Button, Platform, StyleSheet } from "react-native";
+import { Alert, Button, Platform, StyleSheet, View } from "react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
+import { useAuth } from "@/contexts/auth-context";
 import { useCallback, useEffect } from "react";
 
 import {
-  getCurrentState,
-  hasPermission,
-  requestPermission,
-  setDNDEnabled,
+    getCurrentState,
+    hasPermission,
+    requestPermission,
+    setDNDEnabled,
 } from "@/modules/dnd-manager";
 
 import Notif from "@/modules/notification-api-manager";
 import { clearAcceptance } from "@/utils/acceptance-storage";
 
 export default function HomeScreen() {
+  const { user, isAuthenticated, signOut } = useAuth();
+
   useEffect(() => {
     async function fetchDNDSettings() {
       const permissions = hasPermission();
@@ -35,6 +38,24 @@ export default function HomeScreen() {
       console.log("Set DND Result: ", result);
     });
   }, []);
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/onboarding');
+          },
+        },
+      ]
+    );
+  };
 
   // ------------ Notifications demo --------------
   const requestNotifPermissions = useCallback(async () => {
@@ -130,12 +151,25 @@ export default function HomeScreen() {
         />
       }
     >
-        {/* Onboarding button */}
+        {/* Authentication Status */}
         <ThemedView style={styles.stepContainer}>
-          <Button 
-            title="🎉 View Onboarding Flow" 
-            onPress={() => router.push('/onboarding')} 
-          />
+          <ThemedText type="subtitle">👤 Account Status</ThemedText>
+          {isAuthenticated ? (
+            <View style={{ gap: 8 }}>
+              <ThemedText>
+                ✅ Signed in as: <ThemedText type="defaultSemiBold">{user?.email}</ThemedText>
+              </ThemedText>
+              <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
+            </View>
+          ) : (
+            <View style={{ gap: 8 }}>
+              <ThemedText>❌ Not signed in</ThemedText>
+              <Button 
+                title="🎉 View Onboarding / Sign Up" 
+                onPress={() => router.push('/onboarding')} 
+              />
+            </View>
+          )}
         </ThemedView>
 
         {/* Testing button */}
