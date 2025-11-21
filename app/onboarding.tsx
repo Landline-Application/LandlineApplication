@@ -154,23 +154,14 @@ export default function OnboardingScreen() {
         animated: true,
       });
     } else {
-<<<<<<< HEAD
       // On the signup screen, validate and submit
       handleSignup();
-=======
-      // Navigate to main app
-      router.replace("/(tabs)");
->>>>>>> origin/main
     }
   };
 
   const handleSkip = () => {
-<<<<<<< HEAD
     // If on signup screen, allow skip as well
     router.replace('/(tabs)');
-=======
-    router.replace("/(tabs)");
->>>>>>> origin/main
   };
 
   return (
