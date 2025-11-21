@@ -7,9 +7,28 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
+import { useAuth } from "@/contexts/auth-context";
+
 import Notif from "@/modules/notification-api-manager";
 
 export default function HomeScreen() {
+  const { user, isAuthenticated, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          router.replace("/onboarding");
+        },
+      },
+    ]);
+  };
+
+  // ------------ Notifications demo --------------
   const requestNotifPermissions = useCallback(async () => {
     const already = Notif.hasPostPermission();
     if (already) {
@@ -17,7 +36,6 @@ export default function HomeScreen() {
       return;
     }
     console.log("Opening notification settings…");
-    // TODO: Fix this implementation
     // Notif.openNotificationSettings();
 
     // optional: check again a bit later
@@ -37,6 +55,7 @@ export default function HomeScreen() {
     const id = Date.now() % 100000;
     Notif.notify("Hello", "It works!", "demo", id);
   }, []);
+  // ------------------------------------------------
 
   const router = useRouter();
 
@@ -76,6 +95,31 @@ export default function HomeScreen() {
             title="Open DND Test Page"
             onPress={() => router.push("/dnd-test")}
           />
+        </ThemedView>
+        {/* Authentication Status */}
+        <ThemedView style={styles.stepContainer}>
+          <ThemedText type="subtitle">👤 Account Status</ThemedText>
+          {isAuthenticated ? (
+            <ThemedView style={{ gap: 8 }}>
+              <ThemedText>
+                ✅ Signed in as:{" "}
+                <ThemedText type="defaultSemiBold">{user?.email}</ThemedText>
+              </ThemedText>
+              <Button
+                title="Sign Out"
+                onPress={handleSignOut}
+                color="#f5576c"
+              />
+            </ThemedView>
+          ) : (
+            <ThemedView style={{ gap: 8 }}>
+              <ThemedText>❌ Not signed in</ThemedText>
+              <Button
+                title="🎉 View Onboarding / Sign Up"
+                onPress={() => router.push("/onboarding")}
+              />
+            </ThemedView>
+          )}
         </ThemedView>
       </ThemedView>
 
