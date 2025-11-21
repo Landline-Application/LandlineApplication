@@ -188,11 +188,7 @@ export default function OnboardingScreen() {
         {slides.map((slide, _index) => (
           <View key={slide.id} style={styles.slide}>
             <LinearGradient
-<<<<<<< HEAD
               colors={slide.gradientColors as [string, string, ...string[]]}
-=======
-              colors={slide.gradientColors as [ColorValue, ColorValue]}
->>>>>>> origin/main
               style={styles.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
