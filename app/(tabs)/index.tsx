@@ -17,7 +17,8 @@ import {
     setDNDEnabled,
 } from "@/modules/dnd-manager";
 
-import * as Notif from "@/modules/notification-api-manager";
+import Notif from "@/modules/notification-api-manager";
+import { clearAcceptance } from "@/utils/acceptance-storage";
 
 export default function HomeScreen() {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -38,6 +39,7 @@ export default function HomeScreen() {
     });
   }, []);
 
+<<<<<<< HEAD
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
@@ -65,25 +67,36 @@ export default function HomeScreen() {
         }
         console.log("Opening notification settings…");
         Notif.openNotificationSettings();
+=======
+  // ------------ Notifications demo --------------
+  const requestNotifPermissions = useCallback(async () => {
+    const already = Notif.hasPostPermission();
+    if (already) {
+      console.log("Notification permission already granted");
+      return;
+    }
+    console.log("Opening notification settings…");
+    Notif.openNotificationSettings();
+>>>>>>> origin/main
 
-        // optional: check again a bit later
-        setTimeout(() => {
-            console.log("Permission after settings:", Notif.hasPostPermission());
-        }, 2000);
-    }, []);
+    // optional: check again a bit later
+    setTimeout(() => {
+      console.log("Permission after settings:", Notif.hasPostPermission());
+    }, 2000);
+  }, []);
 
-// Send a test notification
-    const sendTestNotification = useCallback(() => {
-        if (!Notif.hasPostPermission()) {
-            Alert.alert("Enable notifications first");
-            return;
-        }
-        // IMPORTANCE_DEFAULT = 3
-        Notif.createChannel("demo", "Demo", 3);
-        const id = Date.now() % 100000;
-        Notif.notify("Hello", "It works!", "demo", id);
-    }, []);
-// ------------------------------------------------
+  // Send a test notification
+  const sendTestNotification = useCallback(() => {
+    if (!Notif.hasPostPermission()) {
+      Alert.alert("Enable notifications first");
+      return;
+    }
+    // IMPORTANCE_DEFAULT = 3
+    Notif.createChannel("demo", "Demo", 3);
+    const id = Date.now() % 100000;
+    Notif.notify("Hello", "It works!", "demo", id);
+  }, []);
+  // ------------------------------------------------
 
   async function requestPermissions() {
     const permissionGranted = await requestPermission();
@@ -94,7 +107,7 @@ export default function HomeScreen() {
     } else {
       // Settings screen was opened, need to check again later
       console.log(
-        "Please grant DND permission in the settings that just opened"
+        "Please grant DND permission in the settings that just opened",
       );
 
       // Later, manually check again:
@@ -116,6 +129,28 @@ export default function HomeScreen() {
     setDNDEnabled(true).then((result) => {
       console.log("Set DND Result: ", result);
     });
+  }
+
+  async function resetTermsAcceptance() {
+    try {
+      await clearAcceptance();
+      Alert.alert(
+        "Success",
+        "Terms acceptance cleared. App will now redirect to terms screen.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Navigate to terms screen to restart the flow
+              router.replace('/terms-and-privacy' as any);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to clear acceptance. Please try again.");
+      console.error("Error clearing acceptance:", error);
+    }
   }
 
   return (
@@ -149,13 +184,25 @@ export default function HomeScreen() {
           )}
         </ThemedView>
 
+        {/* Testing button */}
+        <ThemedView style={styles.stepContainer}>
+          <Button 
+            title="🔄 Reset Terms Acceptance (Testing)" 
+            onPress={resetTermsAcceptance}
+            color="#ff6b6b"
+          />
+        </ThemedView>
+
         {/* DND buttons */}
       <Button title="Request DND Permissions" onPress={requestPermissions} />
       <Button title="Turn on DND" onPress={turnOnDND} />
 
-        {/* Notification buttons */}
-        <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
-        <Button title="Send Test Notification" onPress={sendTestNotification} />
+      {/* Notification buttons */}
+      <Button
+        title="Request Notification Permission"
+        onPress={requestNotifPermissions}
+      />
+      <Button title="Send Test Notification" onPress={sendTestNotification} />
 
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>

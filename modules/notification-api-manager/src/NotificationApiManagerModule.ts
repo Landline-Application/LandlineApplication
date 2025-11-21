@@ -12,6 +12,7 @@ import { requireNativeModule } from "expo-modules-core";
  * - isLandlineModeActive(): boolean
  * - getLoggedNotifications(): Array
  * - clearLoggedNotifications(): boolean
+ * - clearAllData(): Promise<boolean>
  */
 type NotificationApiNativeModule = {
     hasPostPermission(): boolean;
@@ -28,8 +29,10 @@ type NotificationApiNativeModule = {
     requestNotificationListenerPermission(): Promise<boolean>;
     setLandlineMode(isActive: boolean): boolean;
     isLandlineModeActive(): boolean;
-    getLoggedNotifications(): any[];
+    getLoggedNotifications(): Promise<any[]>;
     clearLoggedNotifications(): boolean;
+    // Data Management
+    clearAllData(): Promise<boolean>;
 };
 
 const Native: NotificationApiNativeModule =
@@ -88,6 +91,14 @@ export function clearLoggedNotifications() {
     return Native.clearLoggedNotifications();
 }
 
+// ============================================================
+// DATA MANAGEMENT
+// ============================================================
+
+export function clearAllData() {
+    return Native.clearAllData();
+}
+
 export default {
     hasPostPermission,
     requestPostPermission,
@@ -99,4 +110,5 @@ export default {
     isLandlineModeActive,
     getLoggedNotifications,
     clearLoggedNotifications,
+    clearAllData,
 };
