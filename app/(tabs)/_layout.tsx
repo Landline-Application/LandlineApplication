@@ -15,14 +15,20 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          backgroundColor: colorScheme === 'dark' ? '#0F0F0F' : '#fff',
+          borderTopColor: colorScheme === 'dark' ? '#333' : '#eee',
+        },
       }}>
+      {/* Main Landline Mode Screen */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Landline',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone.fill" color={color} />,
         }}
       />
+      {/* Notification Log */}
       <Tabs.Screen
         name="notifications"
         options={{
@@ -30,32 +36,31 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
         }}
       />
+      {/* Settings */}
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+        }}
+      />
+      {/* Hidden dev/test screens */}
       <Tabs.Screen
         name="landline-mode-test"
         options={{
-          title: 'Landline',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          href: null, // Hide from tab bar
         }}
       />
       <Tabs.Screen
         name="background-service-demo"
         options={{
-          title: 'BG Service',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
+          href: null, // Hide from tab bar
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>
