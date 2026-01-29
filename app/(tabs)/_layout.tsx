@@ -54,6 +54,14 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Debug Screen - Hidden from tab bar */}
+      <Tabs.Screen
+        name="debug-screen"
+        options={{
+          title: 'Debug Screen',
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
