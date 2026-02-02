@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -7,24 +7,51 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
-import { usePhoneAuth } from "@/hooks/use-phone-auth";
 import { RolodexCard } from "@/components/ui/roledex-card";
 import { FormLayout } from "@/components/ui/form-layout";
-import { PhoneInput } from "@/components/ui/form/phone-number";
+import { EmailPasswordInput } from "@/components/ui/form/email-password-input";
 import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
 import { Button } from "@/components/ui/form/button";
 
-export default function LoginPage() {
-  const {
-    detectedCountry,
-    phoneInput,
-    isLoading,
-    isFormValid,
-    handlePhoneNumberChange,
-    submitPhone,
-  } = usePhoneAuth({
-    onSuccess: () => router.replace("/(tabs)"),
-  });
+export default function LoginEmailPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async () => {
+    setEmailError("");
+    setPasswordError("");
+
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = password.length >= 6;
+
+    if (!isEmailValid) {
+      setEmailError("Please enter a valid email");
+    }
+    if (!isPasswordValid) {
+      setPasswordError("Password must be at least 6 characters");
+    }
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      router.replace("/(tabs)");
+    }, 1500);
+  };
+
+  const isFormValid = validateEmail(email) && password.length >= 6;
 
   return (
     <FormLayout>
@@ -34,16 +61,18 @@ export default function LoginPage() {
           <Text style={styles.headerSubtitle}>Welcome back</Text>
         </View>
 
-        <PhoneInput
-          value={phoneInput}
-          onChangeText={handlePhoneNumberChange}
-          detectedCountry={detectedCountry}
-          isValid={isFormValid}
+        <EmailPasswordInput
+          email={email}
+          password={password}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          emailError={emailError}
+          passwordError={passwordError}
         />
 
         {/* Login Button */}
         <Button
-          onPress={submitPhone}
+          onPress={handleSubmit}
           disabled={!isFormValid || isLoading}
           loading={isLoading}
           variant="primary"
@@ -60,15 +89,15 @@ export default function LoginPage() {
 
         {/* Social Login Buttons */}
         <ContinueWithSocials
-          buttons={["google", "email"]}
+          buttons={["google", "phone"]}
           onGooglePress={() => console.log("Google login")}
-          onEmailPress={() => router.push("/login-email")}
+          onPhonePress={() => router.push("/login")}
         />
 
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
           <Button
-            onPress={() => router.push("/create-account")}
+            onPress={() => router.push("/create-account-email")}
             variant="text"
           >
             Don't have an account?

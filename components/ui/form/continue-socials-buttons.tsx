@@ -2,33 +2,70 @@ import { COLORS } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
 
-export function ContinueWithSocials() {
+type ButtonType = "google" | "email" | "phone";
+
+interface ContinueWithSocialsProps {
+  buttons?: ButtonType[];
+  onGooglePress?: () => void;
+  onEmailPress?: () => void;
+  onPhonePress?: () => void;
+}
+
+export function ContinueWithSocials({
+  buttons = ["google", "email"],
+  onGooglePress,
+  onEmailPress,
+  onPhonePress,
+}: ContinueWithSocialsProps) {
+  const buttonConfig = {
+    google: {
+      icon: "logo-google" as const,
+      text: "Continue with Google",
+      filled: false,
+      onPress: onGooglePress,
+    },
+    email: {
+      icon: "mail" as const,
+      text: "Continue with Email",
+      filled: true,
+      onPress: onEmailPress,
+    },
+    phone: {
+      icon: "call" as const,
+      text: "Continue with Phone",
+      filled: true,
+      onPress: onPhonePress,
+    },
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} accessibilityRole="button">
-        <Ionicons
-          name="logo-google"
-          size={20}
-          color={COLORS.textPrimary}
-          style={styles.icon}
-        />
-        <Text style={styles.buttonText}>Continue with Google</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.button, styles.emailButton]}
-        accessibilityRole="button"
-      >
-        <Ionicons
-          name="mail"
-          size={20}
-          color={COLORS.cardBg}
-          style={styles.icon}
-        />
-        <Text style={[styles.buttonText, { color: COLORS.cardBg }]}>
-          Continue with Email
-        </Text>
-      </TouchableOpacity>
+      {buttons.map((buttonType) => {
+        const config = buttonConfig[buttonType];
+        return (
+          <TouchableOpacity
+            key={buttonType}
+            style={[styles.button, config.filled && styles.filledButton]}
+            accessibilityRole="button"
+            onPress={config.onPress}
+          >
+            <Ionicons
+              name={config.icon}
+              size={20}
+              color={config.filled ? COLORS.cardBg : COLORS.textPrimary}
+              style={styles.icon}
+            />
+            <Text
+              style={[
+                styles.buttonText,
+                config.filled && { color: COLORS.cardBg },
+              ]}
+            >
+              {config.text}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -45,7 +82,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "transparent",
   },
-  emailButton: { backgroundColor: COLORS.textPrimary },
+  filledButton: { backgroundColor: COLORS.textPrimary },
   buttonText: {
     fontSize: 14,
     fontWeight: "600",
