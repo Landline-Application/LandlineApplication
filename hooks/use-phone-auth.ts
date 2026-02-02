@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
-import { Alert } from "react-native";
-import {
-  getCountryCodeFromNumber,
-  validatePhoneNumber,
-} from "@/utils/phone-number";
+import { useCallback, useMemo, useState } from 'react';
+
+import { Alert } from 'react-native';
+
+import { getCountryCodeFromNumber, validatePhoneNumber } from '@/utils/phone-number';
 
 interface UsePhoneAuthProps {
   initialValue?: string;
@@ -19,32 +18,29 @@ interface UsePhoneAuthReturn {
   submitPhone: () => Promise<void>;
 }
 
-export function usePhoneAuth({
-  initialValue,
-  onSuccess,
-}: UsePhoneAuthProps): UsePhoneAuthReturn {
-  const [phoneInput, setPhoneInput] = useState(initialValue ?? "1");
+export function usePhoneAuth({ initialValue, onSuccess }: UsePhoneAuthProps): UsePhoneAuthReturn {
+  const [phoneInput, setPhoneInput] = useState(initialValue ?? '1');
   const [isLoading, setIsLoading] = useState(false);
 
   const detectedCountry = useMemo(() => {
-    const fullNumber = phoneInput ? `+${phoneInput}` : "+1";
+    const fullNumber = phoneInput ? `+${phoneInput}` : '+1';
     // Defaulting to US if detection fails
-    return getCountryCodeFromNumber(fullNumber, "US");
+    return getCountryCodeFromNumber(fullNumber, 'US');
   }, [phoneInput]);
 
   const isFormValid = useMemo(() => {
-    const fullNumber = phoneInput ? `+${phoneInput}` : "";
+    const fullNumber = phoneInput ? `+${phoneInput}` : '';
     return validatePhoneNumber(fullNumber, detectedCountry);
   }, [phoneInput, detectedCountry]);
 
   const handlePhoneNumberChange = useCallback((text: string) => {
-    const cleaned = text.replace(/\D/g, "");
+    const cleaned = text.replace(/\D/g, '');
     setPhoneInput(cleaned);
   }, []);
 
   const submitPhone = useCallback(async () => {
     if (!isFormValid) {
-      Alert.alert("Invalid Number", "Please insert a valid phone number.");
+      Alert.alert('Invalid Number', 'Please insert a valid phone number.');
       return;
     }
 
@@ -58,7 +54,7 @@ export function usePhoneAuth({
         onSuccess();
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to verify phone number. Please try again.");
+      Alert.alert('Error', 'Failed to verify phone number. Please try again.');
       console.error(error);
     } finally {
       setIsLoading(false);

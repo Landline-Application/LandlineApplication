@@ -1,6 +1,8 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet, Platform } from "react-native";
-import { COLORS } from "@/constants/colors";
+import React from 'react';
+
+import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { COLORS } from '@/constants/colors';
 
 interface EmailPasswordInputProps {
   email: string;
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 8,
     letterSpacing: 0.5,
@@ -81,12 +83,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 16,
     fontSize: 16,
-    color: "#333",
+    color: '#333',
     borderWidth: 1.5,
     borderColor: COLORS.cardBorder,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   inputError: {
-    borderColor: "#c44536",
+    borderColor: '#c44536',
   },
 });

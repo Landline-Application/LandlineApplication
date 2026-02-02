@@ -1,6 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { COLORS } from "@/constants/colors";
+import React from 'react';
+
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+
+import { COLORS } from '@/constants/colors';
 
 interface RolodexCardProps {
   title: string;
@@ -31,13 +33,13 @@ export function RolodexCard({ title, children, style }: RolodexCardProps) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: "relative",
+    position: 'relative',
     marginBottom: 20,
-    width: "100%",
+    width: '100%',
   },
 
   tab: {
-    alignSelf: "center",
+    alignSelf: 'center',
     backgroundColor: COLORS.tabBg,
     paddingVertical: 6,
     paddingHorizontal: 24,
@@ -52,9 +54,9 @@ const styles = StyleSheet.create({
   tabText: {
     color: COLORS.textPrimary,
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: '900',
     letterSpacing: 1.5,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
   },
 
   card: {
@@ -63,7 +65,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     zIndex: 1,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   content: {
     padding: 24,
@@ -71,12 +73,12 @@ const styles = StyleSheet.create({
   },
 
   punchHoleContainer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 15,
     left: 0,
     right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 80,
     zIndex: 10,
   },
@@ -85,19 +87,19 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: COLORS.background,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   shadowLayer: {
-    position: "absolute",
+    position: 'absolute',
     top: 10,
     left: 0,
     right: 0,
     bottom: -10,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: 12,
     zIndex: 0,
   },

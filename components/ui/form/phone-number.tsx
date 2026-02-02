@@ -1,7 +1,9 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet, Platform } from "react-native";
-import { getCountryFlagEmoji } from "@/utils/phone-number";
-import { COLORS } from "@/constants/colors";
+import React from 'react';
+
+import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { COLORS } from '@/constants/colors';
+import { getCountryFlagEmoji } from '@/utils/phone-number';
 
 interface PhoneInputProps {
   value: string;
@@ -41,8 +43,8 @@ export function PhoneInput({
       </View>
 
       <Text style={styles.disclaimer}>
-        We&apos;ll call or text you to confirm your number. Standard message and
-        data rates may apply.
+        We&apos;ll call or text you to confirm your number. Standard message and data rates may
+        apply.
       </Text>
     </View>
   );
@@ -54,14 +56,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   wrapper: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.inputBg,
     borderRadius: 8,
     borderWidth: 1.5,
@@ -79,21 +81,21 @@ const styles = StyleSheet.create({
   plus: {
     fontSize: 18,
     color: COLORS.textPrimary,
-    fontWeight: "600",
+    fontWeight: '600',
     marginRight: 4,
   },
   input: {
     flex: 1,
     fontSize: 18,
-    color: "#333",
-    fontWeight: "600",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    height: "100%",
+    color: '#333',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    height: '100%',
   },
   disclaimer: {
     fontSize: 10,
-    color: "#7a6a4a",
+    color: '#7a6a4a',
     marginTop: 6,
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
 });

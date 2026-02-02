@@ -1,19 +1,21 @@
-import React from "react";
+import React from 'react';
+
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
   ActivityIndicator,
-  ViewStyle,
+  StyleSheet,
+  Text,
   TextStyle,
-} from "react-native";
-import { COLORS } from "@/constants/colors";
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
+
+import { COLORS } from '@/constants/colors';
 
 interface ButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: "primary" | "outline" | "text";
+  variant?: 'primary' | 'outline' | 'text';
   children: string;
   accessibilityLabel?: string;
   style?: ViewStyle;
@@ -24,7 +26,7 @@ export function Button({
   onPress,
   disabled = false,
   loading = false,
-  variant = "primary",
+  variant = 'primary',
   children,
   accessibilityLabel,
   style,
@@ -32,18 +34,18 @@ export function Button({
 }: ButtonProps) {
   const buttonStyle = [
     styles.button,
-    variant === "primary" && styles.primaryButton,
-    variant === "outline" && styles.outlineButton,
-    variant === "text" && styles.textButton,
+    variant === 'primary' && styles.primaryButton,
+    variant === 'outline' && styles.outlineButton,
+    variant === 'text' && styles.textButton,
     (disabled || loading) && styles.buttonDisabled,
     style,
   ];
 
   const textStyles = [
     styles.buttonText,
-    variant === "primary" && styles.primaryButtonText,
-    variant === "outline" && styles.outlineButtonText,
-    variant === "text" && styles.textButtonText,
+    variant === 'primary' && styles.primaryButtonText,
+    variant === 'outline' && styles.outlineButtonText,
+    variant === 'text' && styles.textButtonText,
     textStyle,
   ];
 
@@ -56,9 +58,7 @@ export function Button({
       accessibilityLabel={accessibilityLabel || children}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === "primary" ? COLORS.cardBg : COLORS.textPrimary}
-        />
+        <ActivityIndicator color={variant === 'primary' ? COLORS.cardBg : COLORS.textPrimary} />
       ) : (
         <Text style={textStyles}>{children}</Text>
       )}
@@ -70,25 +70,25 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 8,
     height: 50,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   primaryButton: {
     backgroundColor: COLORS.textPrimary,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
   },
   outlineButton: {
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: COLORS.textPrimary,
   },
   textButton: {
-    backgroundColor: "transparent",
-    height: "auto",
+    backgroundColor: 'transparent',
+    height: 'auto',
     padding: 10,
   },
   buttonDisabled: {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     letterSpacing: 1,
   },
   primaryButtonText: {
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   textButtonText: {
     color: COLORS.textSecondary,
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: '500',
     opacity: 0.8,
     letterSpacing: 0,
   },

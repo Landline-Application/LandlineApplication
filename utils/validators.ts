@@ -1,16 +1,16 @@
 export const validateEmail = (value: string): string => {
   if (!value) {
-    return "Email is required";
+    return 'Email is required';
   }
 
   // Improved regex to ensure there's a character after the dot in the domain
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   if (!emailRegex.test(value)) {
-    return "Please enter a valid email";
+    return 'Please enter a valid email';
   }
 
-  return "";
+  return '';
 };
 
 /**
@@ -27,28 +27,28 @@ export const validateEmail = (value: string): string => {
  */
 export const validatePassword = (value: string): string => {
   if (!value) {
-    return "Password is required.";
+    return 'Password is required.';
   }
 
   if (value.length < 8) {
-    return "Password must be at least 8 characters long.";
+    return 'Password must be at least 8 characters long.';
   }
 
   if (!/[A-Z]/.test(value)) {
-    return "Password must contain at least one uppercase letter.";
+    return 'Password must contain at least one uppercase letter.';
   }
 
   if (!/[a-z]/.test(value)) {
-    return "Password must contain at least one lowercase letter.";
+    return 'Password must contain at least one lowercase letter.';
   }
 
   if (!/\d/.test(value)) {
-    return "Password must contain at least one number.";
+    return 'Password must contain at least one number.';
   }
 
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-    return "Password must contain at least one special character.";
+    return 'Password must contain at least one special character.';
   }
 
-  return "";
+  return '';
 };

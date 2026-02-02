@@ -1,12 +1,8 @@
-import React from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React from 'react';
+
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ViewStyle } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenLayoutProps {
   children: React.ReactNode;
@@ -17,7 +13,7 @@ export function FormLayout({ children, style }: ScreenLayoutProps) {
   return (
     <SafeAreaView style={[styles.container, style]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -35,14 +31,14 @@ export function FormLayout({ children, style }: ScreenLayoutProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#2b2b2b", // Or import from Colors
+    backgroundColor: '#2b2b2b', // Or import from Colors
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
     padding: 20,
   },
 });

@@ -1,9 +1,9 @@
-import { CountryCode, parsePhoneNumberWithError } from "libphonenumber-js";
+import { CountryCode, parsePhoneNumberWithError } from 'libphonenumber-js';
 
 export const getCountryFlagEmoji = (countryCode: string) => {
   const codePoints = countryCode
     .toUpperCase()
-    .split("")
+    .split('')
     .map((char) => 127397 + char.charCodeAt(0));
   return String.fromCodePoint(...codePoints);
 };
@@ -15,17 +15,15 @@ export const getCountryFlagEmoji = (countryCode: string) => {
  */
 export const getCountryCodeFromNumber = (
   phoneNumber: string,
-  defaultCountry: CountryCode = "US",
+  defaultCountry: CountryCode = 'US',
 ): CountryCode => {
   try {
-    if (!phoneNumber || phoneNumber.replace(/\D/g, "").length === 0) {
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length === 0) {
       return defaultCountry;
     }
 
     // Add + if not present for parsing
-    const numberToParse = phoneNumber.startsWith("+")
-      ? phoneNumber
-      : `+${phoneNumber}`;
+    const numberToParse = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     const parsed = parsePhoneNumberWithError(numberToParse, defaultCountry);
 
     return parsed?.country || defaultCountry;
@@ -40,18 +38,13 @@ export const getCountryCodeFromNumber = (
  * @param country - Country code to validate against
  * @returns true if valid, false otherwise
  */
-export const validatePhoneNumber = (
-  phoneNumber: string,
-  country?: CountryCode,
-): boolean => {
+export const validatePhoneNumber = (phoneNumber: string, country?: CountryCode): boolean => {
   try {
-    if (!phoneNumber || phoneNumber.replace(/\D/g, "").length === 0) {
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length === 0) {
       return false;
     }
 
-    const numberToParse = phoneNumber.startsWith("+")
-      ? phoneNumber
-      : `+${phoneNumber}`;
+    const numberToParse = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     const parsed = parsePhoneNumberWithError(numberToParse, country);
 
     return parsed?.isValid() || false;

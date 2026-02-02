@@ -1,24 +1,22 @@
-import React, { useState } from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { router } from "expo-router";
-import { COLORS } from "@/constants/colors";
-import { RolodexCard } from "@/components/ui/roledex-card";
-import { FormLayout } from "@/components/ui/form-layout";
-import { EmailPasswordInput } from "@/components/ui/form/email-password-input";
-import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
-import { Button } from "@/components/ui/form/button";
+import React, { useState } from 'react';
+
+import { Platform, StyleSheet, Text, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { FormLayout } from '@/components/ui/form-layout';
+import { Button } from '@/components/ui/form/button';
+import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
+import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
+import { RolodexCard } from '@/components/ui/roledex-card';
+import { COLORS } from '@/constants/colors';
 
 export default function LoginEmailPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,17 +24,17 @@ export default function LoginEmailPage() {
   };
 
   const handleSubmit = async () => {
-    setEmailError("");
-    setPasswordError("");
+    setEmailError('');
+    setPasswordError('');
 
     const isEmailValid = validateEmail(email);
     const isPasswordValid = password.length >= 6;
 
     if (!isEmailValid) {
-      setEmailError("Please enter a valid email");
+      setEmailError('Please enter a valid email');
     }
     if (!isPasswordValid) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError('Password must be at least 6 characters');
     }
 
     if (!isEmailValid || !isPasswordValid) {
@@ -47,7 +45,7 @@ export default function LoginEmailPage() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      router.replace("/(tabs)");
+      router.replace('/(tabs)');
     }, 1500);
   };
 
@@ -89,26 +87,20 @@ export default function LoginEmailPage() {
 
         {/* Social Login Buttons */}
         <ContinueWithSocials
-          buttons={["google", "phone"]}
-          onGooglePress={() => console.log("Google login")}
-          onPhonePress={() => router.push("/login")}
+          buttons={['google', 'phone']}
+          onGooglePress={() => console.log('Google login')}
+          onPhonePress={() => router.push('/login')}
         />
 
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
-          <Button
-            onPress={() => router.push("/create-account-email")}
-            variant="text"
-          >
-            Don't have an account?
+          <Button onPress={() => router.push('/create-account-email')} variant="text">
+            Don&apos;t have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace('/(tabs)')} variant="text">
         Skip
       </Button>
     </FormLayout>
@@ -117,16 +109,16 @@ export default function LoginEmailPage() {
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   brandText: {
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   headerSubtitle: {
     fontSize: 13,
@@ -136,8 +128,8 @@ const styles = StyleSheet.create({
 
   // Divider Section
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 20,
   },
   dividerLine: {
@@ -150,12 +142,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     color: COLORS.textSecondary,
     fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    fontWeight: '800',
+    textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
 
   signUpContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
 });
