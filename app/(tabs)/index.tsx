@@ -130,6 +130,13 @@ export default function HomeScreen() {
         />
       }
     >
+        {/* Login button */}
+        <ThemedView style={styles.stepContainer}>
+          <Button 
+            title="🔐 View Login Page" 
+            onPress={() => router.push('/login')} 
+          />
+        </ThemedView>
 
         {/* Create Account button */}
         <ThemedView style={styles.stepContainer}>
