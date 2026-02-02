@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import { usePhoneAuth } from "@/hooks/use-phone-auth";
@@ -67,19 +62,13 @@ export default function LoginPage() {
 
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
-          <Button
-            onPress={() => router.push("/create-account")}
-            variant="text"
-          >
-            Don't have an account?
+          <Button onPress={() => router.push("/create-account")} variant="text">
+            Don&apos;t have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace("/(tabs)")} variant="text">
         Skip
       </Button>
     </FormLayout>

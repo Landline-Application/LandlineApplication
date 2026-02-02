@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import { RolodexCard } from "@/components/ui/roledex-card";
@@ -100,15 +95,12 @@ export default function LoginEmailPage() {
             onPress={() => router.push("/create-account-email")}
             variant="text"
           >
-            Don't have an account?
+            Don&apos;t have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace("/(tabs)")} variant="text">
         Skip
       </Button>
     </FormLayout>
