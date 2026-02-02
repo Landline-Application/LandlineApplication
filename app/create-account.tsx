@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
@@ -14,6 +13,7 @@ import { RolodexCard } from "@/components/ui/roledex-card";
 import { FormLayout } from "@/components/ui/form-layout";
 import { PhoneInput } from "@/components/ui/form/phone-number";
 import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
+import { Button } from "@/components/ui/form/button";
 
 export default function CreateAccountPage() {
   const {
@@ -44,19 +44,14 @@ export default function CreateAccountPage() {
           isValid={isFormValid}
         />
 
-        <TouchableOpacity
-          style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+        <Button
           onPress={submitPhone}
-          disabled={isLoading}
-          accessibilityRole="button"
-          accessibilityLabel="Continue"
+          disabled={!isFormValid || isLoading}
+          loading={isLoading}
+          variant="primary"
         >
-          {isLoading ? (
-            <ActivityIndicator color={COLORS.cardBg} />
-          ) : (
-            <Text style={styles.primaryButtonText}>CONTINUE</Text>
-          )}
-        </TouchableOpacity>
+          CONTINUE
+        </Button>
 
         {/* Divider */}
         <View style={styles.dividerContainer}>
@@ -65,23 +60,29 @@ export default function CreateAccountPage() {
           <View style={styles.dividerLine} />
         </View>
 
-        <ContinueWithSocials />
+        <ContinueWithSocials
+          buttons={["google", "email"]}
+          onGooglePress={() => console.log("Google sign up")}
+          onEmailPress={() => router.push("/create-account-email")}
+        />
 
         {/* Login Link */}
-        <TouchableOpacity
-          onPress={() => router.push("/login")}
-          style={styles.loginLinkContainer}
-        >
-          <Text style={styles.loginLinkText}>Already have an account?</Text>
-        </TouchableOpacity>
+        <View style={styles.loginLinkContainer}>
+          <Button
+            onPress={() => router.push("/login")}
+            variant="text"
+          >
+            Already have an account?
+          </Button>
+        </View>
       </RolodexCard>
 
-      <TouchableOpacity
-        style={styles.skipButton}
+      <Button
         onPress={() => router.replace("/(tabs)")}
+        variant="text"
       >
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+        Skip
+      </Button>
     </FormLayout>
   );
 }
@@ -103,29 +104,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 4,
-  },
-
-  // --- Buttons ---
-  primaryButton: {
-    backgroundColor: COLORS.textPrimary,
-    borderRadius: 8,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: COLORS.cardBg,
-    fontSize: 14,
-    fontWeight: "bold",
-    letterSpacing: 1,
   },
 
   // Divider Section
@@ -151,24 +129,5 @@ const styles = StyleSheet.create({
 
   loginLinkContainer: {
     alignItems: "center",
-  },
-  loginLinkText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-    fontWeight: "500",
-    opacity: 0.8,
-  },
-
-  // --- Skip ---
-  skipButton: {
-    alignItems: "center",
-    marginTop: 10,
-    padding: 10,
-  },
-  skipText: {
-    color: COLORS.tabBg,
-    fontSize: 15,
-    fontWeight: "500",
-    opacity: 0.8,
   },
 });
