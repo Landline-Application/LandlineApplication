@@ -1,19 +1,16 @@
-import React from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { router } from "expo-router";
-import { COLORS } from "@/constants/colors";
-import { usePhoneAuth } from "@/hooks/use-phone-auth";
-import { RolodexCard } from "@/components/ui/roledex-card";
-import { FormLayout } from "@/components/ui/form-layout";
-import { PhoneInput } from "@/components/ui/form/phone-number";
-import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
-import { Button } from "@/components/ui/form/button";
+import React from 'react';
+
+import { Platform, StyleSheet, Text, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { FormLayout } from '@/components/ui/form-layout';
+import { Button } from '@/components/ui/form/button';
+import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
+import { PhoneInput } from '@/components/ui/form/phone-number';
+import { RolodexCard } from '@/components/ui/roledex-card';
+import { COLORS } from '@/constants/colors';
+import { usePhoneAuth } from '@/hooks/use-phone-auth';
 
 export default function CreateAccountPage() {
   const {
@@ -24,7 +21,7 @@ export default function CreateAccountPage() {
     handlePhoneNumberChange,
     submitPhone,
   } = usePhoneAuth({
-    onSuccess: () => router.replace("/(tabs)"),
+    onSuccess: () => router.replace('/(tabs)'),
   });
 
   return (
@@ -32,9 +29,7 @@ export default function CreateAccountPage() {
       <RolodexCard title="LANDLINE">
         <View style={styles.cardWrapper}>
           <Text style={styles.brandText}>Landline</Text>
-          <Text style={styles.headerSubtitle}>
-            Stay connected, stay present
-          </Text>
+          <Text style={styles.headerSubtitle}>Stay connected, stay present</Text>
         </View>
 
         <PhoneInput
@@ -61,26 +56,20 @@ export default function CreateAccountPage() {
         </View>
 
         <ContinueWithSocials
-          buttons={["google", "email"]}
-          onGooglePress={() => console.log("Google sign up")}
-          onEmailPress={() => router.push("/create-account-email")}
+          buttons={['google', 'email']}
+          onGooglePress={() => console.log('Google sign up')}
+          onEmailPress={() => router.push('/create-account-email')}
         />
 
         {/* Login Link */}
         <View style={styles.loginLinkContainer}>
-          <Button
-            onPress={() => router.push("/login")}
-            variant="text"
-          >
+          <Button onPress={() => router.push('/login')} variant="text">
             Already have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace('/(tabs)')} variant="text">
         Skip
       </Button>
     </FormLayout>
@@ -89,16 +78,16 @@ export default function CreateAccountPage() {
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   brandText: {
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   headerSubtitle: {
     fontSize: 13,
@@ -108,8 +97,8 @@ const styles = StyleSheet.create({
 
   // Divider Section
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 20,
   },
   dividerLine: {
@@ -122,12 +111,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     color: COLORS.textSecondary,
     fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    fontWeight: '800',
+    textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
 
   loginLinkContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
 });

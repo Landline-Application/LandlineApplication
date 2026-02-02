@@ -1,8 +1,9 @@
-import { COLORS } from "@/constants/colors";
-import { Ionicons } from "@expo/vector-icons";
-import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-type ButtonType = "google" | "email" | "phone";
+import { COLORS } from '@/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+
+type ButtonType = 'google' | 'email' | 'phone';
 
 interface ContinueWithSocialsProps {
   buttons?: ButtonType[];
@@ -12,27 +13,27 @@ interface ContinueWithSocialsProps {
 }
 
 export function ContinueWithSocials({
-  buttons = ["google", "email"],
+  buttons = ['google', 'email'],
   onGooglePress,
   onEmailPress,
   onPhonePress,
 }: ContinueWithSocialsProps) {
   const buttonConfig = {
     google: {
-      icon: "logo-google" as const,
-      text: "Continue with Google",
+      icon: 'logo-google' as const,
+      text: 'Continue with Google',
       filled: false,
       onPress: onGooglePress,
     },
     email: {
-      icon: "mail" as const,
-      text: "Continue with Email",
+      icon: 'mail' as const,
+      text: 'Continue with Email',
       filled: true,
       onPress: onEmailPress,
     },
     phone: {
-      icon: "call" as const,
-      text: "Continue with Phone",
+      icon: 'call' as const,
+      text: 'Continue with Phone',
       filled: true,
       onPress: onPhonePress,
     },
@@ -55,12 +56,7 @@ export function ContinueWithSocials({
               color={config.filled ? COLORS.cardBg : COLORS.textPrimary}
               style={styles.icon}
             />
-            <Text
-              style={[
-                styles.buttonText,
-                config.filled && { color: COLORS.cardBg },
-              ]}
-            >
+            <Text style={[styles.buttonText, config.filled && { color: COLORS.cardBg }]}>
               {config.text}
             </Text>
           </TouchableOpacity>
@@ -71,21 +67,21 @@ export function ContinueWithSocials({
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: "column", gap: 12, marginBottom: 20 },
+  container: { flexDirection: 'column', gap: 12, marginBottom: 20 },
   button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     borderWidth: 1,
     borderColor: COLORS.textPrimary,
     borderRadius: 8,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
   },
   filledButton: { backgroundColor: COLORS.textPrimary },
   buttonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     color: COLORS.textPrimary,
   },
   icon: {

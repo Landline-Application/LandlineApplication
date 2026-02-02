@@ -1,26 +1,23 @@
-import React, { useState } from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { router } from "expo-router";
-import { COLORS } from "@/constants/colors";
-import { RolodexCard } from "@/components/ui/roledex-card";
-import { FormLayout } from "@/components/ui/form-layout";
-import { EmailPasswordInput } from "@/components/ui/form/email-password-input";
-import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
-import { Ionicons } from "@expo/vector-icons";
-import { Button } from "@/components/ui/form/button";
+import React, { useState } from 'react';
+
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { FormLayout } from '@/components/ui/form-layout';
+import { Button } from '@/components/ui/form/button';
+import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
+import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
+import { RolodexCard } from '@/components/ui/roledex-card';
+import { COLORS } from '@/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateAccountEmailPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [ageVerified, setAgeVerified] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -29,17 +26,17 @@ export default function CreateAccountEmailPage() {
   };
 
   const handleSubmit = async () => {
-    setEmailError("");
-    setPasswordError("");
+    setEmailError('');
+    setPasswordError('');
 
     const isEmailValid = validateEmail(email);
     const isPasswordValid = password.length >= 6;
 
     if (!isEmailValid) {
-      setEmailError("Please enter a valid email");
+      setEmailError('Please enter a valid email');
     }
     if (!isPasswordValid) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError('Password must be at least 6 characters');
     }
 
     if (!isEmailValid || !isPasswordValid || !ageVerified) {
@@ -50,21 +47,18 @@ export default function CreateAccountEmailPage() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      router.replace("/(tabs)");
+      router.replace('/(tabs)');
     }, 1500);
   };
 
-  const isFormValid =
-    validateEmail(email) && password.length >= 6 && ageVerified;
+  const isFormValid = validateEmail(email) && password.length >= 6 && ageVerified;
 
   return (
     <FormLayout>
       <RolodexCard title="LANDLINE">
         <View style={styles.cardWrapper}>
           <Text style={styles.brandText}>Landline</Text>
-          <Text style={styles.headerSubtitle}>
-            Stay connected, stay present
-          </Text>
+          <Text style={styles.headerSubtitle}>Stay connected, stay present</Text>
         </View>
 
         <EmailPasswordInput
@@ -84,9 +78,7 @@ export default function CreateAccountEmailPage() {
           accessibilityState={{ checked: ageVerified }}
         >
           <View style={[styles.checkbox, ageVerified && styles.checkboxChecked]}>
-            {ageVerified && (
-              <Ionicons name="checkmark" size={16} color={COLORS.cardBg} />
-            )}
+            {ageVerified && <Ionicons name="checkmark" size={16} color={COLORS.cardBg} />}
           </View>
           <Text style={styles.checkboxLabel}>I am 13 years or older</Text>
         </TouchableOpacity>
@@ -110,26 +102,20 @@ export default function CreateAccountEmailPage() {
 
         {/* Social Buttons */}
         <ContinueWithSocials
-          buttons={["google", "phone"]}
-          onGooglePress={() => console.log("Google sign up")}
-          onPhonePress={() => router.push("/create-account")}
+          buttons={['google', 'phone']}
+          onGooglePress={() => console.log('Google sign up')}
+          onPhonePress={() => router.push('/create-account')}
         />
 
         {/* Login Link */}
         <View style={styles.loginLinkContainer}>
-          <Button
-            onPress={() => router.push("/login-email")}
-            variant="text"
-          >
+          <Button onPress={() => router.push('/login-email')} variant="text">
             Already have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace('/(tabs)')} variant="text">
         Skip
       </Button>
     </FormLayout>
@@ -138,16 +124,16 @@ export default function CreateAccountEmailPage() {
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   brandText: {
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   headerSubtitle: {
     fontSize: 13,
@@ -157,8 +143,8 @@ const styles = StyleSheet.create({
 
   // --- Checkbox ---
   checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
   },
   checkbox: {
@@ -168,8 +154,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.textPrimary,
     marginRight: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checkboxChecked: {
     backgroundColor: COLORS.textPrimary,
@@ -181,8 +167,8 @@ const styles = StyleSheet.create({
 
   // Divider Section
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 20,
   },
   dividerLine: {
@@ -195,12 +181,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     color: COLORS.textSecondary,
     fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    fontWeight: '800',
+    textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
 
   loginLinkContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
 });

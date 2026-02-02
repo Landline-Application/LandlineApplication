@@ -1,18 +1,16 @@
-import React from "react";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { router } from "expo-router";
-import { COLORS } from "@/constants/colors";
-import { usePhoneAuth } from "@/hooks/use-phone-auth";
-import { RolodexCard } from "@/components/ui/roledex-card";
-import { FormLayout } from "@/components/ui/form-layout";
-import { PhoneInput } from "@/components/ui/form/phone-number";
-import { ContinueWithSocials } from "@/components/ui/form/continue-socials-buttons";
-import { Button } from "@/components/ui/form/button";
+import React from 'react';
+
+import { Platform, StyleSheet, Text, View } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { FormLayout } from '@/components/ui/form-layout';
+import { Button } from '@/components/ui/form/button';
+import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
+import { PhoneInput } from '@/components/ui/form/phone-number';
+import { RolodexCard } from '@/components/ui/roledex-card';
+import { COLORS } from '@/constants/colors';
+import { usePhoneAuth } from '@/hooks/use-phone-auth';
 
 export default function LoginPage() {
   const {
@@ -23,7 +21,7 @@ export default function LoginPage() {
     handlePhoneNumberChange,
     submitPhone,
   } = usePhoneAuth({
-    onSuccess: () => router.replace("/(tabs)"),
+    onSuccess: () => router.replace('/(tabs)'),
   });
 
   return (
@@ -60,26 +58,20 @@ export default function LoginPage() {
 
         {/* Social Login Buttons */}
         <ContinueWithSocials
-          buttons={["google", "email"]}
-          onGooglePress={() => console.log("Google login")}
-          onEmailPress={() => router.push("/login-email")}
+          buttons={['google', 'email']}
+          onGooglePress={() => console.log('Google login')}
+          onEmailPress={() => router.push('/login-email')}
         />
 
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
-          <Button
-            onPress={() => router.push("/create-account")}
-            variant="text"
-          >
-            Don't have an account?
+          <Button onPress={() => router.push('/create-account')} variant="text">
+            Don&apos;t have an account?
           </Button>
         </View>
       </RolodexCard>
 
-      <Button
-        onPress={() => router.replace("/(tabs)")}
-        variant="text"
-      >
+      <Button onPress={() => router.replace('/(tabs)')} variant="text">
         Skip
       </Button>
     </FormLayout>
@@ -88,16 +80,16 @@ export default function LoginPage() {
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   brandText: {
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   headerSubtitle: {
     fontSize: 13,
@@ -107,8 +99,8 @@ const styles = StyleSheet.create({
 
   // Divider Section
   dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 20,
   },
   dividerLine: {
@@ -121,12 +113,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     color: COLORS.textSecondary,
     fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    fontWeight: '800',
+    textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
 
   signUpContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
 });
