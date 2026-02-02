@@ -91,13 +91,13 @@ export default function OnboardingScreen() {
         animated: true,
       });
     } else {
-      // Navigate to main app
-      router.replace("/(tabs)");
+      // Navigate to create account page
+      router.replace("/create-account");
     }
   };
 
   const handleSkip = () => {
-    router.replace("/(tabs)");
+    router.replace("/create-account");
   };
 
   return (

@@ -130,6 +130,15 @@ export default function HomeScreen() {
         />
       }
     >
+
+        {/* Create Account button */}
+        <ThemedView style={styles.stepContainer}>
+          <Button 
+            title="📝 View Create Account Page" 
+            onPress={() => router.push('/create-account')} 
+          />
+        </ThemedView>
+
         {/* Onboarding button */}
         <ThemedView style={styles.stepContainer}>
           <Button 
