@@ -35,7 +35,7 @@ export default function RootLayout() {
 
       if (!accepted && !isOnTermsScreen) {
         // User hasn't accepted terms, redirect to terms screen
-        router.replace('/terms-and-privacy' as any);
+        router.replace('/terms-and-privacy');
       } else if (accepted && isOnTermsScreen) {
         // User has accepted but is on terms screen, redirect to onboarding
         router.replace('/onboarding');
@@ -56,6 +56,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen name="create-account" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
