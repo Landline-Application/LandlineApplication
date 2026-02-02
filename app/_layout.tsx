@@ -56,7 +56,9 @@ export default function RootLayout() {
         <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="login-email" options={{ headerShown: false }} />
         <Stack.Screen name="create-account" options={{ headerShown: false }} />
+        <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
