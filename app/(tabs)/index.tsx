@@ -53,7 +53,7 @@ export default function HomeScreen() {
       {/* Onboarding button */}
       <ThemedView style={styles.stepContainer}>
         <Button
-          title=View Onboarding Flow"
+          title="View Onboarding Flow"
           onPress={() => router.push("/onboarding")}
         />
       </ThemedView>
