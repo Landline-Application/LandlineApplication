@@ -3,13 +3,11 @@ import { Link, useRouter } from "expo-router";
 import { Alert, Button, Platform, StyleSheet } from "react-native";
 import { useCallback } from "react";
 
-import { HelloWave } from "@/components/hello-wave";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
 import Notif from "@/modules/notification-api-manager";
-import { clearAcceptance } from "@/utils/acceptance-storage";
 
 export default function HomeScreen() {
   const requestNotifPermissions = useCallback(async () => {
@@ -42,28 +40,6 @@ export default function HomeScreen() {
 
   const router = useRouter();
 
-  async function resetTermsAcceptance() {
-    try {
-      await clearAcceptance();
-      Alert.alert(
-        "Success",
-        "Terms acceptance cleared. App will now redirect to terms screen.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to terms screen to restart the flow
-              router.replace("/terms-and-privacy" as any);
-            },
-          },
-        ],
-      );
-    } catch (error) {
-      Alert.alert("Error", "Failed to clear acceptance. Please try again.");
-      console.error("Error clearing acceptance:", error);
-    }
-  }
-
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -77,17 +53,8 @@ export default function HomeScreen() {
       {/* Onboarding button */}
       <ThemedView style={styles.stepContainer}>
         <Button
-          title="🎉 View Onboarding Flow"
+          title="View Onboarding Flow"
           onPress={() => router.push("/onboarding")}
-        />
-      </ThemedView>
-
-      {/* Testing button */}
-      <ThemedView style={styles.stepContainer}>
-        <Button
-          title="🔄 Reset Terms Acceptance (Testing)"
-          onPress={resetTermsAcceptance}
-          color="#ff6b6b"
         />
       </ThemedView>
 
@@ -98,17 +65,18 @@ export default function HomeScreen() {
       />
       <Button title="Send Test Notification" onPress={sendTestNotification} />
 
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">DND Manager Test</ThemedText>
-        <Button
-          title="Open DND Test Page"
-          onPress={() => router.push("/dnd-test")}
-        />
+        <ThemedText type="subtitle">Native Module Tests</ThemedText>
+        <ThemedView style={styles.buttonGroup}>
+          <Button
+            title="Open Auto-Reply Test Page"
+            onPress={() => router.push("/auto-reply-test")}
+          />
+          <Button
+            title="Open DND Test Page"
+            onPress={() => router.push("/dnd-test")}
+          />
+        </ThemedView>
       </ThemedView>
 
       <ThemedView style={styles.stepContainer}>
@@ -185,6 +153,9 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+  },
+  buttonGroup: {
+    gap: 8,
   },
   reactLogo: {
     height: 178,
