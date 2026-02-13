@@ -24,7 +24,7 @@ export interface ExportedData {
 
 /**
  * Centralized Storage Manager for Landline Application
- * 
+ *
  * This class provides a unified interface for all storage operations
  * including AsyncStorage (React Native) and native storage (Android/iOS).
  */
@@ -111,12 +111,12 @@ export class StorageManager {
 
   /**
    * Delete ALL user data from the application
-   * 
+   *
    * This includes:
    * - All AsyncStorage data with @landline_ prefix
    * - Native storage (notification logs, Landline mode state)
    * - Any cached data
-   * 
+   *
    * @returns DeletionResult with details about what was deleted
    */
   static async deleteAllUserData(): Promise<DeletionResult> {
@@ -129,7 +129,7 @@ export class StorageManager {
     try {
       // 1. Get all Landline AsyncStorage keys
       const landlineKeys = await this.getLandlineKeys();
-      
+
       // 2. Delete AsyncStorage data
       if (landlineKeys.length > 0) {
         try {
@@ -145,10 +145,7 @@ export class StorageManager {
       // 3. Clear native storage (Android SharedPreferences)
       try {
         await this.clearNativeStorage();
-        result.deletedKeys.push(
-          'Native: Landline Mode State',
-          'Native: Notification Logs'
-        );
+        result.deletedKeys.push('Native: Landline Mode State', 'Native: Notification Logs');
         console.log('Cleared native storage');
       } catch (error) {
         result.success = false;
@@ -157,7 +154,6 @@ export class StorageManager {
 
       // 4. Optional: Clear any in-memory caches
       // EventEmitter.emit('storage:data-deleted');
-
     } catch (error) {
       result.success = false;
       result.errors?.push(`Unexpected error: ${error}`);
@@ -170,7 +166,7 @@ export class StorageManager {
   /**
    * Export all user data as JSON
    * Useful for allowing users to backup their data before deletion
-   * 
+   *
    * @returns Stringified JSON with all user data
    */
   static async exportUserData(): Promise<string> {

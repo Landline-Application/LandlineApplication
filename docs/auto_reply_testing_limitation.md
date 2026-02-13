@@ -25,6 +25,7 @@ This is by design for security reasons - Android prevents apps from intercepting
 ### Option 1: Use Real Messaging Apps (Recommended)
 
 **On Physical Device:**
+
 1. Install WhatsApp, Messenger, or Telegram
 2. Enable auto-reply in our app
 3. Send yourself a message from another device
@@ -32,6 +33,7 @@ This is by design for security reasons - Android prevents apps from intercepting
 5. Reply history will show ✅
 
 **Example:**
+
 ```bash
 # Install on physical device
 cd android && ./gradlew installDebug
@@ -71,26 +73,31 @@ adb install test-messaging-app.apk
 Even though test notifications don't trigger auto-reply, you can verify the system works:
 
 ### 1. Check Service is Running
+
 ```bash
 adb shell dumpsys activity services | grep AutoReplyListenerService
 # Should show: "app=ProcessRecord..."
 ```
 
 ### 2. Check Listener is Connected
+
 ```bash
 adb shell dumpsys notification | grep "Notification listeners" -A5
 # Should include: com.anonymous.LandlineApplication/expo.modules.autoreplymanager.AutoReplyListenerService
 ```
 
 ### 3. Check Auto-Reply is Enabled
+
 In app: Tap "Check Status" → Should show "Enabled: true"
 
 ### 4. Monitor Logs
+
 ```bash
 adb logcat | grep "AutoReplyListener"
 ```
 
 When a REAL notification arrives, you'll see:
+
 ```
 AutoReplyListener: Notification posted from: com.whatsapp
 AutoReplyListener: Processing notification from com.whatsapp
@@ -110,11 +117,13 @@ AutoReplyListener: Auto-reply sent to com.whatsapp: Your message here
 ## Why This Limitation Exists
 
 **Security:** Prevents malicious apps from:
+
 - Intercepting their own permission requests
 - Hiding their own notifications
 - Manipulating their own notification state
 
 **Privacy:** Apps shouldn't be able to:
+
 - Read their own notifications after posting
 - Modify their own notifications via listener
 - Create notification loops
@@ -124,6 +133,7 @@ AutoReplyListener: Auto-reply sent to com.whatsapp: Your message here
 Since automated testing is limited, here's a manual test workflow:
 
 ### Setup (One Time)
+
 1. Install app on physical device
 2. Install WhatsApp
 3. Get second phone or use web.whatsapp.com
@@ -131,6 +141,7 @@ Since automated testing is limited, here's a manual test workflow:
 5. Enable auto-reply
 
 ### Test Flow
+
 1. Set reply message: "Testing auto-reply!"
 2. Send WhatsApp message from second device: "Hello?"
 3. Wait 1-2 seconds
@@ -138,6 +149,7 @@ Since automated testing is limited, here's a manual test workflow:
 5. Check app "Reply History" → Should show "Testing auto-reply!" with timestamp
 
 ### Expected Results
+
 - WhatsApp shows: "Testing auto-reply!" from you
 - Reply history shows: 1 reply at [timestamp]
 - Logs show: "Auto-reply sent to com.whatsapp..."

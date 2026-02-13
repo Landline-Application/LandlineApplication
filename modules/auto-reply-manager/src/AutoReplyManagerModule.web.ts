@@ -1,21 +1,21 @@
-import { registerWebModule, NativeModule } from "expo";
+import { registerWebModule, NativeModule } from 'expo';
 
 import {
   AutoReplyManagerModuleEvents,
   AutoReplyResult,
   NotificationInfo,
-} from "./AutoReplyManager.types";
+} from './AutoReplyManager.types';
 
 class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModuleEvents> {
   isListenerEnabled(): boolean {
-    console.warn("AutoReplyManager is not supported on web");
+    console.warn('AutoReplyManager is not supported on web');
     return false;
   }
 
   async requestListenerPermission(): Promise<AutoReplyResult> {
     return {
       success: false,
-      message: "AutoReplyManager is not supported on web",
+      message: 'AutoReplyManager is not supported on web',
     };
   }
 
@@ -26,25 +26,25 @@ class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModuleEvents> 
   async setAutoReplyEnabled(_enabled: boolean): Promise<AutoReplyResult> {
     return {
       success: false,
-      message: "AutoReplyManager is not supported on web",
+      message: 'AutoReplyManager is not supported on web',
     };
   }
 
   async setReplyMessage(_message: string): Promise<AutoReplyResult> {
     return {
       success: false,
-      message: "AutoReplyManager is not supported on web",
+      message: 'AutoReplyManager is not supported on web',
     };
   }
 
   getReplyMessage(): string {
-    return "";
+    return '';
   }
 
   async setAllowedApps(_packageNames: string[]): Promise<AutoReplyResult> {
     return {
       success: false,
-      message: "AutoReplyManager is not supported on web",
+      message: 'AutoReplyManager is not supported on web',
     };
   }
 
@@ -63,9 +63,9 @@ class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModuleEvents> 
   async sendTestNotification(_senderName: string, _message: string): Promise<AutoReplyResult> {
     return {
       success: false,
-      message: "Test notifications not supported on web",
+      message: 'Test notifications not supported on web',
     };
   }
 }
 
-export default registerWebModule(AutoReplyManagerModule, "AutoReplyManager");
+export default registerWebModule(AutoReplyManagerModule, 'AutoReplyManager');

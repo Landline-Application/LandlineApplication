@@ -14,29 +14,35 @@ Native Android module for managing Do Not Disturb (DND) mode and per-app notific
 ### 1. Permission Management
 
 **`hasPermission(): boolean`**
+
 - Check if DND policy access is granted
 
 **`requestPermission(): Promise<boolean>`**
+
 - Opens system settings to request DND permission
 - Returns `true` if already granted, `false` if user needs to grant
 
 ### 2. DND State
 
 **`getCurrentState(): DndState`**
+
 - Returns current DND mode and interruption filter state
 - Response includes: `success`, `message`, `currentState` (filter constant)
 
 **`getInterruptionFilterConstants(): InterruptionFilterConstants`**
+
 - Returns filter constant values: `ALL`, `PRIORITY`, `NONE`, `ALARMS`, `UNKNOWN`
 
 ### 3. DND Control
 
 **`setDNDEnabled(enabled: boolean): Promise<DndState>`**
+
 - Enable/disable DND mode
 - `true` = Total Silence mode
 - `false` = Normal mode
 
 **`setInterruptionFilter(filter: number): Promise<DndState>`**
+
 - Set specific DND mode:
   - `INTERRUPTION_FILTER_ALL` (1) - Normal, all notifications
   - `INTERRUPTION_FILTER_PRIORITY` (2) - Priority only
@@ -46,15 +52,18 @@ Native Android module for managing Do Not Disturb (DND) mode and per-app notific
 ### 4. App Notification Management
 
 **`getAllInstalledApps(includeSystemApps: boolean): Promise<AppInfo[]>`**
+
 - Enumerate all installed apps with notification status
 - Returns: `packageName`, `appName`, `notificationsEnabled`, `isSystemApp`
 - Set `includeSystemApps=false` for user apps only
 
 **`getAppNotificationStatus(packageName: string): Promise<NotificationPermissionResult>`**
+
 - Check if specific app has notification permission
 - Returns: `success`, `message`, `notificationsEnabled`
 
 **`openAppNotificationSettings(packageName: string): Promise<boolean>`**
+
 - Opens system notification settings for specific app
 - User can manually toggle notification permission
 - Returns `true` if settings opened successfully

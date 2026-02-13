@@ -2,4 +2,3 @@
 export { default } from './src/BackgroundServiceManagerModule';
 export * from './src/BackgroundServiceManagerModule';
 export * from './src/BackgroundServiceManager.types';
-

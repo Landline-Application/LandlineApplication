@@ -1,13 +1,13 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config')
-const path = require('path')
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 /** @type {import('expo/metro-config').MetroConfig} */
-const defaultConfig = getDefaultConfig(__dirname)
+const defaultConfig = getDefaultConfig(__dirname);
 
 defaultConfig.resolver.nodeModulesPaths = [
   ...defaultConfig.resolver.nodeModulesPaths,
   path.resolve(__dirname, 'modules'),
-]
+];
 
-module.exports = defaultConfig
+module.exports = defaultConfig;
