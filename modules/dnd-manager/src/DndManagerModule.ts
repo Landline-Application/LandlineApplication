@@ -1,4 +1,4 @@
-import { NativeModule, requireNativeModule } from "expo";
+import { NativeModule, requireNativeModule } from 'expo';
 
 import {
   AppInfo,
@@ -6,7 +6,7 @@ import {
   DndState,
   InterruptionFilterConstants,
   NotificationPermissionResult,
-} from "./DndManager.types";
+} from './DndManager.types';
 
 declare class DndManagerModule extends NativeModule<DndManagerModuleEvents> {
   hasPermission(): boolean;
@@ -15,11 +15,9 @@ declare class DndManagerModule extends NativeModule<DndManagerModuleEvents> {
   setDNDEnabled(enabled: boolean): Promise<DndState>;
   setInterruptionFilter(filter: number): Promise<DndState>;
   getAllInstalledApps(includeSystemApps: boolean): Promise<AppInfo[]>;
-  getAppNotificationStatus(
-    packageName: string
-  ): Promise<NotificationPermissionResult>;
+  getAppNotificationStatus(packageName: string): Promise<NotificationPermissionResult>;
   openAppNotificationSettings(packageName: string): Promise<boolean>;
   getInterruptionFilterConstants(): InterruptionFilterConstants;
 }
 
-export default requireNativeModule<DndManagerModule>("DndManager");
+export default requireNativeModule<DndManagerModule>('DndManager');

@@ -1,0 +1,39 @@
+# Ignore artifacts:
+build
+coverage
+dist
+
+# Ignore dependencies:
+node_modules
+
+# Ignore generated files:
+.expo
+.expo-shared
+.gradle
+.idea
+.watchmanconfig
+.bundle
+.ruby-version
+
+# Ignore lock files:
+pnpm-lock.yaml
+
+# Ignore native build outputs:
+android/.gradle
+android/app/build
+android/.idea
+ios/Pods
+ios/Podfile.lock
+
+# Ignore OS files:
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files:
+.vscode
+*.swp
+*.swo
+
+# Ignore environment files:
+.env
+.env.local

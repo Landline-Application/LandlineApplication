@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState } from 'react';
+
 import {
   Alert,
   Button,
@@ -12,15 +12,18 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { StorageManager } from "@/utils/storage/storage-manager";
-import { clearAcceptance } from "@/utils/acceptance-storage";
+} from 'react-native';
+
+import { router } from 'expo-router';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { clearAcceptance } from '@/utils/acceptance-storage';
+import { StorageManager } from '@/utils/storage/storage-manager';
 
 export default function SettingsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [confirmationText, setConfirmationText] = useState("");
+  const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [storageInfo, setStorageInfo] = useState<{
     totalKeys: number;
@@ -42,11 +45,11 @@ export default function SettingsScreen() {
     try {
       const exportedData = await StorageManager.exportUserData();
 
-      if (Platform.OS === "web") {
+      if (Platform.OS === 'web') {
         // For web, create a download
-        const blob = new Blob([exportedData], { type: "application/json" });
+        const blob = new Blob([exportedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = document.createElement('a');
         a.href = url;
         a.download = `landline-data-${new Date().toISOString()}.json`;
         a.click();
@@ -54,31 +57,28 @@ export default function SettingsScreen() {
         // For mobile, use Share API
         await Share.share({
           message: exportedData,
-          title: "Landline Data Export",
+          title: 'Landline Data Export',
         });
       }
     } catch (error) {
-      Alert.alert(
-        "Export Failed",
-        "Could not export your data. Please try again.",
-      );
-      console.error("Export error:", error);
+      Alert.alert('Export Failed', 'Could not export your data. Please try again.');
+      console.error('Export error:', error);
     }
   }
 
   function openDeleteModal() {
     setDeleteModalVisible(true);
-    setConfirmationText("");
+    setConfirmationText('');
   }
 
   function closeDeleteModal() {
     setDeleteModalVisible(false);
-    setConfirmationText("");
+    setConfirmationText('');
   }
 
   async function handleDeleteAllData() {
-    if (confirmationText !== "DELETE") {
-      Alert.alert("Incorrect Confirmation", 'Please type "DELETE" to confirm.');
+    if (confirmationText !== 'DELETE') {
+      Alert.alert('Incorrect Confirmation', 'Please type "DELETE" to confirm.');
       return;
     }
 
@@ -92,30 +92,26 @@ export default function SettingsScreen() {
         closeDeleteModal();
 
         // Show success message
-        Alert.alert(
-          "Data Deleted",
-          "All your data has been permanently deleted from the app.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Navigate to terms screen (fresh start)
-                router.replace("/terms-and-privacy" as any);
-              },
+        Alert.alert('Data Deleted', 'All your data has been permanently deleted from the app.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate to terms screen (fresh start)
+              router.replace('/terms-and-privacy' as any);
             },
-          ],
-        );
+          },
+        ]);
       } else {
         // Show error
         Alert.alert(
-          "Deletion Failed",
-          `Some data could not be deleted:\n${result.errors?.join("\n")}`,
-          [{ text: "OK" }],
+          'Deletion Failed',
+          `Some data could not be deleted:\n${result.errors?.join('\n')}`,
+          [{ text: 'OK' }],
         );
       }
     } catch (error) {
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
-      console.error("Delete error:", error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Delete error:', error);
     } finally {
       setIsDeleting(false);
     }
@@ -124,22 +120,18 @@ export default function SettingsScreen() {
   async function resetTermsAcceptance() {
     try {
       await clearAcceptance();
-      Alert.alert(
-        "Success",
-        "Terms acceptance cleared. App will now redirect to terms screen.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to terms screen to restart the flow
-              router.replace("/terms-and-privacy" as any);
-            },
+      Alert.alert('Success', 'Terms acceptance cleared. App will now redirect to terms screen.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Navigate to terms screen to restart the flow
+            router.replace('/terms-and-privacy' as any);
           },
-        ],
-      );
+        },
+      ]);
     } catch (error) {
-      Alert.alert("Error", "Failed to clear acceptance. Please try again.");
-      console.error("Error clearing acceptance:", error);
+      Alert.alert('Error', 'Failed to clear acceptance. Please try again.');
+      console.error('Error clearing acceptance:', error);
     }
   }
 
@@ -160,9 +152,7 @@ export default function SettingsScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Landline Data:</Text>
-              <Text style={styles.infoValue}>
-                {storageInfo.landlineKeys} items
-              </Text>
+              <Text style={styles.infoValue}>{storageInfo.landlineKeys} items</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Estimated Size:</Text>
@@ -186,14 +176,9 @@ export default function SettingsScreen() {
           Data Management
         </ThemedText>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleExportData}
-        >
+        <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
           <Text style={styles.actionButtonText}>📤 Export My Data</Text>
-          <Text style={styles.actionButtonSubtext}>
-            Download a copy of your data
-          </Text>
+          <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -220,9 +205,7 @@ export default function SettingsScreen() {
         <Text style={styles.bulletPoint}>• Terms of Use acceptance record</Text>
         <Text style={styles.bulletPoint}>• All captured notification logs</Text>
         <Text style={styles.bulletPoint}>• Landline mode settings</Text>
-        <Text style={styles.bulletPoint}>
-          • All app preferences and settings
-        </Text>
+        <Text style={styles.bulletPoint}>• All app preferences and settings</Text>
         <Text style={[styles.infoText, styles.warningText]}>
           This action cannot be undone. Consider exporting your data first.
         </Text>
@@ -240,8 +223,7 @@ export default function SettingsScreen() {
             <Text style={styles.modalTitle}>⚠️ Confirm Data Deletion</Text>
 
             <Text style={styles.modalText}>
-              This will permanently delete ALL your data from the Landline app,
-              including:
+              This will permanently delete ALL your data from the Landline app, including:
             </Text>
 
             <View style={styles.modalList}>
@@ -280,16 +262,13 @@ export default function SettingsScreen() {
                 style={[
                   styles.modalButton,
                   styles.modalButtonDelete,
-                  (confirmationText !== "DELETE" || isDeleting) &&
-                    styles.modalButtonDisabled,
+                  (confirmationText !== 'DELETE' || isDeleting) && styles.modalButtonDisabled,
                 ]}
                 onPress={handleDeleteAllData}
-                disabled={confirmationText !== "DELETE" || isDeleting}
+                disabled={confirmationText !== 'DELETE' || isDeleting}
               >
-                <Text
-                  style={[styles.modalButtonText, styles.modalButtonDeleteText]}
-                >
-                  {isDeleting ? "Deleting..." : "Delete All Data"}
+                <Text style={[styles.modalButtonText, styles.modalButtonDeleteText]}>
+                  {isDeleting ? 'Deleting...' : 'Delete All Data'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -307,101 +286,101 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   sectionTitle: {
     fontSize: 32,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 10,
   },
   sectionHeader: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 15,
   },
   infoCard: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
     padding: 15,
     borderRadius: 8,
   },
   infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
   infoLabel: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   actionButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
   },
   actionButtonText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 4,
   },
   actionButtonSubtext: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 12,
     opacity: 0.8,
   },
   dangerButton: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: '#FF3B30',
   },
   dangerButtonText: {
-    color: "#fff",
+    color: '#fff',
   },
   infoText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#666",
+    color: '#666',
     marginBottom: 12,
   },
   bulletPoint: {
     fontSize: 14,
     lineHeight: 24,
-    color: "#666",
+    color: '#666',
     marginLeft: 10,
   },
   warningText: {
-    color: "#FF3B30",
-    fontWeight: "600",
+    color: '#FF3B30',
+    fontWeight: '600',
     marginTop: 12,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
-    width: "100%",
+    width: '100%',
     maxWidth: 400,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
   modalText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#666",
+    color: '#666',
     marginBottom: 12,
   },
   modalList: {
@@ -411,56 +390,56 @@ const styles = StyleSheet.create({
   modalListItem: {
     fontSize: 14,
     lineHeight: 24,
-    color: "#666",
+    color: '#666',
   },
   modalWarning: {
-    color: "#FF3B30",
-    fontWeight: "bold",
-    textAlign: "center",
+    color: '#FF3B30',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   modalLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
   modalHighlight: {
-    fontWeight: "bold",
-    color: "#FF3B30",
+    fontWeight: 'bold',
+    color: '#FF3B30',
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
   },
   modalButton: {
     flex: 1,
     padding: 14,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
   },
   modalButtonDelete: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: '#FF3B30',
   },
   modalButtonDisabled: {
     opacity: 0.5,
   },
   modalButtonText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   modalButtonDeleteText: {
-    color: "#fff",
+    color: '#fff',
   },
 });

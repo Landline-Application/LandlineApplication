@@ -1,11 +1,11 @@
-import { NativeModule, requireNativeModule } from "expo";
+import { NativeModule, requireNativeModule } from 'expo';
 
 import {
   AutoReplyManagerModuleEvents,
   AutoReplyResult,
   NotificationInfo,
   ReplyHistoryItem,
-} from "./AutoReplyManager.types";
+} from './AutoReplyManager.types';
 
 declare class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModuleEvents> {
   isListenerEnabled(): boolean;
@@ -23,4 +23,4 @@ declare class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModule
   clearReplyHistory(): Promise<AutoReplyResult>;
 }
 
-export default requireNativeModule<AutoReplyManagerModule>("AutoReplyManager");
+export default requireNativeModule<AutoReplyManagerModule>('AutoReplyManager');

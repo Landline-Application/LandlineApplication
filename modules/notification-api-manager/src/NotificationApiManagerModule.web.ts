@@ -1,10 +1,10 @@
-import { registerWebModule, NativeModule } from 'expo';
+import { NativeModule, registerWebModule } from 'expo';
 
 import { ChangeEventPayload } from './NotificationApiManager.types';
 
 type NotificationApiManagerModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
-}
+};
 
 class NotificationApiManagerModule extends NativeModule<NotificationApiManagerModuleEvents> {
   PI = Math.PI;
@@ -14,6 +14,6 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   hello() {
     return 'Hello world! 👋';
   }
-};
+}
 
 export default registerWebModule(NotificationApiManagerModule, 'NotificationApiManagerModule');

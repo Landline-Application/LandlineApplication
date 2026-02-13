@@ -6,4 +6,9 @@
 export { StorageManager } from './storage-manager';
 export type { DeletionResult, ExportedData } from './storage-manager';
 
-export { STORAGE_KEYS, NATIVE_STORAGE, getAllLandlineStorageKeys, isLandlineStorageKey } from './storage-keys';
+export {
+  STORAGE_KEYS,
+  NATIVE_STORAGE,
+  getAllLandlineStorageKeys,
+  isLandlineStorageKey,
+} from './storage-keys';
