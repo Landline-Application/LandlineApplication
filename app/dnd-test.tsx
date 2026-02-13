@@ -1,13 +1,13 @@
-import { Image } from 'expo-image';
+import { useState } from 'react';
+
 import { Alert, Button, StyleSheet } from 'react-native';
+
+import { Image } from 'expo-image';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-
-import { useState } from 'react';
-
 import {
   getAllInstalledApps,
   getAppNotificationStatus,

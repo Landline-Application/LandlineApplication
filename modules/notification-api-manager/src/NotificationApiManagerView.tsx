@@ -1,5 +1,6 @@
-import { requireNativeView } from 'expo';
 import * as React from 'react';
+
+import { requireNativeView } from 'expo';
 
 import { NotificationApiManagerViewProps } from './NotificationApiManager.types';
 

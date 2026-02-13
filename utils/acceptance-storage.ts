@@ -1,5 +1,5 @@
-import { StorageManager } from './storage/storage-manager';
 import { STORAGE_KEYS } from './storage/storage-keys';
+import { StorageManager } from './storage/storage-manager';
 
 const TERMS_VERSION = '1.0.0';
 

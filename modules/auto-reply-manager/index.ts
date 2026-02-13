@@ -1,10 +1,10 @@
-import AutoReplyManagerModule from './src/AutoReplyManagerModule';
-
 import type {
   AutoReplyResult,
   NotificationInfo,
   ReplyHistoryItem,
 } from './src/AutoReplyManager.types';
+import AutoReplyManagerModule from './src/AutoReplyManagerModule';
+
 export * from './src/AutoReplyManager.types';
 
 export function isListenerEnabled(): boolean {

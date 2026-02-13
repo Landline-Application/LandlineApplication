@@ -1,8 +1,9 @@
 import { requireNativeModule } from 'expo-modules-core';
+
 import type {
+  AndroidVersionInfo,
   BackgroundServiceManagerModuleType,
   TaskType,
-  AndroidVersionInfo,
 } from './BackgroundServiceManager.types';
 
 const Native: BackgroundServiceManagerModuleType = requireNativeModule('BackgroundServiceManager');

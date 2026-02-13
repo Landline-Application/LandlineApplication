@@ -97,7 +97,7 @@ To clear all reply history:
 ## API Usage
 
 ```typescript
-import { getReplyHistory, clearReplyHistory } from '@/modules/auto-reply-manager';
+import { clearReplyHistory, getReplyHistory } from '@/modules/auto-reply-manager';
 
 // Get reply history
 const history = getReplyHistory();

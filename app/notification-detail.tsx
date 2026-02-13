@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { router, useLocalSearchParams } from 'expo-router';
 
 interface Notification {

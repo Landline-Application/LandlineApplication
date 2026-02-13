@@ -1,7 +1,5 @@
-import { useAuth } from '@/contexts/auth-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
+
 import {
   Alert,
   ColorValue,
@@ -16,6 +14,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+
+import { useAuth } from '@/contexts/auth-context';
 import Animated, {
   Extrapolation,
   interpolate,
