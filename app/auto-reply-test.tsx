@@ -309,7 +309,7 @@ export default function AutoReplyTestScreen() {
       <ThemedView style={styles.sectionContainer}>
         <ThemedText type="subtitle">Test Notifications (Emulator)</ThemedText>
         <ThemedText style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
-          ⚠️ Note: Test notifications won't trigger auto-reply (Android
+          ⚠️ Note: Test notifications won&apos;t trigger auto-reply (Android
           limitation). Use real messaging apps for full testing.
         </ThemedText>
         <ThemedView style={styles.buttonGroup}>
