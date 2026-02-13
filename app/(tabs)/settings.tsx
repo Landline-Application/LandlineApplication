@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Button,
   Modal,
   Platform,
   ScrollView,
@@ -15,6 +16,7 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { StorageManager } from "@/utils/storage/storage-manager";
+import { clearAcceptance } from "@/utils/acceptance-storage";
 
 export default function SettingsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -56,7 +58,10 @@ export default function SettingsScreen() {
         });
       }
     } catch (error) {
-      Alert.alert("Export Failed", "Could not export your data. Please try again.");
+      Alert.alert(
+        "Export Failed",
+        "Could not export your data. Please try again.",
+      );
       console.error("Export error:", error);
     }
   }
@@ -98,14 +103,14 @@ export default function SettingsScreen() {
                 router.replace("/terms-and-privacy" as any);
               },
             },
-          ]
+          ],
         );
       } else {
         // Show error
         Alert.alert(
           "Deletion Failed",
           `Some data could not be deleted:\n${result.errors?.join("\n")}`,
-          [{ text: "OK" }]
+          [{ text: "OK" }],
         );
       }
     } catch (error) {
@@ -113,6 +118,28 @@ export default function SettingsScreen() {
       console.error("Delete error:", error);
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function resetTermsAcceptance() {
+    try {
+      await clearAcceptance();
+      Alert.alert(
+        "Success",
+        "Terms acceptance cleared. App will now redirect to terms screen.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Navigate to terms screen to restart the flow
+              router.replace("/terms-and-privacy" as any);
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to clear acceptance. Please try again.");
+      console.error("Error clearing acceptance:", error);
     }
   }
 
@@ -133,7 +160,9 @@ export default function SettingsScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Landline Data:</Text>
-              <Text style={styles.infoValue}>{storageInfo.landlineKeys} items</Text>
+              <Text style={styles.infoValue}>
+                {storageInfo.landlineKeys} items
+              </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Estimated Size:</Text>
@@ -143,13 +172,24 @@ export default function SettingsScreen() {
         )}
       </ThemedView>
 
+      <ThemedView style={styles.section}>
+        <Button
+          title="🔄 Reset Terms Acceptance (Testing)"
+          onPress={resetTermsAcceptance}
+          color="#ff6b6b"
+        />
+      </ThemedView>
+
       {/* Data Management Section */}
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle" style={styles.sectionHeader}>
           Data Management
         </ThemedText>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleExportData}
+        >
           <Text style={styles.actionButtonText}>📤 Export My Data</Text>
           <Text style={styles.actionButtonSubtext}>
             Download a copy of your data
@@ -180,7 +220,9 @@ export default function SettingsScreen() {
         <Text style={styles.bulletPoint}>• Terms of Use acceptance record</Text>
         <Text style={styles.bulletPoint}>• All captured notification logs</Text>
         <Text style={styles.bulletPoint}>• Landline mode settings</Text>
-        <Text style={styles.bulletPoint}>• All app preferences and settings</Text>
+        <Text style={styles.bulletPoint}>
+          • All app preferences and settings
+        </Text>
         <Text style={[styles.infoText, styles.warningText]}>
           This action cannot be undone. Consider exporting your data first.
         </Text>
