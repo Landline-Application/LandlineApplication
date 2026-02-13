@@ -1,5 +1,9 @@
 import { requireNativeModule } from 'expo-modules-core';
-import type { BackgroundServiceManagerModuleType, TaskType, AndroidVersionInfo } from './BackgroundServiceManager.types';
+import type {
+  BackgroundServiceManagerModuleType,
+  TaskType,
+  AndroidVersionInfo,
+} from './BackgroundServiceManager.types';
 
 const Native: BackgroundServiceManagerModuleType = requireNativeModule('BackgroundServiceManager');
 
@@ -10,7 +14,7 @@ const Native: BackgroundServiceManagerModuleType = requireNativeModule('Backgrou
 /**
  * Start the foreground service with a visible notification.
  * This is required for any background work that should continue when the app is not visible.
- * 
+ *
  * @param title - Title for the notification
  * @param message - Message for the notification
  * @returns true if service started successfully
@@ -42,16 +46,16 @@ export function isForegroundServiceRunning(): boolean {
 /**
  * Schedule periodic background work using WorkManager.
  * WorkManager respects Doze mode and battery optimization settings.
- * 
+ *
  * Note: Minimum interval is 15 minutes (Android system requirement)
- * 
+ *
  * @param intervalMinutes - How often to run the task (minimum 15 minutes)
  * @param taskType - Type of task to perform (default: 'notification_check')
  * @returns true if work was scheduled successfully
  */
 export function scheduleBackgroundWork(
   intervalMinutes: number,
-  taskType: TaskType = 'notification_check'
+  taskType: TaskType = 'notification_check',
 ): boolean {
   return Native.scheduleBackgroundWork(intervalMinutes, taskType);
 }
@@ -79,7 +83,7 @@ export function isBackgroundWorkScheduled(): boolean {
 /**
  * Check if the app is ignoring battery optimizations.
  * When true, the app can run more freely in the background.
- * 
+ *
  * @returns true if app is ignoring battery optimizations
  */
 export function isIgnoringBatteryOptimizations(): boolean {
@@ -88,10 +92,10 @@ export function isIgnoringBatteryOptimizations(): boolean {
 
 /**
  * Request user to disable battery optimizations for this app.
- * 
+ *
  * ⚠️ WARNING: Only use if absolutely necessary for your app's core functionality.
  * Google Play may reject apps that abuse this permission.
- * 
+ *
  * @returns Promise that resolves to true if request was successful
  */
 export function requestIgnoreBatteryOptimizations(): Promise<boolean> {
@@ -101,7 +105,7 @@ export function requestIgnoreBatteryOptimizations(): Promise<boolean> {
 /**
  * Open battery optimization settings for the app.
  * This is less aggressive than requesting to ignore optimizations.
- * 
+ *
  * @returns Promise that resolves to true if settings opened successfully
  */
 export function openBatteryOptimizationSettings(): Promise<boolean> {
@@ -115,7 +119,7 @@ export function openBatteryOptimizationSettings(): Promise<boolean> {
 /**
  * Get Android version information
  * Useful for implementing conditional behavior based on Android version
- * 
+ *
  * @returns Object containing sdkInt, release, and codename
  */
 export function getAndroidVersion(): AndroidVersionInfo {
@@ -125,7 +129,7 @@ export function getAndroidVersion(): AndroidVersionInfo {
 /**
  * Check if device is in Doze mode.
  * In Doze mode, background work is heavily restricted.
- * 
+ *
  * @returns true if device is in Doze mode
  */
 export function isDeviceIdleMode(): boolean {
@@ -146,4 +150,3 @@ export default {
   getAndroidVersion,
   isDeviceIdleMode,
 };
-

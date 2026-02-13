@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 interface Notification {
@@ -25,7 +18,7 @@ export default function NotificationDetailScreen() {
   const notificationsData = params.notifications as string;
 
   const [notifications, setNotifications] = useState<Notification[]>(
-    JSON.parse(notificationsData || '[]')
+    JSON.parse(notificationsData || '[]'),
   );
 
   const getCategoryIcon = (cat: string): string => {
@@ -90,21 +83,17 @@ export default function NotificationDetailScreen() {
   };
 
   const handleDismissAll = () => {
-    Alert.alert(
-      'Dismiss All',
-      `Are you sure you want to dismiss all ${category}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Dismiss',
-          style: 'destructive',
-          onPress: () => {
-            setNotifications([]);
-            router.back();
-          },
+    Alert.alert('Dismiss All', `Are you sure you want to dismiss all ${category}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Dismiss',
+        style: 'destructive',
+        onPress: () => {
+          setNotifications([]);
+          router.back();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -138,7 +127,9 @@ export default function NotificationDetailScreen() {
               <View key={`${notif.id}-${index}`} style={styles.notificationCard}>
                 <View style={styles.notificationHeader}>
                   <View style={styles.notificationAppContainer}>
-                    <View style={[styles.appIndicator, { backgroundColor: getCategoryColor(category) }]} />
+                    <View
+                      style={[styles.appIndicator, { backgroundColor: getCategoryColor(category) }]}
+                    />
                     <View style={styles.notificationInfo}>
                       <Text style={styles.appName}>{notif.appName}</Text>
                       <Text style={styles.timestamp}>{formatTimestamp(notif.postTime)}</Text>
@@ -153,12 +144,8 @@ export default function NotificationDetailScreen() {
                 </View>
 
                 <View style={styles.notificationContent}>
-                  {notif.title && (
-                    <Text style={styles.notificationTitle}>{notif.title}</Text>
-                  )}
-                  {notif.text && (
-                    <Text style={styles.notificationText}>{notif.text}</Text>
-                  )}
+                  {notif.title && <Text style={styles.notificationTitle}>{notif.title}</Text>}
+                  {notif.text && <Text style={styles.notificationText}>{notif.text}</Text>}
                 </View>
 
                 <View style={styles.notificationFooter}>
@@ -333,4 +320,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

@@ -1,19 +1,15 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import "react-native-reanimated";
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import 'react-native-reanimated';
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { hasAcceptedTerms } from "@/utils/acceptance-storage";
-import { AuthProvider } from "@/contexts/auth-context";
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { hasAcceptedTerms } from '@/utils/acceptance-storage';
+import { AuthProvider } from '@/contexts/auth-context';
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: '(tabs)',
 };
 
 export default function RootLayout() {
@@ -34,14 +30,14 @@ export default function RootLayout() {
       // Re-check acceptance status to ensure we have the latest value
       const accepted = await hasAcceptedTerms();
       const currentScreen = segments[0] as string;
-      const isOnTermsScreen = currentScreen === "terms-and-privacy";
+      const isOnTermsScreen = currentScreen === 'terms-and-privacy';
 
       if (!accepted && !isOnTermsScreen) {
         // User hasn't accepted terms, redirect to terms screen
-        router.replace("/terms-and-privacy" as any);
+        router.replace('/terms-and-privacy' as any);
       } else if (accepted && isOnTermsScreen) {
         // User has accepted but is on terms screen, redirect to onboarding
-        router.replace("/onboarding");
+        router.replace('/onboarding');
       }
     }
 
@@ -55,22 +51,13 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen
-            name="terms-and-privacy"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="notification-detail"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
+          <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

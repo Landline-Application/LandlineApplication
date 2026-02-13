@@ -37,7 +37,7 @@ jobs:
     name: Build Android APK
     needs: lint
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -75,5 +75,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-preview-apk
-          path: "*.apk"
+          path: '*.apk'
           retention-days: 14

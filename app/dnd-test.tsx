@@ -1,12 +1,12 @@
-import { Image } from "expo-image";
-import { Alert, Button, StyleSheet } from "react-native";
+import { Image } from 'expo-image';
+import { Alert, Button, StyleSheet } from 'react-native';
 
-import { HelloWave } from "@/components/hello-wave";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import { HelloWave } from '@/components/hello-wave';
+import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   getAllInstalledApps,
@@ -18,66 +18,69 @@ import {
   requestPermission,
   setDNDEnabled,
   setInterruptionFilter,
-} from "@/modules/dnd-manager";
+} from '@/modules/dnd-manager';
 
 export default function DNDTestScreen() {
-  const [dndStatus, setDndStatus] = useState("");
+  const [dndStatus, setDndStatus] = useState('');
   const [appCount, setAppCount] = useState(0);
 
   async function checkPermission() {
     const hasPerms = hasPermission();
-    Alert.alert("DND Permission", `Has permission: ${hasPerms}`);
+    Alert.alert('DND Permission', `Has permission: ${hasPerms}`);
   }
 
   async function requestPermissions() {
     const granted = await requestPermission();
     if (granted) {
-      Alert.alert("Success", "DND permission already granted!");
+      Alert.alert('Success', 'DND permission already granted!');
     } else {
-      Alert.alert("Action Required", "Please grant DND permission in settings");
+      Alert.alert('Action Required', 'Please grant DND permission in settings');
     }
   }
 
   async function checkCurrentState() {
     const state = getCurrentState();
     setDndStatus(`State: ${state.message} (${state.currentState})`);
-    Alert.alert("Current DND State", JSON.stringify(state, null, 2));
+    Alert.alert('Current DND State', JSON.stringify(state, null, 2));
   }
 
   async function turnOnDND() {
     const result = await setDNDEnabled(true);
-    Alert.alert("Enable DND", JSON.stringify(result, null, 2));
+    Alert.alert('Enable DND', JSON.stringify(result, null, 2));
   }
 
   async function turnOffDND() {
     const result = await setDNDEnabled(false);
-    Alert.alert("Disable DND", JSON.stringify(result, null, 2));
+    Alert.alert('Disable DND', JSON.stringify(result, null, 2));
   }
 
   async function setPriorityMode() {
     const constants = getInterruptionFilterConstants();
     const result = await setInterruptionFilter(constants.PRIORITY);
-    Alert.alert("Priority Mode", JSON.stringify(result, null, 2));
+    Alert.alert('Priority Mode', JSON.stringify(result, null, 2));
   }
 
   async function setAlarmsMode() {
     const constants = getInterruptionFilterConstants();
     const result = await setInterruptionFilter(constants.ALARMS);
-    Alert.alert("Alarms Mode", JSON.stringify(result, null, 2));
+    Alert.alert('Alarms Mode', JSON.stringify(result, null, 2));
   }
 
   async function setNormalMode() {
     const constants = getInterruptionFilterConstants();
     const result = await setInterruptionFilter(constants.ALL);
-    Alert.alert("Normal Mode", JSON.stringify(result, null, 2));
+    Alert.alert('Normal Mode', JSON.stringify(result, null, 2));
   }
 
   async function getInstalledApps() {
     const apps = await getAllInstalledApps(false);
     setAppCount(apps.length);
     Alert.alert(
-      "Installed Apps",
-      `Found ${apps.length} apps\n\nFirst 3:\n${apps.slice(0, 3).map((a) => `${a.appName} - ${a.notificationsEnabled ? "✓" : "✗"}`).join("\n")}`
+      'Installed Apps',
+      `Found ${apps.length} apps\n\nFirst 3:\n${apps
+        .slice(0, 3)
+        .map((a) => `${a.appName} - ${a.notificationsEnabled ? '✓' : '✗'}`)
+        .join('\n')}`,
     );
   }
 
@@ -85,37 +88,37 @@ export default function DNDTestScreen() {
     const apps = await getAllInstalledApps(true);
     setAppCount(apps.length);
     Alert.alert(
-      "All Apps (including system)",
-      `Found ${apps.length} apps\n\nFirst 3:\n${apps.slice(0, 3).map((a) => `${a.appName} - ${a.notificationsEnabled ? "✓" : "✗"}`).join("\n")}`
+      'All Apps (including system)',
+      `Found ${apps.length} apps\n\nFirst 3:\n${apps
+        .slice(0, 3)
+        .map((a) => `${a.appName} - ${a.notificationsEnabled ? '✓' : '✗'}`)
+        .join('\n')}`,
     );
   }
 
   async function checkAppStatus() {
-    const packageName = "com.android.chrome";
+    const packageName = 'com.android.chrome';
     const status = await getAppNotificationStatus(packageName);
-    Alert.alert(
-      "Chrome Notification Status",
-      JSON.stringify(status, null, 2)
-    );
+    Alert.alert('Chrome Notification Status', JSON.stringify(status, null, 2));
   }
 
   async function openChromeSettings() {
-    const packageName = "com.android.chrome";
+    const packageName = 'com.android.chrome';
     const opened = await openAppNotificationSettings(packageName);
-    Alert.alert("Settings", opened ? "Opened successfully" : "Failed to open");
+    Alert.alert('Settings', opened ? 'Opened successfully' : 'Failed to open');
   }
 
   async function showFilterConstants() {
     const constants = getInterruptionFilterConstants();
-    Alert.alert("Filter Constants", JSON.stringify(constants, null, 2));
+    Alert.alert('Filter Constants', JSON.stringify(constants, null, 2));
   }
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
+      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
       headerImage={
         <Image
-          source={require("@/assets/images/partial-react-logo.png")}
+          source={require('@/assets/images/partial-react-logo.png')}
           style={styles.reactLogo}
         />
       }
@@ -174,18 +177,9 @@ export default function DNDTestScreen() {
         <ThemedText type="subtitle">App Notifications</ThemedText>
         <ThemedView style={styles.buttonGroup}>
           <Button title="Get User Apps" onPress={getInstalledApps} />
-          <Button
-            title="Get All Apps (+ System)"
-            onPress={getInstalledAppsWithSystem}
-          />
-          <Button
-            title="Check Chrome Status"
-            onPress={checkAppStatus}
-          />
-          <Button
-            title="Open Chrome Settings"
-            onPress={openChromeSettings}
-          />
+          <Button title="Get All Apps (+ System)" onPress={getInstalledAppsWithSystem} />
+          <Button title="Check Chrome Status" onPress={checkAppStatus} />
+          <Button title="Open Chrome Settings" onPress={openChromeSettings} />
         </ThemedView>
       </ThemedView>
     </ParallaxScrollView>
@@ -194,14 +188,14 @@ export default function DNDTestScreen() {
 
 const styles = StyleSheet.create({
   titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginBottom: 16,
   },
   statusContainer: {
     padding: 12,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -217,6 +211,6 @@ const styles = StyleSheet.create({
     width: 290,
     bottom: 0,
     left: 0,
-    position: "absolute",
+    position: 'absolute',
   },
 });

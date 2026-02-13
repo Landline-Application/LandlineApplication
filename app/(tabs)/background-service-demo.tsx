@@ -22,12 +22,12 @@ export default function BackgroundServiceDemo() {
       checkBatteryOptimization();
       getVersionInfo();
       checkDozeMode();
-      
+
       // Setup notification channel
       NotificationApiManager.createChannel(
         'background_service_channel',
         'Background Service',
-        3 // IMPORTANCE_DEFAULT
+        3, // IMPORTANCE_DEFAULT
       );
     }
   }, []);
@@ -60,9 +60,9 @@ export default function BackgroundServiceDemo() {
   const handleStartForegroundService = () => {
     const success = BackgroundServiceManager.startForegroundService(
       'Background Service Active',
-      'Monitoring notifications in the background'
+      'Monitoring notifications in the background',
     );
-    
+
     if (success) {
       Alert.alert('Success', 'Foreground service started successfully!');
       checkServiceStatus();
@@ -73,7 +73,7 @@ export default function BackgroundServiceDemo() {
 
   const handleStopForegroundService = () => {
     const success = BackgroundServiceManager.stopForegroundService();
-    
+
     if (success) {
       Alert.alert('Success', 'Foreground service stopped');
       checkServiceStatus();
@@ -84,11 +84,8 @@ export default function BackgroundServiceDemo() {
 
   const handleScheduleWork = () => {
     // Schedule work to run every 15 minutes (minimum allowed)
-    const success = BackgroundServiceManager.scheduleBackgroundWork(
-      15,
-      'notification_check'
-    );
-    
+    const success = BackgroundServiceManager.scheduleBackgroundWork(15, 'notification_check');
+
     if (success) {
       Alert.alert('Success', 'Background work scheduled (runs every 15 minutes)');
       checkWorkStatus();
@@ -99,7 +96,7 @@ export default function BackgroundServiceDemo() {
 
   const handleCancelWork = () => {
     const success = BackgroundServiceManager.cancelBackgroundWork();
-    
+
     if (success) {
       Alert.alert('Success', 'Background work cancelled');
       checkWorkStatus();
@@ -123,7 +120,7 @@ export default function BackgroundServiceDemo() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -133,7 +130,7 @@ export default function BackgroundServiceDemo() {
 
   const handleSendTestNotification = () => {
     const hasPermission = NotificationApiManager.hasPostPermission();
-    
+
     if (!hasPermission) {
       Alert.alert(
         'Permission Required',
@@ -144,7 +141,7 @@ export default function BackgroundServiceDemo() {
             text: 'Open Settings',
             onPress: () => NotificationApiManager.requestPostPermission(),
           },
-        ]
+        ],
       );
       return;
     }
@@ -153,7 +150,7 @@ export default function BackgroundServiceDemo() {
       'Test Notification',
       'This is a test notification from the background service',
       'background_service_channel',
-      Date.now()
+      Date.now(),
     );
 
     if (success) {
@@ -167,9 +164,7 @@ export default function BackgroundServiceDemo() {
     return (
       <ThemedView style={styles.container}>
         <ThemedText style={styles.title}>Background Service Demo</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          This feature is only available on Android
-        </ThemedText>
+        <ThemedText style={styles.subtitle}>This feature is only available on Android</ThemedText>
       </ThemedView>
     );
   }
@@ -179,15 +174,13 @@ export default function BackgroundServiceDemo() {
       <ThemedView style={styles.header}>
         <Ionicons name="settings-outline" size={40} color="#007AFF" />
         <ThemedText style={styles.title}>Background Service Demo</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Test background service functionality
-        </ThemedText>
+        <ThemedText style={styles.subtitle}>Test background service functionality</ThemedText>
       </ThemedView>
 
       {/* System Status */}
       <ThemedView style={styles.section}>
         <ThemedText style={styles.sectionTitle}>System Status</ThemedText>
-        
+
         <ThemedView style={styles.statusRow}>
           <ThemedText style={styles.statusLabel}>Foreground Service:</ThemedText>
           <ThemedText style={[styles.statusValue, serviceRunning && styles.statusActive]}>
@@ -204,16 +197,16 @@ export default function BackgroundServiceDemo() {
 
         <ThemedView style={styles.statusRow}>
           <ThemedText style={styles.statusLabel}>Battery Optimization:</ThemedText>
-          <ThemedText style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}>
+          <ThemedText
+            style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}
+          >
             {batteryOptimizationIgnored ? 'Ignored' : 'Active'}
           </ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.statusRow}>
           <ThemedText style={styles.statusLabel}>Doze Mode:</ThemedText>
-          <ThemedText style={styles.statusValue}>
-            {isDozeMode ? 'Active' : 'Inactive'}
-          </ThemedText>
+          <ThemedText style={styles.statusValue}>{isDozeMode ? 'Active' : 'Inactive'}</ThemedText>
         </ThemedView>
 
         {androidVersion && (
@@ -230,14 +223,15 @@ export default function BackgroundServiceDemo() {
       <ThemedView style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Foreground Service</ThemedText>
         <ThemedText style={styles.description}>
-          Foreground services display a persistent notification and can run even when the app is in the background.
+          Foreground services display a persistent notification and can run even when the app is in
+          the background.
         </ThemedText>
-        
+
         <ThemedView style={styles.buttonContainer}>
           <ThemedView style={styles.button} onTouchEnd={handleStartForegroundService}>
             <ThemedText style={styles.buttonText}>Start Service</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.button} onTouchEnd={handleStopForegroundService}>
             <ThemedText style={styles.buttonText}>Stop Service</ThemedText>
           </ThemedView>
@@ -250,12 +244,12 @@ export default function BackgroundServiceDemo() {
         <ThemedText style={styles.description}>
           WorkManager schedules battery-efficient periodic tasks. Minimum interval is 15 minutes.
         </ThemedText>
-        
+
         <ThemedView style={styles.buttonContainer}>
           <ThemedView style={styles.button} onTouchEnd={handleScheduleWork}>
             <ThemedText style={styles.buttonText}>Schedule Work</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.button} onTouchEnd={handleCancelWork}>
             <ThemedText style={styles.buttonText}>Cancel Work</ThemedText>
           </ThemedView>
@@ -266,14 +260,15 @@ export default function BackgroundServiceDemo() {
       <ThemedView style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Battery Optimization</ThemedText>
         <ThemedText style={styles.description}>
-          ⚠️ Use with caution. Google Play may reject apps that unnecessarily request to ignore battery optimization.
+          ⚠️ Use with caution. Google Play may reject apps that unnecessarily request to ignore
+          battery optimization.
         </ThemedText>
-        
+
         <ThemedView style={styles.buttonContainer}>
           <ThemedView style={styles.button} onTouchEnd={handleRequestBatteryOptimization}>
             <ThemedText style={styles.buttonText}>Request Ignore</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.button} onTouchEnd={handleOpenBatterySettings}>
             <ThemedText style={styles.buttonText}>Open Settings</ThemedText>
           </ThemedView>
@@ -286,7 +281,7 @@ export default function BackgroundServiceDemo() {
         <ThemedText style={styles.description}>
           Send a test notification to verify the notification system is working.
         </ThemedText>
-        
+
         <ThemedView style={styles.button} onTouchEnd={handleSendTestNotification}>
           <ThemedText style={styles.buttonText}>Send Test Notification</ThemedText>
         </ThemedView>
@@ -294,8 +289,8 @@ export default function BackgroundServiceDemo() {
 
       {/* Refresh Button */}
       <ThemedView style={styles.section}>
-        <ThemedView 
-          style={[styles.button, styles.refreshButton]} 
+        <ThemedView
+          style={[styles.button, styles.refreshButton]}
           onTouchEnd={() => {
             checkServiceStatus();
             checkWorkStatus();
@@ -390,4 +385,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#34C759',
   },
 });
-

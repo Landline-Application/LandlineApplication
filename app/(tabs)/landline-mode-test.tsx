@@ -37,7 +37,7 @@ export default function LandlineModeTest() {
     Alert.alert(
       'Grant Permission',
       'Please enable notification access for this app, then come back and check status.',
-      [{ text: 'OK', onPress: () => setTimeout(checkPermission, 1000) }]
+      [{ text: 'OK', onPress: () => setTimeout(checkPermission, 1000) }],
     );
   };
 
@@ -80,7 +80,7 @@ export default function LandlineModeTest() {
       {/* Status */}
       <ThemedView style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Status</ThemedText>
-        
+
         <ThemedView style={styles.statusRow}>
           <ThemedText>Notification Listener Permission:</ThemedText>
           <ThemedText style={[styles.statusBadge, hasPermission && styles.statusActive]}>
@@ -131,11 +131,16 @@ export default function LandlineModeTest() {
 
       {/* Logged Notifications */}
       <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Logged Notifications ({notifications.length})</ThemedText>
-        
+        <ThemedText style={styles.sectionTitle}>
+          Logged Notifications ({notifications.length})
+        </ThemedText>
+
         {notifications.length === 0 ? (
           <ThemedText style={styles.emptyText}>
-            No notifications logged yet. {isLandlineModeActive ? 'Send yourself a test notification!' : 'Activate Landline mode first.'}
+            No notifications logged yet.{' '}
+            {isLandlineModeActive
+              ? 'Send yourself a test notification!'
+              : 'Activate Landline mode first.'}
           </ThemedText>
         ) : (
           notifications.map((notif, index) => (
@@ -157,7 +162,7 @@ export default function LandlineModeTest() {
           <ThemedView style={[styles.button, styles.refreshButton]} onTouchEnd={handleRefresh}>
             <ThemedText style={styles.buttonText}>Refresh</ThemedText>
           </ThemedView>
-          
+
           {notifications.length > 0 && (
             <ThemedView style={[styles.button, styles.clearButton]} onTouchEnd={handleClearLogs}>
               <ThemedText style={styles.buttonText}>Clear All</ThemedText>
@@ -303,4 +308,3 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
-
