@@ -1,11 +1,11 @@
-import AutoReplyManagerModule from "./src/AutoReplyManagerModule";
-
 import type {
   AutoReplyResult,
   NotificationInfo,
   ReplyHistoryItem,
-} from "./src/AutoReplyManager.types";
-export * from "./src/AutoReplyManager.types";
+} from './src/AutoReplyManager.types';
+import AutoReplyManagerModule from './src/AutoReplyManagerModule';
+
+export * from './src/AutoReplyManager.types';
 
 export function isListenerEnabled(): boolean {
   return AutoReplyManagerModule.isListenerEnabled();
@@ -19,9 +19,7 @@ export function isAutoReplyEnabled(): boolean {
   return AutoReplyManagerModule.isAutoReplyEnabled();
 }
 
-export function setAutoReplyEnabled(
-  enabled: boolean,
-): Promise<AutoReplyResult> {
+export function setAutoReplyEnabled(enabled: boolean): Promise<AutoReplyResult> {
   return AutoReplyManagerModule.setAutoReplyEnabled(enabled);
 }
 
@@ -33,9 +31,7 @@ export function getReplyMessage(): string {
   return AutoReplyManagerModule.getReplyMessage();
 }
 
-export function setAllowedApps(
-  packageNames: string[],
-): Promise<AutoReplyResult> {
+export function setAllowedApps(packageNames: string[]): Promise<AutoReplyResult> {
   return AutoReplyManagerModule.setAllowedApps(packageNames);
 }
 

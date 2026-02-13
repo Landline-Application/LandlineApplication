@@ -30,4 +30,3 @@ export interface BackgroundServiceManagerModuleType {
   getAndroidVersion(): AndroidVersionInfo;
   isDeviceIdleMode(): boolean;
 }
-

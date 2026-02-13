@@ -1,5 +1,5 @@
-import { StorageManager } from './storage/storage-manager';
 import { STORAGE_KEYS } from './storage/storage-keys';
+import { StorageManager } from './storage/storage-manager';
 
 const TERMS_VERSION = '1.0.0';
 
@@ -14,9 +14,7 @@ export interface AcceptanceRecord {
  */
 export async function hasAcceptedTerms(): Promise<boolean> {
   try {
-    const record = await StorageManager.getItem<AcceptanceRecord>(
-      STORAGE_KEYS.TERMS_ACCEPTANCE
-    );
+    const record = await StorageManager.getItem<AcceptanceRecord>(STORAGE_KEYS.TERMS_ACCEPTANCE);
     if (record !== null) {
       // Check if user accepted the current version
       return record.accepted && record.version === TERMS_VERSION;
@@ -50,9 +48,7 @@ export async function saveTermsAcceptance(): Promise<void> {
  */
 export async function getAcceptanceRecord(): Promise<AcceptanceRecord | null> {
   try {
-    return await StorageManager.getItem<AcceptanceRecord>(
-      STORAGE_KEYS.TERMS_ACCEPTANCE
-    );
+    return await StorageManager.getItem<AcceptanceRecord>(STORAGE_KEYS.TERMS_ACCEPTANCE);
   } catch (error) {
     console.error('Error getting acceptance record:', error);
     return null;

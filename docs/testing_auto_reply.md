@@ -9,6 +9,7 @@ The app now includes a test notification generator that simulates real messaging
 ### 1. Grant Notification Listener Permission
 
 **On Device/Emulator:**
+
 1. Open the app
 2. Navigate to "Auto-Reply Test Page"
 3. Tap "Request Listener Permission"
@@ -21,10 +22,12 @@ The app now includes a test notification generator that simulates real messaging
 ### 2. Configure Auto-Reply
 
 **Set Reply Message:**
+
 1. Tap "Update Message" (sets: "I'm in a meeting right now. I'll get back to you soon!")
 2. Tap "Show Current Message" to verify
 
 **Set Allowed Apps (Optional):**
+
 - Tap "Allow All Apps" to reply to all test notifications
 - Or tap "Set Messaging Apps" to filter specific apps
 
@@ -38,12 +41,14 @@ The app now includes a test notification generator that simulates real messaging
 ### 4. Send Test Notifications
 
 **Single Test:**
+
 1. Tap "Send Test Message"
 2. Pull down notification shade
 3. You should see notification from "John Doe"
 4. Click the notification to see reply action
 
 **Multiple Tests:**
+
 1. Tap "Send Multiple Test Messages"
 2. Creates 3 test notifications (Alice, Bob, Charlie)
 3. Watch auto-reply respond to each
@@ -51,18 +56,21 @@ The app now includes a test notification generator that simulates real messaging
 ### 5. Verify Auto-Reply
 
 **Check if it worked:**
+
 1. After sending test notification, wait 1-2 seconds
 2. Pull down notification shade
 3. Look for "Reply Sent" notification showing your auto-reply
 4. Or tap "Show Active Notifications" to see all notifications
 
 **Check Service Logs:**
+
 ```bash
 # View auto-reply service logs
 adb logcat | grep AutoReplyListener
 ```
 
 You should see:
+
 ```
 AutoReplyListener: Processing notification from expo.modules.autoreplymanager.testnotificationhelper
 AutoReplyListener: Auto-reply sent: I'm in a meeting...
@@ -71,6 +79,7 @@ AutoReplyListener: Auto-reply sent: I'm in a meeting...
 ## Test Notification Details
 
 The test notifications simulate real messaging apps:
+
 - **Sender:** Configurable name (e.g., "John Doe")
 - **Message:** Configurable text
 - **Reply Action:** Full RemoteInput with free-form text
@@ -82,24 +91,28 @@ The test notifications simulate real messaging apps:
 ### Auto-Reply Not Working?
 
 **Check Permission:**
+
 ```javascript
 const hasPermission = isListenerEnabled();
 console.log('Permission:', hasPermission); // Must be true
 ```
 
 **Check Service:**
+
 ```javascript
 const isRunning = isServiceRunning();
 console.log('Service:', isRunning); // Must be true
 ```
 
 **Check Enabled:**
+
 ```javascript
 const enabled = isAutoReplyEnabled();
 console.log('Enabled:', enabled); // Must be true
 ```
 
 **Check Allowed Apps:**
+
 ```javascript
 const apps = getAllowedApps();
 console.log('Allowed:', apps); // Empty = all allowed
@@ -135,17 +148,20 @@ For production testing with real apps:
 ## Test Scenarios
 
 ### Scenario 1: Basic Auto-Reply
+
 1. Enable auto-reply ✓
 2. Send test notification ✓
 3. Verify reply sent ✓
 
 ### Scenario 2: App Filtering
+
 1. Set "WhatsApp Only" filter ✓
 2. Send test notification (will NOT reply - different package) ✗
 3. Clear filter with "Allow All Apps" ✓
 4. Send test notification (will reply now) ✓
 
 ### Scenario 3: Enable/Disable
+
 1. Enable auto-reply ✓
 2. Send test → replies ✓
 3. Disable auto-reply ✗
@@ -154,6 +170,7 @@ For production testing with real apps:
 6. Send test → replies ✓
 
 ### Scenario 4: Custom Message
+
 1. Set custom message: "On vacation until Monday!"
 2. Send test notification
 3. Verify custom message in reply
@@ -161,6 +178,7 @@ For production testing with real apps:
 ## Expected Behavior
 
 **When Auto-Reply is ENABLED:**
+
 - ✅ Receives all notifications via NotificationListenerService
 - ✅ Filters by allowed apps list (if set)
 - ✅ Detects notifications with reply actions
@@ -168,6 +186,7 @@ For production testing with real apps:
 - ✅ Logs activity to Logcat
 
 **When Auto-Reply is DISABLED:**
+
 - ✅ Service still receives notifications (listener stays active)
 - ✅ Does NOT send any replies
 - ✅ Notifications remain unread
@@ -205,6 +224,7 @@ adb shell am force-stop com.anonymous.landlineapplication
 ## Next Steps
 
 Once testing is complete on emulator:
+
 1. Test on physical device with real messaging apps
 2. Test battery impact (service runs continuously)
 3. Test behavior when app is closed

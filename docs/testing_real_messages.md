@@ -3,6 +3,7 @@
 ## Emulator SMS Testing
 
 ### Send SMS to Emulator
+
 ```bash
 # Get emulator phone number
 adb emu sms send 5554 "Test message from emulator"
@@ -11,6 +12,7 @@ adb emu sms send 5554 "Test message from emulator"
 ```
 
 **Limitations:**
+
 - SMS auto-reply works ONLY if the Messages app creates notifications with reply actions
 - Most default SMS apps on Android 15+ support this
 - The notification must have RemoteInput for auto-reply to work
@@ -18,6 +20,7 @@ adb emu sms send 5554 "Test message from emulator"
 ## WhatsApp on Emulator
 
 ### Install WhatsApp
+
 ```bash
 # Download WhatsApp APK
 wget https://www.whatsapp.com/android/current/WhatsApp.apk
@@ -27,6 +30,7 @@ adb install WhatsApp.apk
 ```
 
 ### Setup
+
 1. Open WhatsApp
 2. Verify with a real phone number (or use test number)
 3. Send message from another device
@@ -35,18 +39,20 @@ adb install WhatsApp.apk
 ## Physical Device Testing (Recommended)
 
 ### Setup
+
 1. Build release APK: `cd android && ./gradlew assembleRelease`
 2. Install on device: `adb install app/build/outputs/apk/release/app-release.apk`
 3. Grant notification listener permission
 4. Enable auto-reply
 5. Install messaging apps:
    - WhatsApp
-   - Messenger  
+   - Messenger
    - Telegram
    - Signal
    - Instagram
 
 ### Test
+
 1. Send yourself messages from another account/device
 2. Verify auto-replies are sent
 3. Check in messaging app conversation
@@ -56,6 +62,7 @@ adb install WhatsApp.apk
 Auto-reply works with any app that implements Direct Reply (RemoteInput):
 
 ✅ **Confirmed Working:**
+
 - WhatsApp
 - Facebook Messenger
 - Telegram
@@ -67,6 +74,7 @@ Auto-reply works with any app that implements Direct Reply (RemoteInput):
 - Google Messages
 
 ❌ **Not Supported:**
+
 - Apps without reply actions
 - Notifications marked as "silent"
 - System notifications
@@ -74,6 +82,7 @@ Auto-reply works with any app that implements Direct Reply (RemoteInput):
 ## Why Test Notifications Don't Show in Messages App
 
 Test notifications are **system notifications**, not real messages. They:
+
 - Simulate the notification structure
 - Include reply actions
 - Trigger auto-reply service
@@ -84,6 +93,7 @@ Test notifications are **system notifications**, not real messages. They:
 ## Quick Test Workflow
 
 ### On Emulator (Test Notifications)
+
 ```
 1. Enable auto-reply
 2. Send test notification
@@ -92,6 +102,7 @@ Test notifications are **system notifications**, not real messages. They:
 ```
 
 ### On Real Device (Real Messages)
+
 ```
 1. Install WhatsApp
 2. Enable auto-reply

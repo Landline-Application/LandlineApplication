@@ -1,6 +1,6 @@
 /**
  * Centralized storage keys for the Landline application
- * 
+ *
  * This file contains all storage keys used throughout the app
  * to ensure consistency and make data deletion easier.
  */
@@ -11,7 +11,7 @@
 export const STORAGE_KEYS = {
   // User Legal & Compliance
   TERMS_ACCEPTANCE: '@landline_terms_acceptance',
-  
+
   // Future keys can be added here as the app grows:
   // USER_PREFERENCES: '@landline_user_preferences',
   // NOTIFICATION_SETTINGS: '@landline_notification_settings',
@@ -27,7 +27,7 @@ export const NATIVE_STORAGE = {
   // Android SharedPreferences names
   LANDLINE_MODE_PREFS: 'landline_mode_prefs',
   NOTIFICATION_LOGS: 'landline_notifications',
-  
+
   // Keys within SharedPreferences
   KEYS: {
     IS_LANDLINE_MODE_ACTIVE: 'is_landline_mode_active',

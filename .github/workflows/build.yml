@@ -1,4 +1,4 @@
-name: Build Android
+name: Lint & Compile Check
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
 
 # Cancel in-progress builds for the same PR when a new commit is pushed
 concurrency:
-  group: build-${{ github.head_ref }}
+  group: ci-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,11 +33,11 @@ jobs:
       - name: Run lint
         run: pnpm lint
 
-  build:
-    name: Build Android APK
+  compile-check:
+    name: Compile Check
     needs: lint
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -63,17 +63,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup EAS CLI
-        run: pnpm add -g eas-cli
+      - name: Prebuild native Android project
+        run: npx expo prebuild --clean --platform android --no-interactive
 
-      - name: Build Android APK
-        run: eas build --local --platform android --profile preview --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-preview-apk
-          path: "*.apk"
-          retention-days: 14
+      - name: Compile Android project
+        run: npx expo run:android --no-build

@@ -13,6 +13,7 @@ The auto-reply manager now tracks every reply sent, allowing you to see what mes
 3. Tap **"View Reply History"**
 
 You'll see:
+
 - The message text sent
 - Timestamp of when it was sent
 - Up to 10 most recent replies (with total count)
@@ -37,17 +38,20 @@ Reply History (15 total)
 ## How It Works
 
 ### Storage
+
 - Replies are stored in **SharedPreferences**
 - Maximum 50 most recent replies kept
 - Persists across app restarts
 - Automatically trims old entries
 
 ### What's Tracked
+
 ✅ Reply message text
 ✅ Timestamp (milliseconds)
 ❌ NOT tracked: Recipient name/app (for privacy)
 
 ### Data Structure
+
 ```json
 [
   {
@@ -60,6 +64,7 @@ Reply History (15 total)
 ## Testing the Feature
 
 ### Setup
+
 1. Enable auto-reply
 2. Send test notifications
 3. Wait 1-2 seconds for auto-reply to trigger
@@ -92,11 +97,11 @@ To clear all reply history:
 ## API Usage
 
 ```typescript
-import { getReplyHistory, clearReplyHistory } from '@/modules/auto-reply-manager';
+import { clearReplyHistory, getReplyHistory } from '@/modules/auto-reply-manager';
 
 // Get reply history
 const history = getReplyHistory();
-history.forEach(item => {
+history.forEach((item) => {
   console.log(`Sent at ${new Date(item.timestamp)}: ${item.message}`);
 });
 
@@ -127,6 +132,7 @@ adb logcat | grep "saveReplyToHistory"
 ## Privacy Considerations
 
 **What we DON'T track:**
+
 - Recipient names
 - Recipient phone numbers
 - Package names of messaging apps
@@ -134,6 +140,7 @@ adb logcat | grep "saveReplyToHistory"
 - Notification details
 
 **What we DO track:**
+
 - Only the auto-reply message YOU configured
 - Timestamp of when it was sent
 
@@ -156,6 +163,7 @@ This ensures user privacy while providing useful history.
 ## Future Enhancements
 
 Potential features (not yet implemented):
+
 - Filter by date range
 - Search history
 - Export to file
