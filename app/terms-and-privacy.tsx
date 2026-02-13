@@ -1,6 +1,5 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useState } from 'react';
+
 import {
   ColorValue,
   Platform,
@@ -11,6 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+
 import { PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
 import { saveTermsAcceptance } from '@/utils/acceptance-storage';
 

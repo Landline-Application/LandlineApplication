@@ -1,7 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { isLandlineStorageKey } from './storage-keys';
+
 import NotificationApiManager from '@/modules/notification-api-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { isLandlineStorageKey } from './storage-keys';
 
 /**
  * Result of a data deletion operation

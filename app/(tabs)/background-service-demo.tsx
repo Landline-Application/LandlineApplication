@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+
+import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import Ionicons from '@expo/vector-icons/Ionicons';
-
 // Import the background service manager
 import BackgroundServiceManager from '@/modules/background-service-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function BackgroundServiceDemo() {
   const [serviceRunning, setServiceRunning] = useState(false);

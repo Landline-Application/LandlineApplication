@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
 import React, { useState } from 'react';
+
 import {
   Alert,
   Button,
@@ -13,10 +13,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { router } from 'expo-router';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { StorageManager } from '@/utils/storage/storage-manager';
 import { clearAcceptance } from '@/utils/acceptance-storage';
+import { StorageManager } from '@/utils/storage/storage-manager';
 
 export default function SettingsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);

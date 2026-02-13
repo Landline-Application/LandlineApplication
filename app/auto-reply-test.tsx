@@ -1,28 +1,28 @@
-import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+
 import { Alert, Button, Platform, StyleSheet } from 'react-native';
+
+import { Image } from 'expo-image';
+import * as Notifications from 'expo-notifications';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-
-import { useState, useEffect } from 'react';
-import * as Notifications from 'expo-notifications';
-
 import {
-  isListenerEnabled,
-  requestListenerPermission,
+  clearReplyHistory,
+  getActiveNotifications,
+  getAllowedApps,
+  getReplyHistory,
+  getReplyMessage,
   isAutoReplyEnabled,
+  isListenerEnabled,
+  isServiceRunning,
+  requestListenerPermission,
+  sendTestNotification,
+  setAllowedApps,
   setAutoReplyEnabled,
   setReplyMessage,
-  getReplyMessage,
-  setAllowedApps,
-  getAllowedApps,
-  isServiceRunning,
-  getActiveNotifications,
-  sendTestNotification,
-  getReplyHistory,
-  clearReplyHistory,
 } from '@/modules/auto-reply-manager';
 
 export default function AutoReplyTestScreen() {

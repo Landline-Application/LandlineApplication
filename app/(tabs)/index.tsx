@@ -1,14 +1,14 @@
+import { useCallback } from 'react';
+
+import { Alert, Button, Platform, StyleSheet } from 'react-native';
+
 import { Image } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
-import { Alert, Button, Platform, StyleSheet } from 'react-native';
-import { useCallback } from 'react';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-
 import { useAuth } from '@/contexts/auth-context';
-
 import Notif from '@/modules/notification-api-manager';
 
 export default function HomeScreen() {

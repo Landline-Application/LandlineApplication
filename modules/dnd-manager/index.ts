@@ -1,11 +1,11 @@
-import DNDManagerModule from './src/DndManagerModule';
-
 import type {
   AppInfo,
   DndState,
   InterruptionFilterConstants,
   NotificationPermissionResult,
 } from './src/DndManager.types';
+import DNDManagerModule from './src/DndManagerModule';
+
 export * from './src/DndManager.types';
 
 export function hasPermission(): boolean {

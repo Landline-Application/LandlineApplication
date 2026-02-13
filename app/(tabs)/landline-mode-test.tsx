@@ -1,8 +1,10 @@
+import React, { useEffect, useState } from 'react';
+
+import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
-import React, { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
 
 export default function LandlineModeTest() {
   const [hasPermission, setHasPermission] = useState(false);
