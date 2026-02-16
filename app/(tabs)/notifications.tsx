@@ -3,16 +3,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  RefreshControl,
-  ScrollView,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
-
+import NotebookLogView from '@/components/notebook-log-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
 
 interface Notification {
@@ -28,7 +26,7 @@ interface Notification {
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"notebook" | "classic">("notebook");
+  const [viewMode, setViewMode] = useState<'notebook' | 'classic'>('notebook');
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -62,25 +60,20 @@ export default function NotificationsScreen() {
         <Text style={styles.headerTitle}>Landline Log</Text>
         <TouchableOpacity
           style={styles.viewToggle}
-          onPress={() => setViewMode(viewMode === "notebook" ? "classic" : "notebook")}
+          onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
         >
           <Text style={styles.viewToggleText}>
-            {viewMode === "notebook" ? "📔 Notebook" : "📱 Modern"}
+            {viewMode === 'notebook' ? '📔 Notebook' : '📱 Modern'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Notebook View */}
-      {viewMode === "notebook" ? (
-        <NotebookLogView
-          notifications={notifications}
-          onRefresh={loadNotifications}
-        />
+      {viewMode === 'notebook' ? (
+        <NotebookLogView notifications={notifications} onRefresh={loadNotifications} />
       ) : (
         <View style={styles.modernPlaceholder}>
-          <Text style={styles.placeholderText}>
-            Classic view - To be implemented
-          </Text>
+          <Text style={styles.placeholderText}>Classic view - To be implemented</Text>
         </View>
       )}
     </View>
@@ -90,54 +83,54 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#3d3325",
+    backgroundColor: '#3d3325',
   },
   centerContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#3d3325",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#3d3325',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#D4AF7A",
+    color: '#D4AF7A',
   },
   header: {
-    backgroundColor: "rgba(61, 51, 37, 0.95)",
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    backgroundColor: 'rgba(61, 51, 37, 0.95)',
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 15,
     paddingHorizontal: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: "#6B5A44",
+    borderBottomColor: '#6B5A44',
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#F4E4C1",
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontWeight: 'bold',
+    color: '#F4E4C1',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   viewToggle: {
-    backgroundColor: "#6B5A44",
+    backgroundColor: '#6B5A44',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   viewToggleText: {
-    color: "#F4E4C1",
+    color: '#F4E4C1',
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   modernPlaceholder: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   placeholderText: {
-    color: "#D4AF7A",
+    color: '#D4AF7A',
     fontSize: 16,
   },
 });
