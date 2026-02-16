@@ -1,6 +1,3 @@
-import { useAuth } from '@/contexts/auth-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 
 import {
@@ -10,14 +7,14 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
-  View,
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -76,78 +73,18 @@ const slides: OnboardingSlide[] = [
     emoji: '🔐',
     gradientColors: ['#fa709a', '#fee140'],
   },
-  {
-    id: 6,
-    title: 'Create Your Account',
-    description: 'Sign up with your email to get started and sync your preferences across devices.',
-    emoji: '👤',
-    gradientColors: ['#667eea', '#764ba2'],
-  },
 ];
 
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
-  const { signUp } = useAuth();
-  
-  // Signup form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     scrollX.value = offsetX;
     const index = Math.round(offsetX / width);
     setCurrentIndex(index);
-  };
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleSignup = async () => {
-    // Validate inputs
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      // Use the auth context to sign up
-      await signUp(email, password);
-      
-      Alert.alert('Success', 'Account created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)'),
-        },
-      ]);
-    } catch {
-      Alert.alert('Error', 'Failed to create account. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleNext = () => {
@@ -167,13 +104,13 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Skip button */}
       {currentIndex < slides.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
+          <ThemedText style={styles.skipText}>Skip</ThemedText>
         </TouchableOpacity>
       )}
 
@@ -188,32 +125,32 @@ export default function OnboardingScreen() {
         decelerationRate="fast"
       >
         {slides.map((slide, _index) => (
-          <View key={slide.id} style={styles.slide}>
+          <ThemedView key={slide.id} style={styles.slide}>
             <LinearGradient
               colors={slide.gradientColors as [ColorValue, ColorValue]}
               style={styles.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <View style={styles.content}>
-                <View style={styles.emojiContainer}>
-                  <Text style={styles.emoji}>{slide.emoji}</Text>
-                </View>
+              <ThemedView style={styles.content}>
+                <ThemedView style={styles.emojiContainer}>
+                  <ThemedText style={styles.emoji}>{slide.emoji}</ThemedText>
+                </ThemedView>
 
-                <Text style={styles.title}>{slide.title}</Text>
-                <Text style={styles.description}>{slide.description}</Text>
+                <ThemedText style={styles.title}>{slide.title}</ThemedText>
+                <ThemedText style={styles.description}>{slide.description}</ThemedText>
 
                 {/* Feature highlights for specific slides */}
                 {slide.id === 2 && (
-                  <View style={styles.featureList}>
+                  <ThemedView style={styles.featureList}>
                     <FeatureItem text="Silent notifications during focus time" />
                     <FeatureItem text="Auto-capture all incoming alerts" />
                     <FeatureItem text="Review later at your convenience" />
-                  </View>
+                  </ThemedView>
                 )}
 
                 {slide.id === 5 && (
-                  <View style={styles.permissionsList}>
+                  <ThemedView style={styles.permissionsList}>
                     <PermissionItem
                       icon="🔔"
                       title="Notification Access"
@@ -224,67 +161,16 @@ export default function OnboardingScreen() {
                       title="Background Services"
                       description="Run efficiently in background"
                     />
-                  </View>
+                  </ThemedView>
                 )}
-
-                {slide.id === 6 && (
-                  <KeyboardAvoidingView 
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.signupForm}
-                  >
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.inputLabel}>Email Address</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="your.email@example.com"
-                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.inputLabel}>Password</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="At least 8 characters"
-                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.inputLabel}>Confirm Password</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Re-enter your password"
-                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                      />
-                    </View>
-
-                    <Text style={styles.termsText}>
-                      By signing up, you agree to our Terms of Service and Privacy Policy
-                    </Text>
-                  </KeyboardAvoidingView>
-                )}
-              </View>
+              </ThemedView>
             </LinearGradient>
-          </View>
+          </ThemedView>
         ))}
       </ScrollView>
 
       {/* Pagination dots */}
-      <View style={styles.pagination}>
+      <ThemedView style={styles.pagination}>
         {slides.map((_, index) => {
           // eslint-disable-next-line react-hooks/rules-of-hooks
           const dotStyle = useAnimatedStyle(() => {
@@ -312,7 +198,7 @@ export default function OnboardingScreen() {
 
           return <Animated.View key={index} style={[styles.dot, dotStyle]} />;
         })}
-      </View>
+      </ThemedView>
 
       {/* Next/Get Started button */}
       <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -322,24 +208,22 @@ export default function OnboardingScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <Text style={styles.nextButtonText}>
-            {currentIndex === slides.length - 1 ? (isLoading ? 'Creating Account...' : 'Sign Up') : 'Next'}
-          </Text>
+          <ThemedText style={styles.nextButtonText}>Next</ThemedText>
         </LinearGradient>
       </TouchableOpacity>
-    </View>
+    </ThemedView>
   );
 }
 
 // Feature item component
 function FeatureItem({ text }: { text: string }) {
   return (
-    <View style={styles.featureItem}>
-      <View style={styles.checkmark}>
-        <Text style={styles.checkmarkText}>✓</Text>
-      </View>
-      <Text style={styles.featureText}>{text}</Text>
-    </View>
+    <ThemedView style={styles.featureItem}>
+      <ThemedView style={styles.checkmark}>
+        <ThemedText style={styles.checkmarkText}>✓</ThemedText>
+      </ThemedView>
+      <ThemedText style={styles.featureText}>{text}</ThemedText>
+    </ThemedView>
   );
 }
 
@@ -354,51 +238,15 @@ function PermissionItem({
   description: string;
 }) {
   return (
-    <View style={styles.permissionItem}>
-      <View style={styles.permissionIcon}>
-        <Text style={styles.permissionIconText}>{icon}</Text>
-      </View>
-      <View style={styles.permissionContent}>
-        <Text style={styles.permissionTitle}>{title}</Text>
-        <Text style={styles.permissionDescription}>{description}</Text>
-      </View>
-    </View>
-  );
-}
-
-// Pagination dot component
-function PaginationDot({ index, scrollX }: { index: number; scrollX: ReturnType<typeof useSharedValue> }) {
-  const dotStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * width,
-      index * width,
-      (index + 1) * width,
-    ];
-
-    const scale = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.8, 1.4, 0.8],
-      Extrapolate.CLAMP
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.4, 1, 0.4],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[styles.dot, dotStyle]}
-    />
+    <ThemedView style={styles.permissionItem}>
+      <ThemedView style={styles.permissionIcon}>
+        <ThemedText style={styles.permissionIconText}>{icon}</ThemedText>
+      </ThemedView>
+      <ThemedView style={styles.permissionContent}>
+        <ThemedText style={styles.permissionTitle}>{title}</ThemedText>
+        <ThemedText style={styles.permissionDescription}>{description}</ThemedText>
+      </ThemedView>
+    </ThemedView>
   );
 }
 
