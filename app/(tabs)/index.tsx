@@ -69,11 +69,6 @@ export default function HomeScreen() {
         />
       }
     >
-      {/* Onboarding button */}
-      <ThemedView style={styles.stepContainer}>
-        <Button title="View Onboarding Flow" onPress={() => router.push('/onboarding')} />
-      </ThemedView>
-
       {/* Notification buttons */}
       <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
       <Button title="Send Test Notification" onPress={sendTestNotification} />
