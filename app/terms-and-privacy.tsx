@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import {
   ColorValue,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,10 +15,12 @@ import { router } from 'expo-router';
 
 import { PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
 import { saveTermsAcceptance } from '@/utils/acceptance-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TabType = 'terms' | 'privacy';
 
 export default function TermsAndPrivacyScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('terms');
   const [hasScrolledTerms, setHasScrolledTerms] = useState(false);
   const [hasScrolledPrivacy, setHasScrolledPrivacy] = useState(false);
@@ -67,7 +68,7 @@ export default function TermsAndPrivacyScreen() {
 
       <LinearGradient
         colors={['#667eea', '#764ba2'] as [ColorValue, ColorValue]}
-        style={styles.gradient}
+        style={[styles.gradient, { paddingTop: insets.top + 20 }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
@@ -172,7 +173,7 @@ export default function TermsAndPrivacyScreen() {
 
         {/* Requirement hint */}
         {!isAcceptButtonEnabled && (
-          <Text style={styles.hintText}>
+          <Text style={[styles.hintText, { marginBottom: insets.bottom + 16 }]}>
             {!hasScrolledTerms
               ? 'Please scroll to the end of Terms of Use'
               : !hasScrolledPrivacy
@@ -180,6 +181,7 @@ export default function TermsAndPrivacyScreen() {
                 : 'Please check the agreement box'}
           </Text>
         )}
+        {isAcceptButtonEnabled && <View style={{ height: insets.bottom }} />}
       </LinearGradient>
     </View>
   );
@@ -192,7 +194,6 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingHorizontal: 20,
   },
   header: {

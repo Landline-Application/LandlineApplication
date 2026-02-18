@@ -18,10 +18,12 @@ import { router } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -136,7 +138,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <ThemedView style={styles.section}>
         <ThemedText type="title" style={styles.sectionTitle}>
           Settings

@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
 
 import NotebookLogView from '@/components/notebook-log-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Notification {
   timestamp: number;
@@ -24,6 +24,7 @@ interface Notification {
 }
 
 export default function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'notebook' | 'classic'>('notebook');
@@ -56,7 +57,7 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       {/* View Mode Toggle */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Text style={styles.headerTitle}>Landline Log</Text>
         <TouchableOpacity
           style={styles.viewToggle}
@@ -98,7 +99,6 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: 'rgba(61, 51, 37, 0.95)',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 15,
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -111,7 +111,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#F4E4C1',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   viewToggle: {
     backgroundColor: '#6B5A44',

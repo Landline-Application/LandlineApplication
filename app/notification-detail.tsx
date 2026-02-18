@@ -4,6 +4,8 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 interface Notification {
   timestamp: number;
   packageName: string;
@@ -15,6 +17,7 @@ interface Notification {
 }
 
 export default function NotificationDetailScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const category = params.category as string;
   const notificationsData = params.notifications as string;
@@ -101,7 +104,12 @@ export default function NotificationDetailScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: getCategoryColor(category) }]}>
+      <View
+        style={[
+          styles.header,
+          { borderBottomColor: getCategoryColor(category), paddingTop: insets.top + 20 },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -176,7 +184,6 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
-    paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 3,

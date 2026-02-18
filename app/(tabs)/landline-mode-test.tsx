@@ -5,8 +5,10 @@ import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LandlineModeTest() {
+  const insets = useSafeAreaInsets();
   const [hasPermission, setHasPermission] = useState(false);
   const [isLandlineModeActive, setIsLandlineModeActive] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -73,7 +75,7 @@ export default function LandlineModeTest() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <ThemedView style={styles.header}>
         <ThemedText style={styles.title}>Landline Mode Test</ThemedText>
         <ThemedText style={styles.subtitle}>Test notification logging</ThemedText>

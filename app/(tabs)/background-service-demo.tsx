@@ -4,12 +4,14 @@ import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Import the background service manager
 import BackgroundServiceManager from '@/modules/background-service-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function BackgroundServiceDemo() {
+  const insets = useSafeAreaInsets();
   const [serviceRunning, setServiceRunning] = useState(false);
   const [workScheduled, setWorkScheduled] = useState(false);
   const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState(false);
@@ -171,7 +173,7 @@ export default function BackgroundServiceDemo() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <ThemedView style={styles.header}>
         <Ionicons name="settings-outline" size={40} color="#007AFF" />
         <ThemedText style={styles.title}>Background Service Demo</ThemedText>
