@@ -133,9 +133,7 @@ export default function LandlineModeTest() {
 
       {/* Logged Notifications */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Logged Notifications ({notifications.length})
-        </Text>
+        <Text style={styles.sectionTitle}>Logged Notifications ({notifications.length})</Text>
 
         {notifications.length === 0 ? (
           <Text style={styles.emptyText}>
@@ -150,9 +148,7 @@ export default function LandlineModeTest() {
               <Text style={styles.notifApp}>{notif.appName}</Text>
               <Text style={styles.notifTitle}>{notif.title}</Text>
               <Text style={styles.notifText}>{notif.text}</Text>
-              <Text style={styles.notifTime}>
-                {new Date(notif.postTime).toLocaleString()}
-              </Text>
+              <Text style={styles.notifTime}>{new Date(notif.postTime).toLocaleString()}</Text>
             </View>
           ))
         )}

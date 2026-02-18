@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Import the background service manager
 import BackgroundServiceManager from '@/modules/background-service-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BackgroundServiceDemo() {
   const insets = useSafeAreaInsets();
@@ -198,9 +198,7 @@ export default function BackgroundServiceDemo() {
 
         <View style={styles.statusRow}>
           <Text style={styles.statusLabel}>Battery Optimization:</Text>
-          <Text
-            style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}
-          >
+          <Text style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}>
             {batteryOptimizationIgnored ? 'Ignored' : 'Active'}
           </Text>
         </View>

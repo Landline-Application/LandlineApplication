@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import {
-  Alert,
-  Button,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Image } from 'expo-image';
 import * as Notifications from 'expo-notifications';

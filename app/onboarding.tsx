@@ -235,13 +235,9 @@ function FeatureItem({ text }: { text: string }) {
   return (
     <View style={styles.featureItem}>
       <View style={styles.checkmark}>
-        <Text style={styles.checkmarkText}>
-          ✓
-        </Text>
+        <Text style={styles.checkmarkText}>✓</Text>
       </View>
-      <Text style={styles.featureText}>
-        {text}
-      </Text>
+      <Text style={styles.featureText}>{text}</Text>
     </View>
   );
 }
@@ -259,21 +255,11 @@ function PermissionItem({
   return (
     <View style={styles.permissionItem}>
       <View style={styles.permissionIcon}>
-        <Text style={styles.permissionIconText}>
-          {icon}
-        </Text>
+        <Text style={styles.permissionIconText}>{icon}</Text>
       </View>
       <View style={styles.permissionContent}>
-        <Text style={styles.permissionTitle}>
-          {title}
-        </Text>
-        <Text
-          style={styles.permissionDescription}
-         
-         
-        >
-          {description}
-        </Text>
+        <Text style={styles.permissionTitle}>{title}</Text>
+        <Text style={styles.permissionDescription}>{description}</Text>
       </View>
     </View>
   );
