@@ -1,13 +1,11 @@
 import { useCallback } from 'react';
 
-import { Alert, Button, Platform, StyleSheet } from 'react-native';
+import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Image } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
 import Notif from '@/modules/notification-api-manager';
 
@@ -73,56 +71,56 @@ export default function HomeScreen() {
       <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
       <Button title="Send Test Notification" onPress={sendTestNotification} />
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Native Module Tests</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.stepContainer}>
+        <Text>Native Module Tests</Text>
+        <View style={styles.buttonGroup}>
           <Button
             title="Open Auto-Reply Test Page"
             onPress={() => router.push('/auto-reply-test')}
           />
           <Button title="Open DND Test Page" onPress={() => router.push('/dnd-test')} />
-        </ThemedView>
+        </View>
         {/* Authentication Status */}
-        <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">👤 Account Status</ThemedText>
+        <View style={styles.stepContainer}>
+          <Text>👤 Account Status</Text>
           {isAuthenticated ? (
-            <ThemedView style={{ gap: 8 }}>
-              <ThemedText>
-                ✅ Signed in as: <ThemedText type="defaultSemiBold">{user?.email}</ThemedText>
-              </ThemedText>
+            <View style={{ gap: 8 }}>
+              <Text>
+                ✅ Signed in as: <Text>{user?.email}</Text>
+              </Text>
               <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
-            </ThemedView>
+            </View>
           ) : (
-            <ThemedView style={{ gap: 8 }}>
-              <ThemedText>❌ Not signed in</ThemedText>
+            <View style={{ gap: 8 }}>
+              <Text>❌ Not signed in</Text>
               <Button
                 title="🎉 View Onboarding / Sign Up"
                 onPress={() => router.push('/onboarding')}
               />
-            </ThemedView>
+            </View>
           )}
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
+      <View style={styles.stepContainer}>
+        <Text>Step 1: Try it</Text>
+        <Text>
+          Edit <Text>app/(tabs)/index.tsx</Text> to see changes.
           Press{' '}
-          <ThemedText type="defaultSemiBold">
+          <Text>
             {Platform.select({
               ios: 'cmd + d',
               android: 'cmd + m',
               web: 'F12',
             })}
-          </ThemedText>{' '}
+          </Text>{' '}
           to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
+        </Text>
+      </View>
+      <View style={styles.stepContainer}>
         <Link href="/modal">
           <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+            <Text>Step 2: Explore</Text>
           </Link.Trigger>
           <Link.Preview />
           <Link.Menu>
@@ -143,20 +141,20 @@ export default function HomeScreen() {
           </Link.Menu>
         </Link>
 
-        <ThemedText>
+        <Text>
           {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
+        </Text>
+      </View>
+      <View style={styles.stepContainer}>
+        <Text>Step 3: Get a fresh start</Text>
+        <Text>
           {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
+          <Text>npm run reset-project</Text> to get a fresh{' '}
+          <Text>app</Text> directory. This will move the current{' '}
+          <Text>app</Text> to{' '}
+          <Text>app-example</Text>.
+        </Text>
+      </View>
     </ParallaxScrollView>
   );
 }
