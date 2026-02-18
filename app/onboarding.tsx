@@ -3,7 +3,6 @@ import React, { useRef, useState } from 'react';
 import {
   ColorValue,
   Dimensions,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -18,10 +17,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Animated, {
   Extrapolation,
+  SharedValue,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -80,6 +81,7 @@ export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
+  const insets = useSafeAreaInsets();
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -110,7 +112,10 @@ export default function OnboardingScreen() {
 
       {/* Skip button */}
       {currentIndex < slides.length - 1 && (
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+        <TouchableOpacity
+          style={[styles.skipButton, { top: insets.top + 10 }]}
+          onPress={handleSkip}
+        >
           <ThemedText style={styles.skipText}>Skip</ThemedText>
         </TouchableOpacity>
       )}
@@ -171,49 +176,48 @@ export default function OnboardingScreen() {
       </ScrollView>
 
       {/* Pagination dots */}
-      <View style={styles.pagination}>
-        {slides.map((_, index) => {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          const dotStyle = useAnimatedStyle(() => {
-            const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
-            const scale = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.8, 1.4, 0.8],
-              Extrapolation.CLAMP,
-            );
-
-            const opacity = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.4, 1, 0.4],
-              Extrapolation.CLAMP,
-            );
-
-            return {
-              transform: [{ scale }],
-              opacity,
-            };
-          });
-
-          return <Animated.View key={index} style={[styles.dot, dotStyle]} />;
-        })}
+      <View style={[styles.pagination, { bottom: insets.bottom + 100 }]}>
+        {slides.map((_, index) => (
+          <PaginationDot key={index} index={index} scrollX={scrollX} />
+        ))}
       </View>
 
       {/* Next/Get Started button */}
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+      <TouchableOpacity
+        style={[styles.nextButton, { bottom: insets.bottom + 20 }]}
+        onPress={handleNext}
+      >
         <LinearGradient
           colors={['#667eea', '#764ba2']}
           style={styles.nextButtonGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <ThemedText style={styles.nextButtonText}>Next</ThemedText>
+          <ThemedText style={styles.nextButtonText}>
+            {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+          </ThemedText>
         </LinearGradient>
       </TouchableOpacity>
     </ThemedView>
   );
+}
+
+// Pagination dot component — hook must live at top level of a component, not inside .map()
+function PaginationDot({ index, scrollX }: { index: number; scrollX: SharedValue<number> }) {
+  const dotStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+
+    const scale = interpolate(scrollX.value, inputRange, [0.8, 1.4, 0.8], Extrapolation.CLAMP);
+
+    const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  return <Animated.View style={[styles.dot, dotStyle]} />;
 }
 
 // Feature item component
@@ -258,7 +262,6 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
     right: 20,
     zIndex: 10,
     paddingHorizontal: 20,
@@ -390,7 +393,6 @@ const styles = StyleSheet.create({
   pagination: {
     flexDirection: 'row',
     position: 'absolute',
-    bottom: 140,
     alignSelf: 'center',
     backgroundColor: 'transparent',
   },
@@ -403,7 +405,6 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     position: 'absolute',
-    bottom: 50,
     left: 40,
     right: 40,
     borderRadius: 30,
@@ -424,37 +425,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 1,
-  },
-  signupForm: {
-    width: '100%',
-    marginTop: 20,
-  },
-  inputContainer: {
-    marginBottom: 20,
-    width: '100%',
-  },
-  inputLabel: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#fff',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  termsText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 18,
-    paddingHorizontal: 10,
   },
 });
