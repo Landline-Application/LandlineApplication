@@ -23,7 +23,7 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
 2. Install dependencies using pnpm:
 
    ```bash
-    pnpm install
+   pnpm install
    ```
 
 3. Run the application:
@@ -39,3 +39,19 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    pnpm ios     # for iOS
    pnpm web     # for Web
    ```
+
+## Windows-Specific Setup
+
+If you're building on Windows and encounter Gradle errors related to dependencies, you may need to regenerate the Android build files:
+
+```bash
+rm -r android
+expo prebuild --clean
+pnpm android
+```
+
+This is necessary because the Android project needs to be regenerated with the correct dependency linking for your environment. Additionally, configure pnpm to use a flattened node_modules structure, which can help avoid path length issues on Windows:
+
+```bash
+pnpm config set node-linker=hoisted
+```
