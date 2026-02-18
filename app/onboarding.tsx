@@ -8,6 +8,7 @@ import {
   StatusBar,
   StyleSheet,
   TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -125,32 +126,32 @@ export default function OnboardingScreen() {
         decelerationRate="fast"
       >
         {slides.map((slide, _index) => (
-          <ThemedView key={slide.id} style={styles.slide}>
+          <View key={slide.id} style={styles.slide}>
             <LinearGradient
               colors={slide.gradientColors as [ColorValue, ColorValue]}
               style={styles.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <ThemedView style={styles.content}>
-                <ThemedView style={styles.emojiContainer}>
+              <View style={styles.content}>
+                <View style={styles.emojiContainer}>
                   <ThemedText style={styles.emoji}>{slide.emoji}</ThemedText>
-                </ThemedView>
+                </View>
 
                 <ThemedText style={styles.title}>{slide.title}</ThemedText>
                 <ThemedText style={styles.description}>{slide.description}</ThemedText>
 
                 {/* Feature highlights for specific slides */}
                 {slide.id === 2 && (
-                  <ThemedView style={styles.featureList}>
+                  <View style={styles.featureList}>
                     <FeatureItem text="Silent notifications during focus time" />
                     <FeatureItem text="Auto-capture all incoming alerts" />
                     <FeatureItem text="Review later at your convenience" />
-                  </ThemedView>
+                  </View>
                 )}
 
                 {slide.id === 5 && (
-                  <ThemedView style={styles.permissionsList}>
+                  <View style={styles.permissionsList}>
                     <PermissionItem
                       icon="🔔"
                       title="Notification Access"
@@ -161,16 +162,16 @@ export default function OnboardingScreen() {
                       title="Background Services"
                       description="Run efficiently in background"
                     />
-                  </ThemedView>
+                  </View>
                 )}
-              </ThemedView>
+              </View>
             </LinearGradient>
-          </ThemedView>
+          </View>
         ))}
       </ScrollView>
 
       {/* Pagination dots */}
-      <ThemedView style={styles.pagination}>
+      <View style={styles.pagination}>
         {slides.map((_, index) => {
           // eslint-disable-next-line react-hooks/rules-of-hooks
           const dotStyle = useAnimatedStyle(() => {
@@ -198,7 +199,7 @@ export default function OnboardingScreen() {
 
           return <Animated.View key={index} style={[styles.dot, dotStyle]} />;
         })}
-      </ThemedView>
+      </View>
 
       {/* Next/Get Started button */}
       <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -218,12 +219,12 @@ export default function OnboardingScreen() {
 // Feature item component
 function FeatureItem({ text }: { text: string }) {
   return (
-    <ThemedView style={styles.featureItem}>
-      <ThemedView style={styles.checkmark}>
+    <View style={styles.featureItem}>
+      <View style={styles.checkmark}>
         <ThemedText style={styles.checkmarkText}>✓</ThemedText>
-      </ThemedView>
+      </View>
       <ThemedText style={styles.featureText}>{text}</ThemedText>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -238,15 +239,15 @@ function PermissionItem({
   description: string;
 }) {
   return (
-    <ThemedView style={styles.permissionItem}>
-      <ThemedView style={styles.permissionIcon}>
+    <View style={styles.permissionItem}>
+      <View style={styles.permissionIcon}>
         <ThemedText style={styles.permissionIconText}>{icon}</ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.permissionContent}>
+      </View>
+      <View style={styles.permissionContent}>
         <ThemedText style={styles.permissionTitle}>{title}</ThemedText>
         <ThemedText style={styles.permissionDescription}>{description}</ThemedText>
-      </ThemedView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
@@ -271,6 +272,7 @@ const styles = StyleSheet.create({
   slide: {
     width,
     height,
+    backgroundColor: 'transparent',
   },
   gradient: {
     flex: 1,
@@ -284,6 +286,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingTop: 100,
     paddingBottom: 200,
+    backgroundColor: 'transparent',
   },
   emojiContainer: {
     width: 140,
@@ -315,6 +318,7 @@ const styles = StyleSheet.create({
   featureList: {
     width: '100%',
     marginTop: 20,
+    backgroundColor: 'transparent',
   },
   featureItem: {
     flexDirection: 'row',
@@ -347,6 +351,7 @@ const styles = StyleSheet.create({
   permissionsList: {
     width: '100%',
     marginTop: 20,
+    backgroundColor: 'transparent',
   },
   permissionItem: {
     flexDirection: 'row',
@@ -370,6 +375,7 @@ const styles = StyleSheet.create({
   },
   permissionContent: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   permissionTitle: {
     color: '#fff',
@@ -386,6 +392,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 140,
     alignSelf: 'center',
+    backgroundColor: 'transparent',
   },
   dot: {
     width: 10,
