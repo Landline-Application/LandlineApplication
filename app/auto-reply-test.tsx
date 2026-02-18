@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
 import * as Notifications from 'expo-notifications';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import {
   clearReplyHistory,
   getActiveNotifications,
@@ -219,18 +216,9 @@ export default function AutoReplyTestScreen() {
   }
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
+    <ScrollView>
       <View style={styles.titleContainer}>
         <Text>Auto-Reply Test</Text>
-        <HelloWave />
       </View>
 
       {status && (
@@ -308,7 +296,7 @@ export default function AutoReplyTestScreen() {
           <Button title="Clear History" onPress={clearHistory} />
         </View>
       </View>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 

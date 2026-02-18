@@ -1,11 +1,7 @@
 import { useState } from 'react';
 
-import { Alert, Button, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import {
   getAllInstalledApps,
   getAppNotificationStatus,
@@ -112,18 +108,9 @@ export default function DNDTestScreen() {
   }
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
+    <ScrollView>
       <View style={styles.titleContainer}>
         <Text>DND Manager Test</Text>
-        <HelloWave />
       </View>
 
       {dndStatus && (
@@ -180,7 +167,7 @@ export default function DNDTestScreen() {
           <Button title="Open Chrome Settings" onPress={openChromeSettings} />
         </View>
       </View>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 
