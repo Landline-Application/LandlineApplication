@@ -40,9 +40,9 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    pnpm web     # for Web
    ```
 
-## Windows-Specific Setup
+## Android Build Issues
 
-If you're building on Windows and encounter Gradle errors related to dependencies, you may need to regenerate the Android build files:
+If you encounter Gradle errors related to missing dependencies or dependency resolution when building for Android, you may need to regenerate the Android build files:
 
 ```bash
 rm -r android
@@ -50,7 +50,7 @@ expo prebuild --clean
 pnpm android
 ```
 
-This is necessary because the Android project needs to be regenerated with the correct dependency linking for your environment. Additionally, configure pnpm to use a flattened node_modules structure, which can help avoid path length issues on Windows:
+This regenerates the Android project with the correct dependency linking. If you encounter path length issues (particularly on Windows), you can configure pnpm to use a flattened node_modules structure:
 
 ```bash
 pnpm config set node-linker=hoisted
