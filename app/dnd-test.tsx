@@ -1,12 +1,6 @@
 import { useState } from 'react';
 
-import {
-  Alert,
-  Button,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Button, StyleSheet, Text, View } from 'react-native';
 
 import { Image } from 'expo-image';
 

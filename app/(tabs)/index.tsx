@@ -105,8 +105,7 @@ export default function HomeScreen() {
       <View style={styles.stepContainer}>
         <Text>Step 1: Try it</Text>
         <Text>
-          Edit <Text>app/(tabs)/index.tsx</Text> to see changes.
-          Press{' '}
+          Edit <Text>app/(tabs)/index.tsx</Text> to see changes. Press{' '}
           <Text>
             {Platform.select({
               ios: 'cmd + d',
@@ -149,10 +148,8 @@ export default function HomeScreen() {
         <Text>Step 3: Get a fresh start</Text>
         <Text>
           {`When you're ready, run `}
-          <Text>npm run reset-project</Text> to get a fresh{' '}
-          <Text>app</Text> directory. This will move the current{' '}
-          <Text>app</Text> to{' '}
-          <Text>app-example</Text>.
+          <Text>npm run reset-project</Text> to get a fresh <Text>app</Text> directory. This will
+          move the current <Text>app</Text> to <Text>app-example</Text>.
         </Text>
       </View>
     </ParallaxScrollView>

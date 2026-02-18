@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import NotebookLogView from '@/components/notebook-log-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
