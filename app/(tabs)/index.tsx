@@ -1,13 +1,12 @@
 import { useCallback } from 'react';
 
-import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { useAuth } from '@/contexts/auth-context';
 import Notif from '@/modules/notification-api-manager';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -58,122 +57,80 @@ export default function HomeScreen() {
   const router = useRouter();
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      {/* Notification buttons */}
-      <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
-      <Button title="Send Test Notification" onPress={sendTestNotification} />
-
-      <View style={styles.stepContainer}>
-        <Text>Native Module Tests</Text>
-        <View style={styles.buttonGroup}>
-          <Button
-            title="Open Auto-Reply Test Page"
-            onPress={() => router.push('/auto-reply-test')}
-          />
-          <Button title="Open DND Test Page" onPress={() => router.push('/dnd-test')} />
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Notification buttons */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Request Permission" onPress={requestNotifPermissions} />
+            <Button title="Send Test Notification" onPress={sendTestNotification} />
+          </View>
         </View>
+
+        {/* Native Module Tests */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Native Module Tests</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Auto-Reply Test" onPress={() => router.push('/auto-reply-test')} />
+            <Button title="DND Test" onPress={() => router.push('/dnd-test')} />
+          </View>
+        </View>
+
         {/* Authentication Status */}
-        <View style={styles.stepContainer}>
-          <Text>👤 Account Status</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
           {isAuthenticated ? (
-            <View style={{ gap: 8 }}>
-              <Text>
-                ✅ Signed in as: <Text>{user?.email}</Text>
-              </Text>
+            <View style={styles.authContainer}>
+              <Text style={styles.statusText}>Signed in as: {user?.email}</Text>
               <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
             </View>
           ) : (
-            <View style={{ gap: 8 }}>
-              <Text>❌ Not signed in</Text>
-              <Button
-                title="🎉 View Onboarding / Sign Up"
-                onPress={() => router.push('/onboarding')}
-              />
+            <View style={styles.authContainer}>
+              <Text style={styles.statusText}>Not signed in</Text>
+              <Button title="Sign Up" onPress={() => router.push('/create-account')} />
             </View>
           )}
         </View>
-      </View>
 
-      <View style={styles.stepContainer}>
-        <Text>Step 1: Try it</Text>
-        <Text>
-          Edit <Text>app/(tabs)/index.tsx</Text> to see changes. Press{' '}
-          <Text>
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </Text>{' '}
-          to open developer tools.
-        </Text>
-      </View>
-      <View style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <Text>Step 2: Explore</Text>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <Text>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </Text>
-      </View>
-      <View style={styles.stepContainer}>
-        <Text>Step 3: Get a fresh start</Text>
-        <Text>
-          {`When you're ready, run `}
-          <Text>npm run reset-project</Text> to get a fresh <Text>app</Text> directory. This will
-          move the current <Text>app</Text> to <Text>app-example</Text>.
-        </Text>
-      </View>
-    </ParallaxScrollView>
+        {/* Onboarding */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Onboarding</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="View Onboarding" onPress={() => router.push('/onboarding')} />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safeArea: {
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 24,
+  },
+  section: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   buttonGroup: {
     gap: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  authContainer: {
+    gap: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
