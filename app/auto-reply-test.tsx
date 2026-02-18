@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 
-import { Alert, Button, Platform, StyleSheet } from 'react-native';
+import {
+  Alert,
+  Button,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Image } from 'expo-image';
 import * as Notifications from 'expo-notifications';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import {
   clearReplyHistory,
   getActiveNotifications,
@@ -230,86 +235,86 @@ export default function AutoReplyTestScreen() {
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Auto-Reply Test</ThemedText>
+      <View style={styles.titleContainer}>
+        <Text>Auto-Reply Test</Text>
         <HelloWave />
-      </ThemedView>
+      </View>
 
       {status && (
-        <ThemedView style={styles.statusContainer}>
-          <ThemedText>{status}</ThemedText>
-        </ThemedView>
+        <View style={styles.statusContainer}>
+          <Text>{status}</Text>
+        </View>
       )}
 
       {notificationCount > 0 && (
-        <ThemedView style={styles.statusContainer}>
-          <ThemedText>Active notifications: {notificationCount}</ThemedText>
-        </ThemedView>
+        <View style={styles.statusContainer}>
+          <Text>Active notifications: {notificationCount}</Text>
+        </View>
       )}
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Permissions</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Permissions</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Check Listener Permission" onPress={checkListenerPermission} />
           <Button title="Request Listener Permission" onPress={requestPermission} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Auto-Reply Control</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Auto-Reply Control</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Check Status" onPress={checkAutoReplyStatus} />
           <Button title="Enable Auto-Reply" onPress={enableAutoReply} />
           <Button title="Disable Auto-Reply" onPress={disableAutoReply} />
           <Button title="Check Service Running" onPress={checkServiceStatus} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Reply Message</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Reply Message</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Show Current Message" onPress={showCurrentMessage} />
           <Button title="Update Message" onPress={updateReplyMessage} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Allowed Apps</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Allowed Apps</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Show Allowed Apps" onPress={showAllowedApps} />
           <Button title="Set WhatsApp Only" onPress={setWhatsAppOnly} />
           <Button title="Set Messaging Apps" onPress={setMessagingApps} />
           <Button title="Allow All Apps" onPress={allowAllApps} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Test Notifications (Emulator)</ThemedText>
-        <ThemedText style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+      <View style={styles.sectionContainer}>
+        <Text>Test Notifications (Emulator)</Text>
+        <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
           ⚠️ Note: Test notifications won&apos;t trigger auto-reply (Android limitation). Use real
           messaging apps for full testing.
-        </ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+        </Text>
+        <View style={styles.buttonGroup}>
           <Button title="Send Test Message" onPress={sendTestMessage} />
           <Button title="Send Multiple Test Messages" onPress={sendMultipleTests} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Notifications</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Notifications</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Show Active Notifications" onPress={showActiveNotifications} />
           <Button title="Show First Notification Details" onPress={showNotificationDetails} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Reply History</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Reply History</Text>
+        <View style={styles.buttonGroup}>
           <Button title="View Reply History" onPress={viewReplyHistory} />
           <Button title="Clear History" onPress={clearHistory} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
     </ParallaxScrollView>
   );
 }

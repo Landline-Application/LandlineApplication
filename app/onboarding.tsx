@@ -5,6 +5,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
@@ -13,8 +14,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import Animated, {
   Extrapolation,
   SharedValue,
@@ -106,7 +105,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Skip button */}
@@ -115,7 +114,7 @@ export default function OnboardingScreen() {
           style={[styles.skipButton, { top: insets.top + 10 }]}
           onPress={handleSkip}
         >
-          <ThemedText style={styles.skipText}>Skip</ThemedText>
+          <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       )}
 
@@ -143,11 +142,11 @@ export default function OnboardingScreen() {
                 scrollEnabled={false}
               >
                 <View style={styles.emojiContainer}>
-                  <ThemedText style={styles.emoji}>{slide.emoji}</ThemedText>
+                  <Text style={styles.emoji}>{slide.emoji}</Text>
                 </View>
 
-                <ThemedText style={styles.title}>{slide.title}</ThemedText>
-                <ThemedText style={styles.description}>{slide.description}</ThemedText>
+                <Text style={styles.title}>{slide.title}</Text>
+                <Text style={styles.description}>{slide.description}</Text>
 
                 {/* Feature highlights for specific slides */}
                 {slide.id === 2 && (
@@ -196,12 +195,12 @@ export default function OnboardingScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <ThemedText style={styles.nextButtonText}>
+          <Text style={styles.nextButtonText}>
             {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
-          </ThemedText>
+          </Text>
         </LinearGradient>
       </TouchableOpacity>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -236,13 +235,13 @@ function FeatureItem({ text }: { text: string }) {
   return (
     <View style={styles.featureItem}>
       <View style={styles.checkmark}>
-        <ThemedText style={styles.checkmarkText} lightColor="#4facfe" darkColor="#4facfe">
+        <Text style={styles.checkmarkText}>
           ✓
-        </ThemedText>
+        </Text>
       </View>
-      <ThemedText style={styles.featureText} lightColor="#fff" darkColor="#fff">
+      <Text style={styles.featureText}>
         {text}
-      </ThemedText>
+      </Text>
     </View>
   );
 }
@@ -260,21 +259,21 @@ function PermissionItem({
   return (
     <View style={styles.permissionItem}>
       <View style={styles.permissionIcon}>
-        <ThemedText style={styles.permissionIconText} lightColor="#fff" darkColor="#fff">
+        <Text style={styles.permissionIconText}>
           {icon}
-        </ThemedText>
+        </Text>
       </View>
       <View style={styles.permissionContent}>
-        <ThemedText style={styles.permissionTitle} lightColor="#fff" darkColor="#fff">
+        <Text style={styles.permissionTitle}>
           {title}
-        </ThemedText>
-        <ThemedText
+        </Text>
+        <Text
           style={styles.permissionDescription}
-          lightColor="rgba(255,255,255,0.8)"
-          darkColor="rgba(255,255,255,0.8)"
+         
+         
         >
           {description}
-        </ThemedText>
+        </Text>
       </View>
     </View>
   );
