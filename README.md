@@ -1,36 +1,47 @@
 # Landline Application
 
-This is an Android first mobile application designed to help users disconnect from constant notifications while maintaining emergency accessibility, mimicking the experience of traditional landline phones.
+An Android-first mobile app that turns your smartphone into a "landline" — intercepting and silencing notifications while keeping you reachable for what actually matters.
 
 ## Overview
 
-The Landline Application offers the following features by creating a "landline mode" on your smartphone that limits distractions:
+Landline Mode limits distractions by:
 
-- Intercepts and logs notifications without displaying them.
-- Provides a simple interface for making and receiving calls and texts.
-  - Whitelist specific contacts for calls and texts.
-  - Auto-reply to texts/calls/emails when in landline mode.
-  - Emergency bypass for important contacts.
-- Preserves battery life by reducing background activity.
-- Customizable settings for notification handling and app behavior.
+- Intercepting and logging notifications without surfacing them to the user
+- White-listing specific contacts for calls, texts, and emails
+- Auto-replying to messages when in landline mode
+- Providing an emergency bypass for urgent contacts
+- Reducing background activity to preserve battery life
 
-## Installation & Setup
+## Getting Started
 
-Check the [BUILD.md](BUILD.md) file for detailed instructions on setting up the development environment and running the application.
+See [BUILD.md](BUILD.md) for environment setup, prerequisites, and instructions for running on a device or emulator.
+
+## Native Modules
+
+The app ships four custom Android native modules built with [Expo Modules Core](https://docs.expo.dev/modules/overview/). Each module lives under `modules/<name>/` with a TypeScript API surface in `index.ts` and Kotlin implementation under `android/`.
+
+| Module                       | Purpose                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `notification-api-manager`   | Posts notifications, manages channels, logs intercepted notifications for Landline Mode             |
+| `dnd-manager`                | Controls Android Do-Not-Disturb / interruption filters; queries per-app notification status         |
+| `auto-reply-manager`         | Sends auto-replies via `NotificationListenerService` when Landline Mode is active                   |
+| `background-service-manager` | Manages a foreground service and WorkManager periodic tasks; handles battery optimization exemption |
+
+Module-level documentation is in [`docs/`](docs/).
 
 ## Permissions Required
 
-- Notification Access
-- Accessibility Service
-- Device Admin (for lock screen functionality)
-- Overlay Permission (for floating widgets)
-- Usage Access (for monitoring app usage)
-- Battery Optimization Exemption (to ensure background services run smoothly)
-
-## Modules
-
-- **notification-api-manager**: Manages notification access and handling.
+| Permission                     | Reason                                          |
+| ------------------------------ | ----------------------------------------------- |
+| Notification Access            | Read and suppress incoming notifications        |
+| Notification Listener Service  | Power auto-reply and notification logging       |
+| Do Not Disturb Access          | Control interruption filters                    |
+| Battery Optimization Exemption | Keep background services alive                  |
+| Accessibility Service          | Lock screen and overlay functionality (planned) |
+| Device Admin                   | Lock screen control (planned)                   |
+| Overlay Permission             | Floating widget (planned)                       |
+| Usage Access                   | Monitor per-app usage (planned)                 |
 
 ## Contributing
 
-We primarily use Jira for task management.
+Task tracking is done in Jira. Run `pnpm lint` before pushing; the CI pipeline enforces it on every PR.
