@@ -31,6 +31,7 @@ export default function NotificationsScreen() {
 
   const loadNotifications = useCallback(async () => {
     try {
+      setLoading(true);
       const notifs = await NotificationApiManager.getLoggedNotifications();
       setNotifications(notifs);
     } catch (error) {
@@ -39,6 +40,37 @@ export default function NotificationsScreen() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all logged notifications? This cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await NotificationApiManager.clearAllData();
+              if (success) {
+                setNotifications([]);
+                Alert.alert('Success', 'All notifications cleared');
+              } else {
+                Alert.alert('Error', 'Failed to clear notifications');
+              }
+            } catch (error) {
+              console.error('Failed to clear notifications:', error);
+              Alert.alert('Error', 'Failed to clear notifications');
+            }
+          },
+        },
+      ],
+    );
   }, []);
 
   useEffect(() => {
@@ -56,17 +88,22 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* View Mode Toggle */}
+      {/* Header with Controls */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Text style={styles.headerTitle}>Landline Log</Text>
-        <TouchableOpacity
-          style={styles.viewToggle}
-          onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
-        >
-          <Text style={styles.viewToggleText}>
-            {viewMode === 'notebook' ? '📔 Notebook' : '📱 Modern'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerControls}>
+          <TouchableOpacity
+            style={styles.viewToggle}
+            onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
+          >
+            <Text style={styles.viewToggleText}>
+              {viewMode === 'notebook' ? '📔 Notebook' : '📱 Modern'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
+            <Text style={styles.clearButtonText}>🗑️ Clear</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Notebook View */}
@@ -112,6 +149,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#F4E4C1',
   },
+  headerControls: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   viewToggle: {
     backgroundColor: '#6B5A44',
     paddingHorizontal: 12,
@@ -120,6 +162,17 @@ const styles = StyleSheet.create({
   },
   viewToggleText: {
     color: '#F4E4C1',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  clearButton: {
+    backgroundColor: '#c0392b',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  clearButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },

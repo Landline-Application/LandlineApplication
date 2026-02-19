@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   Dimensions,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,8 +31,17 @@ const { width } = Dimensions.get('window');
 const TAB_WIDTH = 40;
 const PAGE_MARGIN = 20;
 
-export default function NotebookLogView({ notifications, onRefresh: _ }: NotebookLogViewProps) {
+export default function NotebookLogView({ notifications, onRefresh }: NotebookLogViewProps) {
   const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      setRefreshing(true);
+      await onRefresh();
+      setRefreshing(false);
+    }
+  };
 
   // Group notifications by first letter of app name
   const groupedNotifications = notifications.reduce(
@@ -92,6 +102,16 @@ export default function NotebookLogView({ notifications, onRefresh: _ }: Noteboo
             style={styles.pageScroll}
             contentContainerStyle={styles.pageContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="#8B7355"
+                colors={['#8B7355', '#6B5A44']}
+                title="Pull to refresh"
+                titleColor="#8B7355"
+              />
+            }
           >
             {/* Page Header */}
             <View style={styles.pageHeader}>
