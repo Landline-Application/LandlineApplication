@@ -81,6 +81,10 @@ export default function HomeScreen() {
             onPress={() => router.push('/auto-reply-test')}
           />
           <Button title="Open DND Test Page" onPress={() => router.push('/dnd-test')} />
+          <Button
+            title="Open Notification Log Test Page"
+            onPress={() => router.push('/notification-log-test')}
+          />
         </ThemedView>
         {/* Authentication Status */}
         <ThemedView style={styles.stepContainer}>
