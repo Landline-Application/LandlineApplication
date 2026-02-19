@@ -1,14 +1,9 @@
 import { useState } from 'react';
 
-import { Alert, Button, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificationLogTestScreen() {
   const [notifCount, setNotifCount] = useState(0);
@@ -99,79 +94,86 @@ export default function NotificationLogTestScreen() {
   }
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <Image source={require('@/assets/images/partial-react-logo.png')} style={styles.logo} />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Notification Log Test 📔</ThemedText>
-        <HelloWave />
-      </ThemedView>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Notification Log Test 📔</Text>
+        </View>
 
-      {/* Permissions Section */}
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Permissions</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
-          <Button title="Check Permission" onPress={checkNotificationPermission} />
-          <Button title="Request Permission" onPress={requestNotificationPermission} />
-        </ThemedView>
-        <ThemedText style={styles.statusText}>
-          Status: {hasPermission ? '✅ Granted' : '❌ Not Granted'}
-        </ThemedText>
-      </ThemedView>
+        {/* Permissions Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Permissions</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Check Permission" onPress={checkNotificationPermission} />
+            <Button title="Request Permission" onPress={requestNotificationPermission} />
+          </View>
+          <Text style={styles.statusText}>
+            Status: {hasPermission ? '✅ Granted' : '❌ Not Granted'}
+          </Text>
+        </View>
 
-      {/* Notification Log Section */}
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Notification Log</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
-          <Button title="Get Logged Notifications" onPress={getLoggedNotifications} />
-          <Button
-            title="Clear All Notifications"
-            onPress={clearAllNotifications}
-            color="#ff6b6b"
-          />
-        </ThemedView>
-        <ThemedText style={styles.statusText}>Logged Notifications: {notifCount}</ThemedText>
-      </ThemedView>
+        {/* Notification Log Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notification Log</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Get Logged Notifications" onPress={getLoggedNotifications} />
+            <Button
+              title="Clear All Notifications"
+              onPress={clearAllNotifications}
+              color="#ff6b6b"
+            />
+          </View>
+          <Text style={styles.statusText}>Logged Notifications: {notifCount}</Text>
+        </View>
 
-      {/* Test Actions */}
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Test Actions</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
-          <Button title="Send Test Notification" onPress={sendTestNotification} />
-        </ThemedView>
-      </ThemedView>
+        {/* Test Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Test Actions</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Send Test Notification" onPress={sendTestNotification} />
+          </View>
+        </View>
 
-      {/* Instructions */}
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">ℹ️ Instructions</ThemedText>
-        <ThemedText>1. Grant notification permission</ThemedText>
-        <ThemedText>2. Send test notifications</ThemedText>
-        <ThemedText>3. View them in the Notifications tab</ThemedText>
-        <ThemedText>4. Use clear to remove all logged notifications</ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Instructions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ℹ️ Instructions</Text>
+          <Text style={styles.instructionText}>1. Grant notification permission</Text>
+          <Text style={styles.instructionText}>2. Send test notifications</Text>
+          <Text style={styles.instructionText}>3. View them in the Notifications tab</Text>
+          <Text style={styles.instructionText}>
+            4. Use clear to remove all logged notifications
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 24,
   },
   titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
     marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  section: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   buttonGroup: {
     gap: 8,
@@ -180,5 +182,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: 4,
+  },
+  instructionText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
