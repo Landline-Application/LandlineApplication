@@ -1,13 +1,7 @@
 import { useState } from 'react';
 
-import { Alert, Button, StyleSheet } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import {
   getAllInstalledApps,
   getAppNotificationStatus,
@@ -114,75 +108,66 @@ export default function DNDTestScreen() {
   }
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">DND Manager Test</ThemedText>
-        <HelloWave />
-      </ThemedView>
+    <ScrollView>
+      <View style={styles.titleContainer}>
+        <Text>DND Manager Test</Text>
+      </View>
 
       {dndStatus && (
-        <ThemedView style={styles.statusContainer}>
-          <ThemedText>{dndStatus}</ThemedText>
-        </ThemedView>
+        <View style={styles.statusContainer}>
+          <Text>{dndStatus}</Text>
+        </View>
       )}
 
       {appCount > 0 && (
-        <ThemedView style={styles.statusContainer}>
-          <ThemedText>Apps found: {appCount}</ThemedText>
-        </ThemedView>
+        <View style={styles.statusContainer}>
+          <Text>Apps found: {appCount}</Text>
+        </View>
       )}
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Permissions</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Permissions</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Check Permission" onPress={checkPermission} />
           <Button title="Request Permission" onPress={requestPermissions} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">DND State</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>DND State</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Get Current State" onPress={checkCurrentState} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">DND Control</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>DND Control</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Enable DND (Total Silence)" onPress={turnOnDND} />
           <Button title="Disable DND" onPress={turnOffDND} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">Interruption Filters</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>Interruption Filters</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Set Priority Mode" onPress={setPriorityMode} />
           <Button title="Set Alarms Only" onPress={setAlarmsMode} />
           <Button title="Set Normal Mode" onPress={setNormalMode} />
           <Button title="Show Filter Constants" onPress={showFilterConstants} />
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <ThemedText type="subtitle">App Notifications</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
+      <View style={styles.sectionContainer}>
+        <Text>App Notifications</Text>
+        <View style={styles.buttonGroup}>
           <Button title="Get User Apps" onPress={getInstalledApps} />
           <Button title="Get All Apps (+ System)" onPress={getInstalledAppsWithSystem} />
           <Button title="Check Chrome Status" onPress={checkAppStatus} />
           <Button title="Open Chrome Settings" onPress={openChromeSettings} />
-        </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 

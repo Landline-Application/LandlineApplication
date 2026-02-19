@@ -2,19 +2,18 @@ import React, { useRef, useState } from 'react';
 
 import {
   ColorValue,
-  Dimensions,
   ScrollView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import Animated, {
   Extrapolation,
   SharedValue,
@@ -23,8 +22,6 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { width, height } = Dimensions.get('window');
 
 interface OnboardingSlide {
   id: number;
@@ -82,6 +79,7 @@ export default function OnboardingScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -107,7 +105,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Skip button */}
@@ -116,7 +114,7 @@ export default function OnboardingScreen() {
           style={[styles.skipButton, { top: insets.top + 10 }]}
           onPress={handleSkip}
         >
-          <ThemedText style={styles.skipText}>Skip</ThemedText>
+          <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       )}
 
@@ -131,20 +129,24 @@ export default function OnboardingScreen() {
         decelerationRate="fast"
       >
         {slides.map((slide, _index) => (
-          <View key={slide.id} style={styles.slide}>
+          <View key={slide.id} style={[styles.slide, { width, height }]}>
             <LinearGradient
               colors={slide.gradientColors as [ColorValue, ColorValue]}
               style={styles.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <View style={styles.content}>
+              <ScrollView
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+              >
                 <View style={styles.emojiContainer}>
-                  <ThemedText style={styles.emoji}>{slide.emoji}</ThemedText>
+                  <Text style={styles.emoji}>{slide.emoji}</Text>
                 </View>
 
-                <ThemedText style={styles.title}>{slide.title}</ThemedText>
-                <ThemedText style={styles.description}>{slide.description}</ThemedText>
+                <Text style={styles.title}>{slide.title}</Text>
+                <Text style={styles.description}>{slide.description}</Text>
 
                 {/* Feature highlights for specific slides */}
                 {slide.id === 2 && (
@@ -169,7 +171,7 @@ export default function OnboardingScreen() {
                     />
                   </View>
                 )}
-              </View>
+              </ScrollView>
             </LinearGradient>
           </View>
         ))}
@@ -178,7 +180,7 @@ export default function OnboardingScreen() {
       {/* Pagination dots */}
       <View style={[styles.pagination, { bottom: insets.bottom + 100 }]}>
         {slides.map((_, index) => (
-          <PaginationDot key={index} index={index} scrollX={scrollX} />
+          <PaginationDot key={index} index={index} scrollX={scrollX} slideWidth={width} />
         ))}
       </View>
 
@@ -193,19 +195,27 @@ export default function OnboardingScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <ThemedText style={styles.nextButtonText}>
+          <Text style={styles.nextButtonText}>
             {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
-          </ThemedText>
+          </Text>
         </LinearGradient>
       </TouchableOpacity>
-    </ThemedView>
+    </View>
   );
 }
 
 // Pagination dot component — hook must live at top level of a component, not inside .map()
-function PaginationDot({ index, scrollX }: { index: number; scrollX: SharedValue<number> }) {
+function PaginationDot({
+  index,
+  scrollX,
+  slideWidth,
+}: {
+  index: number;
+  scrollX: SharedValue<number>;
+  slideWidth: number;
+}) {
   const dotStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const inputRange = [(index - 1) * slideWidth, index * slideWidth, (index + 1) * slideWidth];
 
     const scale = interpolate(scrollX.value, inputRange, [0.8, 1.4, 0.8], Extrapolation.CLAMP);
 
@@ -225,9 +235,9 @@ function FeatureItem({ text }: { text: string }) {
   return (
     <View style={styles.featureItem}>
       <View style={styles.checkmark}>
-        <ThemedText style={styles.checkmarkText}>✓</ThemedText>
+        <Text style={styles.checkmarkText}>✓</Text>
       </View>
-      <ThemedText style={styles.featureText}>{text}</ThemedText>
+      <Text style={styles.featureText}>{text}</Text>
     </View>
   );
 }
@@ -245,11 +255,11 @@ function PermissionItem({
   return (
     <View style={styles.permissionItem}>
       <View style={styles.permissionIcon}>
-        <ThemedText style={styles.permissionIconText}>{icon}</ThemedText>
+        <Text style={styles.permissionIconText}>{icon}</Text>
       </View>
       <View style={styles.permissionContent}>
-        <ThemedText style={styles.permissionTitle}>{title}</ThemedText>
-        <ThemedText style={styles.permissionDescription}>{description}</ThemedText>
+        <Text style={styles.permissionTitle}>{title}</Text>
+        <Text style={styles.permissionDescription}>{description}</Text>
       </View>
     </View>
   );
@@ -273,8 +283,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   slide: {
-    width,
-    height,
     backgroundColor: 'transparent',
   },
   gradient: {
@@ -283,13 +291,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingTop: 100,
-    paddingBottom: 200,
-    backgroundColor: 'transparent',
+    paddingTop: 60,
+    paddingBottom: 180,
   },
   emojiContainer: {
     width: 140,
@@ -301,15 +308,21 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   emoji: {
-    fontSize: 72,
+    fontSize: 64,
+    lineHeight: 72,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 20,
     letterSpacing: 0.5,
+    lineHeight: 36,
+    includeFontPadding: false,
   },
   description: {
     fontSize: 18,
@@ -344,12 +357,18 @@ const styles = StyleSheet.create({
     color: '#4facfe',
     fontSize: 16,
     fontWeight: 'bold',
+    lineHeight: 20,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   featureText: {
     color: '#fff',
     fontSize: 16,
     flex: 1,
     fontWeight: '500',
+    lineHeight: 22,
+    includeFontPadding: false,
   },
   permissionsList: {
     width: '100%',
@@ -375,6 +394,10 @@ const styles = StyleSheet.create({
   },
   permissionIconText: {
     fontSize: 24,
+    lineHeight: 30,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   permissionContent: {
     flex: 1,
@@ -385,10 +408,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
+    lineHeight: 24,
+    includeFontPadding: false,
   },
   permissionDescription: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   pagination: {
     flexDirection: 'row',

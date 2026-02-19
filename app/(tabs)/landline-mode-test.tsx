@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -67,123 +65,119 @@ export default function LandlineModeTest() {
 
   if (Platform.OS !== 'android') {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText style={styles.title}>Landline Mode Test</ThemedText>
-        <ThemedText>This feature is only available on Android</ThemedText>
-      </ThemedView>
+      <View style={styles.container}>
+        <Text style={styles.title}>Landline Mode Test</Text>
+        <Text>This feature is only available on Android</Text>
+      </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
-      <ThemedView style={styles.header}>
-        <ThemedText style={styles.title}>Landline Mode Test</ThemedText>
-        <ThemedText style={styles.subtitle}>Test notification logging</ThemedText>
-      </ThemedView>
+      <View style={styles.header}>
+        <Text style={styles.title}>Landline Mode Test</Text>
+        <Text style={styles.subtitle}>Test notification logging</Text>
+      </View>
 
       {/* Status */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Status</ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Status</Text>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText>Notification Listener Permission:</ThemedText>
-          <ThemedText style={[styles.statusBadge, hasPermission && styles.statusActive]}>
+        <View style={styles.statusRow}>
+          <Text>Notification Listener Permission:</Text>
+          <Text style={[styles.statusBadge, hasPermission && styles.statusActive]}>
             {hasPermission ? 'Granted' : 'Not Granted'}
-          </ThemedText>
-        </ThemedView>
+          </Text>
+        </View>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText>Landline Mode:</ThemedText>
-          <ThemedText style={[styles.statusBadge, isLandlineModeActive && styles.statusActive]}>
+        <View style={styles.statusRow}>
+          <Text>Landline Mode:</Text>
+          <Text style={[styles.statusBadge, isLandlineModeActive && styles.statusActive]}>
             {isLandlineModeActive ? 'Active' : 'Inactive'}
-          </ThemedText>
-        </ThemedView>
+          </Text>
+        </View>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText>Logged Notifications:</ThemedText>
-          <ThemedText style={styles.statusBadge}>{notifications.length}</ThemedText>
-        </ThemedView>
-      </ThemedView>
+        <View style={styles.statusRow}>
+          <Text>Logged Notifications:</Text>
+          <Text style={styles.statusBadge}>{notifications.length}</Text>
+        </View>
+      </View>
 
       {/* Permission */}
       {!hasPermission && (
-        <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>⚠️ Permission Required</ThemedText>
-          <ThemedText style={styles.description}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>⚠️ Permission Required</Text>
+          <Text style={styles.description}>
             This app needs Notification Access permission to log notifications during Landline mode.
-          </ThemedText>
-          <ThemedView style={styles.button} onTouchEnd={handleRequestPermission}>
-            <ThemedText style={styles.buttonText}>Grant Permission</ThemedText>
-          </ThemedView>
-        </ThemedView>
+          </Text>
+          <View style={styles.button} onTouchEnd={handleRequestPermission}>
+            <Text style={styles.buttonText}>Grant Permission</Text>
+          </View>
+        </View>
       )}
 
       {/* Landline Mode Toggle */}
       {hasPermission && (
-        <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Landline Mode Control</ThemedText>
-          <ThemedText style={styles.description}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Landline Mode Control</Text>
+          <Text style={styles.description}>
             When active, all notifications will be logged and can be viewed later.
-          </ThemedText>
-          <ThemedView style={styles.button} onTouchEnd={handleToggleLandlineMode}>
-            <ThemedText style={styles.buttonText}>
+          </Text>
+          <View style={styles.button} onTouchEnd={handleToggleLandlineMode}>
+            <Text style={styles.buttonText}>
               {isLandlineModeActive ? 'Deactivate' : 'Activate'} Landline Mode
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
+            </Text>
+          </View>
+        </View>
       )}
 
       {/* Logged Notifications */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>
-          Logged Notifications ({notifications.length})
-        </ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Logged Notifications ({notifications.length})</Text>
 
         {notifications.length === 0 ? (
-          <ThemedText style={styles.emptyText}>
+          <Text style={styles.emptyText}>
             No notifications logged yet.{' '}
             {isLandlineModeActive
               ? 'Send yourself a test notification!'
               : 'Activate Landline mode first.'}
-          </ThemedText>
+          </Text>
         ) : (
           notifications.map((notif, index) => (
-            <ThemedView key={index} style={styles.notificationCard}>
-              <ThemedText style={styles.notifApp}>{notif.appName}</ThemedText>
-              <ThemedText style={styles.notifTitle}>{notif.title}</ThemedText>
-              <ThemedText style={styles.notifText}>{notif.text}</ThemedText>
-              <ThemedText style={styles.notifTime}>
-                {new Date(notif.postTime).toLocaleString()}
-              </ThemedText>
-            </ThemedView>
+            <View key={index} style={styles.notificationCard}>
+              <Text style={styles.notifApp}>{notif.appName}</Text>
+              <Text style={styles.notifTitle}>{notif.title}</Text>
+              <Text style={styles.notifText}>{notif.text}</Text>
+              <Text style={styles.notifTime}>{new Date(notif.postTime).toLocaleString()}</Text>
+            </View>
           ))
         )}
-      </ThemedView>
+      </View>
 
       {/* Actions */}
-      <ThemedView style={styles.section}>
-        <ThemedView style={styles.buttonRow}>
-          <ThemedView style={[styles.button, styles.refreshButton]} onTouchEnd={handleRefresh}>
-            <ThemedText style={styles.buttonText}>Refresh</ThemedText>
-          </ThemedView>
+      <View style={styles.section}>
+        <View style={styles.buttonRow}>
+          <View style={[styles.button, styles.refreshButton]} onTouchEnd={handleRefresh}>
+            <Text style={styles.buttonText}>Refresh</Text>
+          </View>
 
           {notifications.length > 0 && (
-            <ThemedView style={[styles.button, styles.clearButton]} onTouchEnd={handleClearLogs}>
-              <ThemedText style={styles.buttonText}>Clear All</ThemedText>
-            </ThemedView>
+            <View style={[styles.button, styles.clearButton]} onTouchEnd={handleClearLogs}>
+              <Text style={styles.buttonText}>Clear All</Text>
+            </View>
           )}
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
-      <ThemedView style={styles.instructions}>
-        <ThemedText style={styles.instructionsTitle}>📝 Testing Instructions:</ThemedText>
-        <ThemedText style={styles.instructionsText}>
+      <View style={styles.instructions}>
+        <Text style={styles.instructionsTitle}>📝 Testing Instructions:</Text>
+        <Text style={styles.instructionsText}>
           1. Grant Notification Access permission{'\n'}
           2. Activate Landline Mode{'\n'}
           3. Send yourself a test notification (email, message, etc.){'\n'}
           4. Come back and tap Refresh to see logged notifications
-        </ThemedText>
-      </ThemedView>
+        </Text>
+      </View>
     </ScrollView>
   );
 }

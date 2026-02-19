@@ -40,18 +40,57 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    pnpm web     # for Web
    ```
 
-## Windows-Specific Setup
+## Troubleshooting
 
-If you're building on Windows and encounter Gradle errors related to dependencies, you may need to regenerate the Android build files:
+### Metro Cache and TreeFS Errors
+
+If you encounter Metro bundler errors such as "TreeFS: Could not add directory..." or "node_modules already exists in the file map as a file", the Metro cache is corrupted. This typically happens after interrupted builds or dependency updates.
+
+#### Quick Fix (Recommended First Step)
+
+Clear the Metro cache and free port 8081:
+
+```bash
+# Clear all Metro cache directories
+rm -rf node_modules/.cache $TMPDIR/metro-* ~/.metro-cache 2>/dev/null
+
+# Kill any process using port 8081
+lsof -i :8081 | grep -v COMMAND | awk '{print $2}' | xargs -r kill -9 2>/dev/null
+
+# Restart the dev server with cache clear flag
+pnpm start --clear
+```
+
+#### Full Project Reset (If Quick Fix Doesn't Work)
+
+For more serious issues or when switching between `node-linker` configurations:
+
+```bash
+# 1. Stop the dev server and kill any remaining processes
+lsof -i :8081 | grep -v COMMAND | awk '{print $2}' | xargs -r kill -9 2>/dev/null
+
+# 2. Clear all caches (Metro, pnpm, Gradle, Expo)
+rm -rf node_modules/.cache
+rm -rf $TMPDIR/metro-*
+rm -rf ~/.metro-cache
+rm -rf .expo
+rm -rf .gradle
+rm -rf node_modules
+
+# 3. Reinstall dependencies
+pnpm install
+
+# 4. Restart the dev server
+pnpm start --clear
+```
+
+### Android Build Issues
+
+If you encounter Gradle errors related to missing dependencies or dependency resolution when building for Android, you may need to regenerate the Android build files:
 
 ```bash
 rm -r android
 expo prebuild --clean
-pnpm android
 ```
 
-This is necessary because the Android project needs to be regenerated with the correct dependency linking for your environment. Additionally, configure pnpm to use a flattened node_modules structure, which can help avoid path length issues on Windows:
-
-```bash
-pnpm config set node-linker=hoisted
-```
+This regenerates the Android project with the correct dependency linking.
