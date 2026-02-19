@@ -1,15 +1,12 @@
 import { useCallback } from 'react';
 
-import { Alert, Button, Platform, StyleSheet } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Image } from 'expo-image';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/auth-context';
 import Notif from '@/modules/notification-api-manager';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -60,129 +57,84 @@ export default function HomeScreen() {
   const router = useRouter();
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      {/* Notification buttons */}
-      <Button title="Request Notification Permission" onPress={requestNotifPermissions} />
-      <Button title="Send Test Notification" onPress={sendTestNotification} />
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Notification buttons */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Request Permission" onPress={requestNotifPermissions} />
+            <Button title="Send Test Notification" onPress={sendTestNotification} />
+          </View>
+        </View>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Native Module Tests</ThemedText>
-        <ThemedView style={styles.buttonGroup}>
-          <Button
-            title="Open Auto-Reply Test Page"
-            onPress={() => router.push('/auto-reply-test')}
-          />
-          <Button title="Open DND Test Page" onPress={() => router.push('/dnd-test')} />
-          <Button
-            title="Open Notification Log Test Page"
-            onPress={() => router.push('/notification-log-test')}
-          />
-        </ThemedView>
-        {/* Authentication Status */}
-        <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">👤 Account Status</ThemedText>
-          {isAuthenticated ? (
-            <ThemedView style={{ gap: 8 }}>
-              <ThemedText>
-                ✅ Signed in as: <ThemedText type="defaultSemiBold">{user?.email}</ThemedText>
-              </ThemedText>
-              <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
-            </ThemedView>
-          ) : (
-            <ThemedView style={{ gap: 8 }}>
-              <ThemedText>❌ Not signed in</ThemedText>
-              <Button
-                title="🎉 View Onboarding / Sign Up"
-                onPress={() => router.push('/onboarding')}
-              />
-            </ThemedView>
-          )}
-        </ThemedView>
-      </ThemedView>
-
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
+        {/* Native Module Tests */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Native Module Tests</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Auto-Reply Test" onPress={() => router.push('/auto-reply-test')} />
+            <Button title="DND Test" onPress={() => router.push('/dnd-test')} />
+            <Button
+              title="Notification Log Test"
+              onPress={() => router.push('/notification-log-test')}
             />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+          </View>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Authentication Status */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          {isAuthenticated ? (
+            <View style={styles.authContainer}>
+              <Text style={styles.statusText}>Signed in as: {user?.email}</Text>
+              <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
+            </View>
+          ) : (
+            <View style={styles.authContainer}>
+              <Text style={styles.statusText}>Not signed in</Text>
+              <Button title="Sign Up" onPress={() => router.push('/create-account')} />
+            </View>
+          )}
+        </View>
+
+        {/* Onboarding */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Onboarding</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="View Onboarding" onPress={() => router.push('/onboarding')} />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safeArea: {
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 24,
+  },
+  section: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   buttonGroup: {
     gap: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  authContainer: {
+    gap: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

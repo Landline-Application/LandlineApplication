@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Import the background service manager
 import BackgroundServiceManager from '@/modules/background-service-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BackgroundServiceDemo() {
   const insets = useSafeAreaInsets();
@@ -165,134 +163,132 @@ export default function BackgroundServiceDemo() {
 
   if (Platform.OS !== 'android') {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText style={styles.title}>Background Service Demo</ThemedText>
-        <ThemedText style={styles.subtitle}>This feature is only available on Android</ThemedText>
-      </ThemedView>
+      <View style={styles.container}>
+        <Text style={styles.title}>Background Service Demo</Text>
+        <Text style={styles.subtitle}>This feature is only available on Android</Text>
+      </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
-      <ThemedView style={styles.header}>
+      <View style={styles.header}>
         <Ionicons name="settings-outline" size={40} color="#007AFF" />
-        <ThemedText style={styles.title}>Background Service Demo</ThemedText>
-        <ThemedText style={styles.subtitle}>Test background service functionality</ThemedText>
-      </ThemedView>
+        <Text style={styles.title}>Background Service Demo</Text>
+        <Text style={styles.subtitle}>Test background service functionality</Text>
+      </View>
 
       {/* System Status */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>System Status</ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>System Status</Text>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText style={styles.statusLabel}>Foreground Service:</ThemedText>
-          <ThemedText style={[styles.statusValue, serviceRunning && styles.statusActive]}>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Foreground Service:</Text>
+          <Text style={[styles.statusValue, serviceRunning && styles.statusActive]}>
             {serviceRunning ? 'Running' : 'Stopped'}
-          </ThemedText>
-        </ThemedView>
+          </Text>
+        </View>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText style={styles.statusLabel}>Background Work:</ThemedText>
-          <ThemedText style={[styles.statusValue, workScheduled && styles.statusActive]}>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Background Work:</Text>
+          <Text style={[styles.statusValue, workScheduled && styles.statusActive]}>
             {workScheduled ? 'Scheduled' : 'Not Scheduled'}
-          </ThemedText>
-        </ThemedView>
+          </Text>
+        </View>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText style={styles.statusLabel}>Battery Optimization:</ThemedText>
-          <ThemedText
-            style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}
-          >
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Battery Optimization:</Text>
+          <Text style={[styles.statusValue, batteryOptimizationIgnored && styles.statusActive]}>
             {batteryOptimizationIgnored ? 'Ignored' : 'Active'}
-          </ThemedText>
-        </ThemedView>
+          </Text>
+        </View>
 
-        <ThemedView style={styles.statusRow}>
-          <ThemedText style={styles.statusLabel}>Doze Mode:</ThemedText>
-          <ThemedText style={styles.statusValue}>{isDozeMode ? 'Active' : 'Inactive'}</ThemedText>
-        </ThemedView>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Doze Mode:</Text>
+          <Text style={styles.statusValue}>{isDozeMode ? 'Active' : 'Inactive'}</Text>
+        </View>
 
         {androidVersion && (
-          <ThemedView style={styles.statusRow}>
-            <ThemedText style={styles.statusLabel}>Android Version:</ThemedText>
-            <ThemedText style={styles.statusValue}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Android Version:</Text>
+            <Text style={styles.statusValue}>
               {androidVersion.release} (SDK {androidVersion.sdkInt})
-            </ThemedText>
-          </ThemedView>
+            </Text>
+          </View>
         )}
-      </ThemedView>
+      </View>
 
       {/* Foreground Service Controls */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Foreground Service</ThemedText>
-        <ThemedText style={styles.description}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Foreground Service</Text>
+        <Text style={styles.description}>
           Foreground services display a persistent notification and can run even when the app is in
           the background.
-        </ThemedText>
+        </Text>
 
-        <ThemedView style={styles.buttonContainer}>
-          <ThemedView style={styles.button} onTouchEnd={handleStartForegroundService}>
-            <ThemedText style={styles.buttonText}>Start Service</ThemedText>
-          </ThemedView>
+        <View style={styles.buttonContainer}>
+          <View style={styles.button} onTouchEnd={handleStartForegroundService}>
+            <Text style={styles.buttonText}>Start Service</Text>
+          </View>
 
-          <ThemedView style={styles.button} onTouchEnd={handleStopForegroundService}>
-            <ThemedText style={styles.buttonText}>Stop Service</ThemedText>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+          <View style={styles.button} onTouchEnd={handleStopForegroundService}>
+            <Text style={styles.buttonText}>Stop Service</Text>
+          </View>
+        </View>
+      </View>
 
       {/* WorkManager Controls */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Background Work (WorkManager)</ThemedText>
-        <ThemedText style={styles.description}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Background Work (WorkManager)</Text>
+        <Text style={styles.description}>
           WorkManager schedules battery-efficient periodic tasks. Minimum interval is 15 minutes.
-        </ThemedText>
+        </Text>
 
-        <ThemedView style={styles.buttonContainer}>
-          <ThemedView style={styles.button} onTouchEnd={handleScheduleWork}>
-            <ThemedText style={styles.buttonText}>Schedule Work</ThemedText>
-          </ThemedView>
+        <View style={styles.buttonContainer}>
+          <View style={styles.button} onTouchEnd={handleScheduleWork}>
+            <Text style={styles.buttonText}>Schedule Work</Text>
+          </View>
 
-          <ThemedView style={styles.button} onTouchEnd={handleCancelWork}>
-            <ThemedText style={styles.buttonText}>Cancel Work</ThemedText>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+          <View style={styles.button} onTouchEnd={handleCancelWork}>
+            <Text style={styles.buttonText}>Cancel Work</Text>
+          </View>
+        </View>
+      </View>
 
       {/* Battery Optimization */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Battery Optimization</ThemedText>
-        <ThemedText style={styles.description}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Battery Optimization</Text>
+        <Text style={styles.description}>
           ⚠️ Use with caution. Google Play may reject apps that unnecessarily request to ignore
           battery optimization.
-        </ThemedText>
+        </Text>
 
-        <ThemedView style={styles.buttonContainer}>
-          <ThemedView style={styles.button} onTouchEnd={handleRequestBatteryOptimization}>
-            <ThemedText style={styles.buttonText}>Request Ignore</ThemedText>
-          </ThemedView>
+        <View style={styles.buttonContainer}>
+          <View style={styles.button} onTouchEnd={handleRequestBatteryOptimization}>
+            <Text style={styles.buttonText}>Request Ignore</Text>
+          </View>
 
-          <ThemedView style={styles.button} onTouchEnd={handleOpenBatterySettings}>
-            <ThemedText style={styles.buttonText}>Open Settings</ThemedText>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+          <View style={styles.button} onTouchEnd={handleOpenBatterySettings}>
+            <Text style={styles.buttonText}>Open Settings</Text>
+          </View>
+        </View>
+      </View>
 
       {/* Test Notifications */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Test Notification</ThemedText>
-        <ThemedText style={styles.description}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Test Notification</Text>
+        <Text style={styles.description}>
           Send a test notification to verify the notification system is working.
-        </ThemedText>
+        </Text>
 
-        <ThemedView style={styles.button} onTouchEnd={handleSendTestNotification}>
-          <ThemedText style={styles.buttonText}>Send Test Notification</ThemedText>
-        </ThemedView>
-      </ThemedView>
+        <View style={styles.button} onTouchEnd={handleSendTestNotification}>
+          <Text style={styles.buttonText}>Send Test Notification</Text>
+        </View>
+      </View>
 
       {/* Refresh Button */}
-      <ThemedView style={styles.section}>
-        <ThemedView
+      <View style={styles.section}>
+        <View
           style={[styles.button, styles.refreshButton]}
           onTouchEnd={() => {
             checkServiceStatus();
@@ -301,9 +297,9 @@ export default function BackgroundServiceDemo() {
             checkDozeMode();
           }}
         >
-          <ThemedText style={styles.buttonText}>Refresh Status</ThemedText>
-        </ThemedView>
-      </ThemedView>
+          <Text style={styles.buttonText}>Refresh Status</Text>
+        </View>
+      </View>
     </ScrollView>
   );
 }

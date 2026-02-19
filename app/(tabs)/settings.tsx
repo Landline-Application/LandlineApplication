@@ -16,11 +16,9 @@ import {
 
 import { router } from 'expo-router';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -139,17 +137,13 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
-      <ThemedView style={styles.section}>
-        <ThemedText type="title" style={styles.sectionTitle}>
-          Settings
-        </ThemedText>
-      </ThemedView>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Settings</Text>
+      </View>
 
       {/* Storage Info Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionHeader}>
-          Storage Information
-        </ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Storage Information</Text>
         {storageInfo && (
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
@@ -162,21 +156,19 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
-      </ThemedView>
+      </View>
 
-      <ThemedView style={styles.section}>
+      <View style={styles.section}>
         <Button
           title="🔄 Reset Terms Acceptance (Testing)"
           onPress={resetTermsAcceptance}
           color="#ff6b6b"
         />
-      </ThemedView>
+      </View>
 
       {/* Data Management Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionHeader}>
-          Data Management
-        </ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Data Management</Text>
 
         <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
           <Text style={styles.actionButtonText}>📤 Export My Data</Text>
@@ -194,13 +186,11 @@ export default function SettingsScreen() {
             Permanently remove all your data from this app
           </Text>
         </TouchableOpacity>
-      </ThemedView>
+      </View>
 
       {/* Information Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionHeader}>
-          About Data Deletion
-        </ThemedText>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>About Data Deletion</Text>
         <Text style={styles.infoText}>
           When you delete your data, the following will be permanently removed:
         </Text>
@@ -211,7 +201,7 @@ export default function SettingsScreen() {
         <Text style={[styles.infoText, styles.warningText]}>
           This action cannot be undone. Consider exporting your data first.
         </Text>
-      </ThemedView>
+      </View>
 
       {/* Delete Confirmation Modal */}
       <Modal
