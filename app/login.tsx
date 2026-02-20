@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -10,9 +10,11 @@ import { ContinueWithSocials } from '@/components/ui/form/continue-socials-butto
 import { PhoneInput } from '@/components/ui/form/phone-number';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
+import { useAuth } from '@/contexts/auth-context';
 import { usePhoneAuth } from '@/hooks/use-phone-auth';
 
 export default function LoginPage() {
+  const { signInWithGoogle } = useAuth();
   const {
     detectedCountry,
     phoneInput,
@@ -23,6 +25,17 @@ export default function LoginPage() {
   } = usePhoneAuth({
     onSuccess: () => router.replace('/(tabs)'),
   });
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      if (error?.code !== 'SIGN_IN_CANCELLED') {
+        Alert.alert('Google Sign-In Failed', error?.message || 'An unexpected error occurred.');
+      }
+    }
+  };
 
   return (
     <FormLayout>
@@ -59,7 +72,7 @@ export default function LoginPage() {
         {/* Social Login Buttons */}
         <ContinueWithSocials
           buttons={['google', 'email']}
-          onGooglePress={() => console.log('Google login')}
+          onGooglePress={handleGoogleSignIn}
           onEmailPress={() => router.push('/login-email')}
         />
 
