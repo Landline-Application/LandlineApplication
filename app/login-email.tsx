@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -10,6 +10,7 @@ import { ContinueWithSocials } from '@/components/ui/form/continue-socials-butto
 import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function LoginEmailPage() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,7 @@ export default function LoginEmailPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const { signIn, signInWithGoogle } = useAuth();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,11 +44,34 @@ export default function LoginEmailPage() {
     }
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await signIn(email, password);
       router.replace('/(tabs)');
-    }, 1500);
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        setEmailError('No account found with this email');
+      } else if (code === 'auth/wrong-password') {
+        setPasswordError('Incorrect password');
+      } else if (code === 'auth/too-many-requests') {
+        Alert.alert('Too Many Attempts', 'Please try again later.');
+      } else {
+        Alert.alert('Login Failed', error?.message || 'An unexpected error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      if (error?.code !== 'SIGN_IN_CANCELLED') {
+        Alert.alert('Google Sign-In Failed', error?.message || 'An unexpected error occurred.');
+      }
+    }
   };
 
   const isFormValid = validateEmail(email) && password.length >= 6;
@@ -88,7 +113,7 @@ export default function LoginEmailPage() {
         {/* Social Login Buttons */}
         <ContinueWithSocials
           buttons={['google', 'phone']}
-          onGooglePress={() => console.log('Google login')}
+          onGooglePress={handleGoogleSignIn}
           onPhonePress={() => router.push('/login')}
         />
 
