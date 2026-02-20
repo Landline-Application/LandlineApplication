@@ -69,6 +69,7 @@ export default function RootLayout() {
             <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
             <Stack.Screen name="permissions" options={{ headerShown: false }} />
             <Stack.Screen name="app-selection" options={{ headerShown: false }} />
+            <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
