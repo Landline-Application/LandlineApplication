@@ -1,6 +1,9 @@
 package expo.modules.backgroundservicemanager
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import android.util.Log
 import androidx.work.*
 import java.util.concurrent.TimeUnit
 
@@ -102,22 +105,87 @@ class BackgroundWorker(
     }
     
     /**
-     * Perform notification check or other background operations
-     * This is where you implement your actual background logic
+     * Perform notification check and background processing for Landline Mode.
+     *
+     * This method:
+     * 1. Checks if Landline Mode is active.
+     * 2. Verifies the NotificationListenerService is still enabled in system settings.
+     * 3. Reads current notification log stats from SharedPreferences.
+     * 4. Prunes log entries older than MAX_LOG_AGE_MS to prevent unbounded growth.
+     * 5. Broadcasts a status update so the foreground service can refresh its notification.
+     * 6. Logs a warning if Landline Mode is on but the listener service is not connected.
      */
     private suspend fun performNotificationCheck() {
-        // TODO: Implement your notification checking logic here
-        // This could involve:
-        // - Checking for new notifications
-        // - Processing notification data
-        // - Updating local database
-        // - Triggering local notifications if needed
-        
-        // Example: Log that work was performed
-        android.util.Log.d("BackgroundWorker", "Performing notification check at ${System.currentTimeMillis()}")
-        
-        // If the foreground service is running, you could update its notification
-        // to show that background work was performed
+        val ctx = applicationContext
+        val tag = "BackgroundWorker"
+
+        Log.d(tag, "performNotificationCheck() started at ${System.currentTimeMillis()}")
+
+        // ── 1. Check Landline Mode state ─────────────────────────────────────
+        val modePrefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+        val isLandlineModeActive = modePrefs.getBoolean("is_landline_mode_active", false)
+        Log.d(tag, "Landline mode active: $isLandlineModeActive")
+
+        // ── 2. Check if the NotificationListenerService is enabled ────────────
+        val enabledListeners = Settings.Secure.getString(
+            ctx.contentResolver,
+            "enabled_notification_listeners"
+        )
+        val isListenerEnabled = enabledListeners?.contains(ctx.packageName) == true
+        Log.d(tag, "NotificationListenerService enabled: $isListenerEnabled")
+
+        // ── 3. Read notification log stats ────────────────────────────────────
+        val notifPrefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+        val logsString = notifPrefs.getString("notification_logs", "") ?: ""
+        val logCount = if (logsString.isEmpty()) 0
+                       else logsString.split("\n").count { it.isNotEmpty() }
+        Log.d(tag, "Current notification log count: $logCount")
+
+        // ── 4. Prune logs older than MAX_LOG_AGE_MS (7 days) ─────────────────
+        val maxLogAgeMs = 7L * 24 * 60 * 60 * 1000
+        val cutoff = System.currentTimeMillis() - maxLogAgeMs
+        if (logsString.isNotEmpty()) {
+            val filteredLogs = logsString
+                .split("\n")
+                .filter { line ->
+                    if (line.isEmpty()) return@filter false
+                    val ts = line.split("|").firstOrNull()?.toLongOrNull() ?: Long.MAX_VALUE
+                    ts >= cutoff
+                }
+                .joinToString("\n")
+
+            if (filteredLogs != logsString) {
+                notifPrefs.edit().putString("notification_logs", filteredLogs).apply()
+                val remaining = if (filteredLogs.isEmpty()) 0
+                                else filteredLogs.split("\n").count { it.isNotEmpty() }
+                Log.d(tag, "Pruned stale notification logs. Remaining: $remaining")
+            }
+        }
+
+        // ── 5. Broadcast status update for the foreground service ─────────────
+        if (NotificationForegroundService.isServiceRunning()) {
+            val status = when {
+                !isLandlineModeActive -> "Landline mode off"
+                !isListenerEnabled    -> "Listener permission needed"
+                else                  -> "Active — $logCount notification(s) logged"
+            }
+            val intent = Intent("com.landlineapp.UPDATE_NOTIFICATION").apply {
+                putExtra("message", status)
+            }
+            ctx.sendBroadcast(intent)
+            Log.d(tag, "Broadcast status update: $status")
+        }
+
+        // ── 6. Warn if Landline Mode is active but listener is not enabled ────
+        if (isLandlineModeActive && !isListenerEnabled) {
+            Log.w(
+                tag,
+                "Landline mode is active but NotificationListenerService is NOT enabled. " +
+                "User may need to re-grant notification access."
+            )
+        }
+
+        Log.d(tag, "performNotificationCheck() completed")
     }
 }
 
