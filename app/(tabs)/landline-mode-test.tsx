@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ export default function LandlineModeTest() {
   const [hasPermission, setHasPermission] = useState(false);
   const [isLandlineModeActive, setIsLandlineModeActive] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -29,8 +30,8 @@ export default function LandlineModeTest() {
     setIsLandlineModeActive(active);
   };
 
-  const loadNotifications = () => {
-    const logs = NotificationApiManager.getLoggedNotifications();
+  const loadNotifications = async () => {
+    const logs = await NotificationApiManager.getLoggedNotifications();
     setNotifications(logs);
   };
 
@@ -57,6 +58,14 @@ export default function LandlineModeTest() {
     Alert.alert('Refreshed', `Found ${notifications.length} logged notifications`);
   };
 
+  const handlePullRefresh = () => {
+    setRefreshing(true);
+    checkPermission();
+    checkLandlineMode();
+    loadNotifications();
+    setRefreshing(false);
+  };
+
   const handleClearLogs = () => {
     NotificationApiManager.clearLoggedNotifications();
     setNotifications([]);
@@ -73,7 +82,13 @@ export default function LandlineModeTest() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingTop: insets.top }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handlePullRefresh} />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Landline Mode Test</Text>
         <Text style={styles.subtitle}>Test notification logging</Text>
