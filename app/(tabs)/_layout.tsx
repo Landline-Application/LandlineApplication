@@ -30,11 +30,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="landline-mode-test"
+        name="landline"
         options={{
           title: 'Landline',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone.fill" color={color} />,
         }}
+      />
+      <Tabs.Screen
+        name="landline-mode-test"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="background-service-demo"
