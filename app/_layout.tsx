@@ -51,6 +51,7 @@ function ThemedNavigator() {
         <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="auto-reply-settings" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
