@@ -43,7 +43,13 @@ export function EmailPasswordInput({
           autoCorrect={false}
           editable={!isLoading}
           accessibilityLabel="Email Input"
+          accessibilityErrorMessage={emailError}
         />
+        {emailError ? (
+          <Text style={styles.errorText} accessibilityLiveRegion="polite">
+            {emailError}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.group}>
@@ -60,7 +66,13 @@ export function EmailPasswordInput({
           autoCorrect={false}
           editable={!isLoading}
           accessibilityLabel="Password Input"
+          accessibilityErrorMessage={passwordError}
         />
+        {passwordError ? (
+          <Text style={styles.errorText} accessibilityLiveRegion="polite">
+            {passwordError}
+          </Text>
+        ) : null}
       </View>
     </>
   );
@@ -90,5 +102,11 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#c44536',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#c44536',
+    marginTop: 6,
+    marginLeft: 2,
   },
 });
