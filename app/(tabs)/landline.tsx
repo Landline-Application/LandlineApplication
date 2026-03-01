@@ -260,6 +260,15 @@ export default function LandlineScreen() {
             ))
           )}
 
+          {/* Auto-reply settings */}
+          <TouchableOpacity
+            style={styles.autoReplyButton}
+            onPress={() => router.push('/auto-reply-settings')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.autoReplyButtonText}>Configure Auto-Reply</Text>
+          </TouchableOpacity>
+
           {/* Action buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
@@ -482,6 +491,19 @@ const styles = StyleSheet.create({
   emptyText: {
     color: TEXT_SECONDARY,
     fontSize: 14,
+  },
+  autoReplyButton: {
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: ACCENT_BLUE,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  autoReplyButtonText: {
+    color: ACCENT_BLUE,
+    fontSize: 15,
+    fontWeight: '600',
   },
   actionRow: {
     flexDirection: 'row',
