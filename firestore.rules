@@ -1,0 +1,12 @@
+rules_version = '2';
+// Firestore security rules – Landline
+// Development mode: authenticated users can read/write their own document in users collection.
+// Deploy: firebase deploy --only firestore:rules (requires firebase.json and Firebase CLI)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

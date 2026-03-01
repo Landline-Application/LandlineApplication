@@ -1242,7 +1242,7 @@ export default function DebugToolsScreen() {
                 Email:
               </Text>
               <Text selectable style={{ fontSize: 14, color: COLORS.dark.text }}>
-                {user?.email}
+                Signed in as: {user?.email || user?.phoneNumber || 'Unknown'}
               </Text>
             </View>
 
