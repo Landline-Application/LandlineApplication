@@ -61,6 +61,12 @@ export default function CreateAccountEmailPage() {
         setPasswordError('Password is too weak');
       } else if (code === 'auth/invalid-email') {
         setEmailError('Please enter a valid email address');
+      } else if (code === 'verification-email-failed' || code === 'auth/too-many-requests') {
+        Alert.alert(
+          'Account Created',
+          'Your account was created, but we could not send the verification email. Please check your spam folder, or request a new verification link later from Settings.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+        );
       } else {
         Alert.alert('Sign Up Failed', error?.message || 'An unexpected error occurred.');
       }

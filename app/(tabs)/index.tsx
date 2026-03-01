@@ -86,7 +86,9 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Account</Text>
           {isAuthenticated ? (
             <View style={styles.authContainer}>
-              <Text style={styles.statusText}>Signed in as: {user?.email}</Text>
+              <Text style={styles.statusText}>
+                Signed in as: {user?.email || user?.phoneNumber || 'Unknown'}
+              </Text>
               <Button title="Sign Out" onPress={handleSignOut} color="#f5576c" />
             </View>
           ) : (
