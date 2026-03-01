@@ -2,17 +2,27 @@ import { useState } from 'react';
 
 import { Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificationLogTestScreen() {
+  const { isDark } = useAppTheme();
   const [notifCount, setNotifCount] = useState(0);
   const [hasPermission, setHasPermission] = useState(false);
+
+  const t = {
+    bg: isDark ? '#121212' : '#FFFFFF',
+    text: isDark ? '#FFFFFF' : '#000000',
+    secondaryText: isDark ? '#AAAAAA' : '#666666',
+    sectionBg: isDark ? '#1E1E1E' : '#F5F5F5',
+    instructionBg: isDark ? '#2A2A1A' : '#FFF8E1',
+  };
 
   async function checkNotificationPermission() {
     const hasPerms = NotificationApiManager.hasPostPermission();
     setHasPermission(hasPerms);
-    Alert.alert('Notification Permission', `Has permission: ${hasPerms}`);
+    Alert.alert('Notification Permission', hasPerms ? 'Permission granted ✓' : 'Permission not granted ✗');
   }
 
   async function requestNotificationPermission() {
@@ -48,10 +58,8 @@ export default function NotificationLogTestScreen() {
       return;
     }
 
-    // Create a test channel
     NotificationApiManager.createChannel('test', 'Test Notifications', 3);
 
-    // Send test notification
     const id = Date.now() % 100000;
     const success = NotificationApiManager.notify(
       'Test Notification',
@@ -94,28 +102,25 @@ export default function NotificationLogTestScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Title */}
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Notification Log Test 📔</Text>
+          <Text style={[styles.title, { color: t.text }]}>Notification Log Test 📔</Text>
         </View>
 
-        {/* Permissions Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Permissions</Text>
+        <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Permissions</Text>
           <View style={styles.buttonGroup}>
             <Button title="Check Permission" onPress={checkNotificationPermission} />
             <Button title="Request Permission" onPress={requestNotificationPermission} />
           </View>
-          <Text style={styles.statusText}>
+          <Text style={[styles.statusText, { color: t.text }]}>
             Status: {hasPermission ? '✅ Granted' : '❌ Not Granted'}
           </Text>
         </View>
 
-        {/* Notification Log Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notification Log</Text>
+        <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Notification Log</Text>
           <View style={styles.buttonGroup}>
             <Button title="Get Logged Notifications" onPress={getLoggedNotifications} />
             <Button
@@ -124,24 +129,22 @@ export default function NotificationLogTestScreen() {
               color="#ff6b6b"
             />
           </View>
-          <Text style={styles.statusText}>Logged Notifications: {notifCount}</Text>
+          <Text style={[styles.statusText, { color: t.text }]}>Logged Notifications: {notifCount}</Text>
         </View>
 
-        {/* Test Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Test Actions</Text>
+        <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Test Actions</Text>
           <View style={styles.buttonGroup}>
             <Button title="Send Test Notification" onPress={sendTestNotification} />
           </View>
         </View>
 
-        {/* Instructions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ℹ️ Instructions</Text>
-          <Text style={styles.instructionText}>1. Grant notification permission</Text>
-          <Text style={styles.instructionText}>2. Send test notifications</Text>
-          <Text style={styles.instructionText}>3. View them in the Notifications tab</Text>
-          <Text style={styles.instructionText}>
+        <View style={[styles.section, { backgroundColor: t.instructionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>ℹ️ Instructions</Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>1. Grant notification permission</Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>2. Send test notifications</Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>3. View them in the Notifications tab</Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>
             4. Use clear to remove all logged notifications
           </Text>
         </View>
@@ -157,7 +160,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 24,
+    gap: 16,
   },
   titleContainer: {
     marginBottom: 8,
@@ -169,6 +172,8 @@ const styles = StyleSheet.create({
   section: {
     gap: 12,
     marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
   },
   sectionTitle: {
     fontSize: 16,

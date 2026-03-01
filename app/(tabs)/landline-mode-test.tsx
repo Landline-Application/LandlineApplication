@@ -1,16 +1,32 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LandlineModeTest() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [hasPermission, setHasPermission] = useState(false);
   const [isLandlineModeActive, setIsLandlineModeActive] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const t = {
+    bg: isDark ? '#121212' : '#FFFFFF',
+    text: isDark ? '#FFFFFF' : '#000000',
+    secondaryText: isDark ? '#AAAAAA' : '#666666',
+    sectionBg: isDark ? '#1E1E1E' : 'rgba(0, 122, 255, 0.05)',
+    cardBg: isDark ? '#2A2A2A' : 'rgba(0, 0, 0, 0.05)',
+    instructionBg: isDark ? '#2A2A1A' : 'rgba(255, 204, 0, 0.1)',
+    badgeInactiveBg: isDark ? 'rgba(255, 80, 80, 0.2)' : 'rgba(255, 0, 0, 0.1)',
+    badgeInactiveText: isDark ? '#FF6B6B' : '#CC0000',
+    badgeActiveBg: 'rgba(52, 199, 89, 0.2)',
+    badgeActiveText: '#34C759',
+    badgeNeutralText: isDark ? '#FFFFFF' : '#000000',
+  };
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -74,84 +90,96 @@ export default function LandlineModeTest() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Landline Mode Test</Text>
-        <Text>This feature is only available on Android</Text>
+      <View style={[styles.container, { backgroundColor: t.bg }]}>
+        <Text style={[styles.title, { color: t.text }]}>Landline Mode Test</Text>
+        <Text style={{ color: t.text }}>This feature is only available on Android</Text>
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: t.bg }]}
       contentContainerStyle={{ paddingTop: insets.top }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handlePullRefresh} />
       }
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Landline Mode Test</Text>
-        <Text style={styles.subtitle}>Test notification logging</Text>
+        <Text style={[styles.title, { color: t.text }]}>Landline Mode Test</Text>
+        <Text style={[styles.subtitle, { color: t.secondaryText }]}>Test notification logging</Text>
       </View>
 
-      {/* Status */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Status</Text>
+      <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+        <Text style={[styles.sectionTitle, { color: t.text }]}>Status</Text>
 
         <View style={styles.statusRow}>
-          <Text>Notification Listener Permission:</Text>
-          <Text style={[styles.statusBadge, hasPermission && styles.statusActive]}>
+          <Text style={{ color: t.text }}>Notification Listener Permission:</Text>
+          <Text style={[
+            styles.statusBadge,
+            {
+              backgroundColor: hasPermission ? t.badgeActiveBg : t.badgeInactiveBg,
+              color: hasPermission ? t.badgeActiveText : t.badgeInactiveText,
+            },
+          ]}>
             {hasPermission ? 'Granted' : 'Not Granted'}
           </Text>
         </View>
 
         <View style={styles.statusRow}>
-          <Text>Landline Mode:</Text>
-          <Text style={[styles.statusBadge, isLandlineModeActive && styles.statusActive]}>
+          <Text style={{ color: t.text }}>Landline Mode:</Text>
+          <Text style={[
+            styles.statusBadge,
+            {
+              backgroundColor: isLandlineModeActive ? t.badgeActiveBg : t.badgeInactiveBg,
+              color: isLandlineModeActive ? t.badgeActiveText : t.badgeInactiveText,
+            },
+          ]}>
             {isLandlineModeActive ? 'Active' : 'Inactive'}
           </Text>
         </View>
 
         <View style={styles.statusRow}>
-          <Text>Logged Notifications:</Text>
-          <Text style={styles.statusBadge}>{notifications.length}</Text>
+          <Text style={{ color: t.text }}>Logged Notifications:</Text>
+          <Text style={[styles.statusBadge, { backgroundColor: t.cardBg, color: t.badgeNeutralText }]}>
+            {notifications.length}
+          </Text>
         </View>
       </View>
 
-      {/* Permission */}
       {!hasPermission && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚠️ Permission Required</Text>
-          <Text style={styles.description}>
+        <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>⚠️ Permission Required</Text>
+          <Text style={[styles.description, { color: t.secondaryText }]}>
             This app needs Notification Access permission to log notifications during Landline mode.
           </Text>
-          <View style={styles.button} onTouchEnd={handleRequestPermission}>
+          <TouchableOpacity style={styles.button} onPress={handleRequestPermission} activeOpacity={0.8}>
             <Text style={styles.buttonText}>Grant Permission</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Landline Mode Toggle */}
       {hasPermission && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Landline Mode Control</Text>
-          <Text style={styles.description}>
+        <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Landline Mode Control</Text>
+          <Text style={[styles.description, { color: t.secondaryText }]}>
             When active, all notifications will be logged and can be viewed later.
           </Text>
-          <View style={styles.button} onTouchEnd={handleToggleLandlineMode}>
+          <TouchableOpacity style={styles.button} onPress={handleToggleLandlineMode} activeOpacity={0.8}>
             <Text style={styles.buttonText}>
               {isLandlineModeActive ? 'Deactivate' : 'Activate'} Landline Mode
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Logged Notifications */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Logged Notifications ({notifications.length})</Text>
+      <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
+        <Text style={[styles.sectionTitle, { color: t.text }]}>
+          Logged Notifications ({notifications.length})
+        </Text>
 
         {notifications.length === 0 ? (
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: t.secondaryText }]}>
             No notifications logged yet.{' '}
             {isLandlineModeActive
               ? 'Send yourself a test notification!'
@@ -159,34 +187,43 @@ export default function LandlineModeTest() {
           </Text>
         ) : (
           notifications.map((notif, index) => (
-            <View key={index} style={styles.notificationCard}>
-              <Text style={styles.notifApp}>{notif.appName}</Text>
-              <Text style={styles.notifTitle}>{notif.title}</Text>
-              <Text style={styles.notifText}>{notif.text}</Text>
-              <Text style={styles.notifTime}>{new Date(notif.postTime).toLocaleString()}</Text>
+            <View key={index} style={[styles.notificationCard, { backgroundColor: t.cardBg }]}>
+              <Text style={[styles.notifApp, { color: t.secondaryText }]}>{notif.appName}</Text>
+              <Text style={[styles.notifTitle, { color: t.text }]}>{notif.title}</Text>
+              <Text style={[styles.notifText, { color: t.text }]}>{notif.text}</Text>
+              <Text style={[styles.notifTime, { color: t.secondaryText }]}>
+                {new Date(notif.postTime).toLocaleString()}
+              </Text>
             </View>
           ))
         )}
       </View>
 
-      {/* Actions */}
-      <View style={styles.section}>
+      <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
         <View style={styles.buttonRow}>
-          <View style={[styles.button, styles.refreshButton]} onTouchEnd={handleRefresh}>
+          <TouchableOpacity
+            style={[styles.button, styles.refreshButton, { flex: 1 }]}
+            onPress={handleRefresh}
+            activeOpacity={0.8}
+          >
             <Text style={styles.buttonText}>Refresh</Text>
-          </View>
+          </TouchableOpacity>
 
           {notifications.length > 0 && (
-            <View style={[styles.button, styles.clearButton]} onTouchEnd={handleClearLogs}>
+            <TouchableOpacity
+              style={[styles.button, styles.clearButton, { flex: 1 }]}
+              onPress={handleClearLogs}
+              activeOpacity={0.8}
+            >
               <Text style={styles.buttonText}>Clear All</Text>
-            </View>
+            </TouchableOpacity>
           )}
         </View>
       </View>
 
-      <View style={styles.instructions}>
-        <Text style={styles.instructionsTitle}>📝 Testing Instructions:</Text>
-        <Text style={styles.instructionsText}>
+      <View style={[styles.instructions, { backgroundColor: t.instructionBg }]}>
+        <Text style={[styles.instructionsTitle, { color: t.text }]}>📝 Testing Instructions:</Text>
+        <Text style={[styles.instructionsText, { color: t.text }]}>
           1. Grant Notification Access permission{'\n'}
           2. Activate Landline Mode{'\n'}
           3. Send yourself a test notification (email, message, etc.){'\n'}
@@ -212,14 +249,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    opacity: 0.7,
     marginTop: 4,
   },
   section: {
     marginBottom: 20,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
   },
   sectionTitle: {
     fontSize: 18,
@@ -228,7 +263,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    opacity: 0.7,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -244,12 +278,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
     overflow: 'hidden',
-  },
-  statusActive: {
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    color: '#34C759',
   },
   button: {
     backgroundColor: '#007AFF',
@@ -268,28 +297,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   refreshButton: {
-    flex: 1,
     backgroundColor: '#34C759',
   },
   clearButton: {
-    flex: 1,
     backgroundColor: '#FF3B30',
   },
   emptyText: {
     textAlign: 'center',
-    opacity: 0.5,
     padding: 20,
   },
   notificationCard: {
     padding: 12,
     marginBottom: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   notifApp: {
     fontSize: 12,
     fontWeight: '600',
-    opacity: 0.7,
     marginBottom: 4,
   },
   notifTitle: {
@@ -303,13 +327,11 @@ const styles = StyleSheet.create({
   },
   notifTime: {
     fontSize: 12,
-    opacity: 0.5,
   },
   instructions: {
     padding: 16,
     marginBottom: 20,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 204, 0, 0.1)',
   },
   instructionsTitle: {
     fontSize: 16,
