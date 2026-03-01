@@ -7,6 +7,7 @@ import {
   firebaseSignOut,
   onAuthStateChanged,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithGoogle as firebaseSignInWithGoogle,
   type FirebaseAuthTypes,
@@ -20,6 +21,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,7 +49,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await createUserDocument(credential.user);
-    await sendEmailVerification(credential.user);
+    try {
+      await sendEmailVerification(credential.user);
+    } catch (verificationError: any) {
+      const code = verificationError?.code;
+      const message =
+        code === 'auth/too-many-requests'
+          ? 'Too many verification emails. Please try again later.'
+          : verificationError?.message || 'We could not send the verification email.';
+      const error = new Error(message) as Error & { code?: string };
+      error.code = code ?? 'verification-email-failed';
+      throw error;
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -62,6 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await firebaseSignInWithGoogle();
   };
 
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   return (
     <AuthContext.Provider
         value={{
@@ -72,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           signIn,
           signInWithGoogle,
           signOut,
+          resetPassword,
         }}
     >
       {children}
