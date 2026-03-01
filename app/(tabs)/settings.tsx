@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { router, useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
