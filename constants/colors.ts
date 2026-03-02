@@ -11,4 +11,17 @@ export const COLORS = {
   tabBorder: '#a89968',
   textPrimary: '#5d4e37',
   textSecondary: '#7a6a4a',
+  // Dark mode colors for Landline Mode screen
+  dark: {
+    background: '#1a1a1a',
+    surface: '#242424',
+    card: '#2d2d2d',
+    text: '#ffffff',
+    textSecondary: '#b0b0b0',
+    textMuted: '#808080',
+    primary: '#2563eb',
+    border: '#3a3a3a',
+    divider: '#333333',
+    warning: '#ea580c',
+  },
 };

@@ -203,6 +203,17 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Debug Screen Section */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.debugButton]}
+          onPress={() => router.push('/(tabs)/debug-screen')}
+        >
+          <Text style={styles.actionButtonText}>🐛 Debug Screen</Text>
+          <Text style={styles.actionButtonSubtext}>View development testing tools</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Delete Confirmation Modal */}
       <Modal
         animationType="fade"
@@ -331,6 +342,9 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#fff',
+  },
+  debugButton: {
+    backgroundColor: '#8B5A8E',
   },
   infoText: {
     fontSize: 14,
