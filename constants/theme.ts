@@ -1,5 +1,12 @@
 import { Platform } from 'react-native';
 
+import { COLORS } from './colors';
+
+// Re-export LandlineColors for consistency with existing codebase
+export const LandlineColors = {
+  dark: COLORS.dark,
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

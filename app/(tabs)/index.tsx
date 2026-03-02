@@ -422,6 +422,12 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {/* Recent Sessions Section */}
+        <View style={styles.recentSessionsSection}>
+          <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
+          <Text style={styles.recentSessionsPlaceholder}>No recent sessions</Text>
+        </View>
+
         {/* Info Section */}
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>How it works</Text>
@@ -697,6 +703,25 @@ const styles = StyleSheet.create({
     color: COLORS.dark.primary,
     textAlign: 'center',
     marginTop: 12,
+  },
+  recentSessionsSection: {
+    backgroundColor: COLORS.dark.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.dark.border,
+    marginBottom: 24,
+  },
+  recentSessionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark.text,
+    marginBottom: 12,
+  },
+  recentSessionsPlaceholder: {
+    fontSize: 14,
+    color: COLORS.dark.textMuted,
+    textAlign: 'center',
   },
   infoSection: {
     backgroundColor: COLORS.dark.card,
