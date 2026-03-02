@@ -1,9 +1,5 @@
-import { COLORS } from '@/constants/colors';
-import NotificationApiManager from '@/modules/notification-api-manager';
-import * as BackgroundServiceManager from '@/modules/background-service-manager';
-import * as DndManager from '@/modules/dnd-manager';
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import {
   Alert,
   Animated,
@@ -18,6 +14,13 @@ import {
   Vibration,
   View,
 } from 'react-native';
+
+import { router } from 'expo-router';
+
+import { COLORS } from '@/constants/colors';
+import * as BackgroundServiceManager from '@/modules/background-service-manager';
+import * as DndManager from '@/modules/dnd-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -37,7 +40,7 @@ export default function HomeScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState('0:00');
-  
+
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -50,7 +53,7 @@ export default function HomeScreen() {
       checkLandlineMode();
       loadNotifications();
     }
-  }, []);
+  }, [checkLandlineMode, checkPermission, loadNotifications]);
 
   // Pulse animation when active
   useEffect(() => {
@@ -67,10 +70,10 @@ export default function HomeScreen() {
             duration: 2000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulse.start();
-      
+
       // Glow animation
       Animated.timing(glowAnim, {
         toValue: 1,
@@ -95,9 +98,11 @@ export default function HomeScreen() {
         const hours = Math.floor(diff / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
         const seconds = diff % 60;
-        
+
         if (hours > 0) {
-          setElapsedTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+          setElapsedTime(
+            `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+          );
         } else {
           setElapsedTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
         }
@@ -142,7 +147,7 @@ export default function HomeScreen() {
       Alert.alert(
         'Grant Permission',
         'Please enable notification access for Landline in your device settings, then return to the app.',
-        [{ text: 'OK', onPress: () => setTimeout(checkPermission, 2000) }]
+        [{ text: 'OK', onPress: () => setTimeout(checkPermission, 2000) }],
       );
     } catch {
       Alert.alert('Error', 'Could not open permission settings.');
@@ -157,7 +162,7 @@ export default function HomeScreen() {
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Grant Permission', onPress: handleRequestPermission },
-        ]
+        ],
       );
       return;
     }
@@ -166,12 +171,12 @@ export default function HomeScreen() {
 
   const confirmActivation = async () => {
     setShowConfirmModal(false);
-    
+
     // Haptic feedback
     if (Platform.OS !== 'web') {
       Vibration.vibrate(50);
     }
-    
+
     // Button press animation
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -189,7 +194,7 @@ export default function HomeScreen() {
     try {
       // Activate Landline Mode
       NotificationApiManager.setLandlineMode(true);
-      
+
       // Try to enable DND
       try {
         if (DndManager.hasPermission()) {
@@ -203,7 +208,7 @@ export default function HomeScreen() {
       try {
         BackgroundServiceManager.startForegroundService(
           'Landline Mode Active',
-          'Your notifications are being captured'
+          'Your notifications are being captured',
         );
       } catch {
         // Service not available, continue anyway
@@ -212,7 +217,6 @@ export default function HomeScreen() {
       setIsActive(true);
       setSessionStartTime(new Date());
       setElapsedTime('0:00');
-      
     } catch {
       Alert.alert('Error', 'Could not activate Landline Mode. Please try again.');
     }
@@ -224,7 +228,7 @@ export default function HomeScreen() {
 
   const confirmDeactivation = async () => {
     setShowDeactivateModal(false);
-    
+
     // Haptic feedback
     if (Platform.OS !== 'web') {
       Vibration.vibrate(50);
@@ -233,7 +237,7 @@ export default function HomeScreen() {
     try {
       // Deactivate Landline Mode
       NotificationApiManager.setLandlineMode(false);
-      
+
       // Disable DND
       try {
         if (DndManager.hasPermission()) {
@@ -251,10 +255,9 @@ export default function HomeScreen() {
       }
 
       setIsActive(false);
-      
+
       // Refresh notifications
       await loadNotifications();
-      
     } catch {
       Alert.alert('Error', 'Could not deactivate Landline Mode. Please try again.');
     }
@@ -289,10 +292,7 @@ export default function HomeScreen() {
   if (Platform.OS === 'web') {
     return (
       <SafeAreaView style={styles.container}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Landline Mode</Text>
             <Text style={styles.headerSubtitle}>Take a break from notifications</Text>
@@ -326,7 +326,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -340,19 +340,9 @@ export default function HomeScreen() {
         </View>
 
         {/* Main Toggle Area */}
-        <Animated.View 
-          style={[
-            styles.toggleContainer,
-            { transform: [{ scale: pulseAnim }] },
-          ]}
-        >
-          <Animated.View 
-            style={[
-              styles.glowEffect,
-              { backgroundColor: glowColor },
-            ]} 
-          />
-          
+        <Animated.View style={[styles.toggleContainer, { transform: [{ scale: pulseAnim }] }]}>
+          <Animated.View style={[styles.glowEffect, { backgroundColor: glowColor }]} />
+
           <Pressable
             onPress={isActive ? handleDeactivate : handleActivate}
             style={({ pressed }) => [
@@ -362,9 +352,7 @@ export default function HomeScreen() {
             ]}
           >
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Text style={styles.toggleIcon}>
-                {isActive ? '🔕' : '📱'}
-              </Text>
+              <Text style={styles.toggleIcon}>{isActive ? '🔕' : '📱'}</Text>
               <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
                 {isActive ? 'ACTIVE' : 'INACTIVE'}
               </Text>
@@ -383,70 +371,79 @@ export default function HomeScreen() {
               <Text style={styles.sessionValue}>{elapsedTime}</Text>
             </View>
             <View style={styles.sessionCard}>
-              <Text style={styles.sessionLabel}>Captured</Text>
+              <Text style={styles.sessionLabel}>Notifications Captured</Text>
               <Text style={styles.sessionValue}>{summary.total}</Text>
             </View>
           </View>
         )}
 
-        {/* Permission Warning */}
-        {!hasPermission && (
-          <TouchableOpacity 
-            style={styles.warningCard}
-            onPress={handleRequestPermission}
-          >
-            <Text style={styles.warningIcon}>⚠️</Text>
-            <View style={styles.warningContent}>
-              <Text style={styles.warningTitle}>Permission Required</Text>
-              <Text style={styles.warningText}>
-                Tap to grant notification access
-              </Text>
+        {/* Status Cards */}
+        <View style={styles.statusSection}>
+          {/* Permission Status */}
+          <View style={[styles.statusCard, !hasPermission && styles.statusCardWarning]}>
+            <View style={styles.statusCardHeader}>
+              <Text style={styles.statusCardIcon}>{hasPermission ? '✓' : '!'}</Text>
+              <Text style={styles.statusCardTitle}>Notification Access</Text>
             </View>
-            <Text style={styles.warningArrow}>→</Text>
-          </TouchableOpacity>
-        )}
+            <Text style={styles.statusCardText}>
+              {hasPermission
+                ? 'Landline can capture notifications'
+                : 'Required for Landline Mode'}
+            </Text>
+            {!hasPermission && (
+              <TouchableOpacity
+                style={styles.statusCardButton}
+                onPress={handleRequestPermission}
+              >
+                <Text style={styles.statusCardButtonText}>Grant Access</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-        {/* Notification Summary (when has notifications) */}
-        {(isActive || notifications.length > 0) && (
-          <TouchableOpacity 
-            style={styles.notificationCard}
-            onPress={handleViewNotifications}
-          >
-            <View style={styles.notificationHeader}>
-              <Text style={styles.notificationIcon}>📬</Text>
-              <Text style={styles.notificationTitle}>Notifications</Text>
-            </View>
-            <View style={styles.notificationBreakdown}>
-              <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownValue}>{summary.messages}</Text>
-                <Text style={styles.breakdownLabel}>Messages</Text>
+          {/* Notification Summary (when active or has notifications) */}
+          {(isActive || notifications.length > 0) && (
+            <TouchableOpacity style={styles.statusCard} onPress={handleViewNotifications}>
+              <View style={styles.statusCardHeader}>
+                <Text style={styles.statusCardIcon}>📬</Text>
+                <Text style={styles.statusCardTitle}>Captured Notifications</Text>
               </View>
-              <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownValue}>{summary.calls}</Text>
-                <Text style={styles.breakdownLabel}>Calls</Text>
+              <View style={styles.notificationBreakdown}>
+                <View style={styles.breakdownItem}>
+                  <Text style={styles.breakdownValue}>{summary.messages}</Text>
+                  <Text style={styles.breakdownLabel}>Messages</Text>
+                </View>
+                <View style={styles.breakdownItem}>
+                  <Text style={styles.breakdownValue}>{summary.calls}</Text>
+                  <Text style={styles.breakdownLabel}>Calls</Text>
+                </View>
+                <View style={styles.breakdownItem}>
+                  <Text style={styles.breakdownValue}>{summary.apps}</Text>
+                  <Text style={styles.breakdownLabel}>Apps</Text>
+                </View>
               </View>
-              <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownValue}>{summary.apps}</Text>
-                <Text style={styles.breakdownLabel}>Apps</Text>
-              </View>
-            </View>
-            <Text style={styles.viewAllText}>View all notifications →</Text>
-          </TouchableOpacity>
-        )}
+              <Text style={styles.viewAllText}>Tap to view all →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {/* Quick Info */}
+        {/* Info Section */}
         <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>How it works</Text>
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>🔔</Text>
-            <Text style={styles.infoText}>Notifications silently captured</Text>
+            <Text style={styles.infoText}>Notifications are silently captured and logged</Text>
           </View>
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>🤫</Text>
-            <Text style={styles.infoText}>Phone stays silent</Text>
+            <Text style={styles.infoText}>Your phone stays silent - no sounds or vibrations</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoIcon}>📋</Text>
+            <Text style={styles.infoText}>Review all notifications later at your convenience</Text>
           </View>
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>🚨</Text>
-            <Text style={styles.infoText}>Emergency contacts can reach you</Text>
+            <Text style={styles.infoText}>Emergency contacts can still reach you</Text>
           </View>
         </View>
       </ScrollView>
@@ -464,6 +461,8 @@ export default function HomeScreen() {
             <Text style={styles.modalTitle}>Activate Landline Mode?</Text>
             <Text style={styles.modalText}>
               Your phone will go silent and all notifications will be captured for later review.
+              {'\n\n'}
+              You can deactivate at any time.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -495,21 +494,23 @@ export default function HomeScreen() {
             <Text style={styles.modalIcon}>📱</Text>
             <Text style={styles.modalTitle}>End Landline Mode?</Text>
             <Text style={styles.modalText}>
-              You'll start receiving notifications normally again.
-              {summary.total > 0 && `\n\nYou captured ${summary.total} notification${summary.total !== 1 ? 's' : ''}.`}
+              You&apos;ll start receiving notifications normally again.
+              {'\n\n'}
+              You captured {summary.total} notification{summary.total !== 1 ? 's' : ''} during this
+              session.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonCancel]}
                 onPress={() => setShowDeactivateModal(false)}
               >
-                <Text style={styles.modalButtonCancelText}>Stay</Text>
+                <Text style={styles.modalButtonCancelText}>Stay in Landline</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonDeactivate]}
                 onPress={confirmDeactivation}
               >
-                <Text style={styles.modalButtonConfirmText}>End</Text>
+                <Text style={styles.modalButtonConfirmText}>End Session</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -553,14 +554,14 @@ const styles = StyleSheet.create({
   },
   glowEffect: {
     position: 'absolute',
-    width: width * 0.65,
-    height: width * 0.65,
-    borderRadius: width * 0.325,
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: width * 0.35,
   },
   mainToggle: {
-    width: width * 0.5,
-    height: width * 0.5,
-    borderRadius: width * 0.25,
+    width: width * 0.55,
+    height: width * 0.55,
+    borderRadius: width * 0.275,
     backgroundColor: COLORS.dark.surface,
     borderWidth: 3,
     borderColor: COLORS.dark.border,
@@ -580,12 +581,12 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   toggleIcon: {
-    fontSize: 48,
+    fontSize: 56,
     textAlign: 'center',
     marginBottom: 8,
   },
   toggleStatus: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.dark.textSecondary,
     textAlign: 'center',
@@ -595,112 +596,108 @@ const styles = StyleSheet.create({
     color: COLORS.dark.primary,
   },
   toggleHint: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.dark.textMuted,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 8,
   },
   sessionInfo: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sessionCard: {
     flex: 1,
     backgroundColor: COLORS.dark.card,
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.dark.border,
   },
   sessionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.dark.textMuted,
     marginBottom: 4,
   },
   sessionValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.dark.primary,
   },
-  warningCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.dark.warning + '15',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.dark.warning + '40',
+  statusSection: {
+    gap: 12,
+    marginBottom: 24,
   },
-  warningIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  warningContent: {
-    flex: 1,
-  },
-  warningTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.dark.text,
-    marginBottom: 2,
-  },
-  warningText: {
-    fontSize: 12,
-    color: COLORS.dark.textSecondary,
-  },
-  warningArrow: {
-    fontSize: 18,
-    color: COLORS.dark.warning,
-    fontWeight: 'bold',
-  },
-  notificationCard: {
+  statusCard: {
     backgroundColor: COLORS.dark.card,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.dark.border,
   },
-  notificationHeader: {
+  statusCardWarning: {
+    borderColor: COLORS.dark.warning,
+    backgroundColor: COLORS.dark.warning + '10',
+  },
+  statusCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  notificationIcon: {
-    fontSize: 20,
+  statusCardIcon: {
+    fontSize: 18,
     marginRight: 10,
+    width: 24,
+    textAlign: 'center',
   },
-  notificationTitle: {
+  statusCardTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.dark.text,
   },
+  statusCardText: {
+    fontSize: 14,
+    color: COLORS.dark.textSecondary,
+    marginLeft: 34,
+  },
+  statusCardButton: {
+    backgroundColor: COLORS.dark.warning,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+    marginLeft: 34,
+    alignSelf: 'flex-start',
+  },
+  statusCardButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   notificationBreakdown: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.dark.divider,
+    borderTopColor: COLORS.dark.divider,
   },
   breakdownItem: {
     alignItems: 'center',
   },
   breakdownValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.dark.text,
   },
   breakdownLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.dark.textMuted,
     marginTop: 4,
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.dark.primary,
     textAlign: 'center',
     marginTop: 12,
@@ -708,25 +705,32 @@ const styles = StyleSheet.create({
   infoSection: {
     backgroundColor: COLORS.dark.card,
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: COLORS.dark.border,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark.text,
+    marginBottom: 16,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   infoIcon: {
-    fontSize: 18,
+    fontSize: 20,
     marginRight: 12,
-    width: 26,
+    width: 28,
     textAlign: 'center',
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.dark.textSecondary,
+    lineHeight: 20,
   },
   // Modals
   modalOverlay: {
@@ -741,25 +745,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 340,
     alignItems: 'center',
   },
   modalIcon: {
-    fontSize: 48,
+    fontSize: 56,
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.dark.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   modalText: {
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.dark.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
     marginBottom: 24,
   },
   modalButtons: {
@@ -785,12 +789,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.dark.warning,
   },
   modalButtonCancelText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.dark.textSecondary,
   },
   modalButtonConfirmText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
   },
