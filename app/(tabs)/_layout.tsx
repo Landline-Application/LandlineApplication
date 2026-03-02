@@ -62,13 +62,6 @@ export default function TabLayout() {
           href: null,
         }}
       />
-      <Tabs.Screen
-        name="landline"
-        options={{
-          title: 'Landline',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone.fill" color={color} />,
-        }}
-      />
     </Tabs>
   );
 }
