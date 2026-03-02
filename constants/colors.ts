@@ -23,5 +23,14 @@ export const COLORS = {
     border: '#3a3a3a',
     divider: '#333333',
     warning: '#ea580c',
+    // App-specific notification colors
+    instagram: '#E1306C',
+    messages: '#00B4D8',
+    calls: '#FF6B6B',
+    voicemail: '#4ECDC4',
+    youtube: '#FF0000',
+    apps: '#A78BFA',
+    success: '#34C759',
+    error: '#FF3B30',
   },
 };
