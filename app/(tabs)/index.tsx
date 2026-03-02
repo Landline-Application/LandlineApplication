@@ -32,6 +32,7 @@ interface NotificationSummary {
   calls: number;
 }
 
+// Redirect to landline screen as the main entry point
 export default function HomeScreen() {
   const [isActive, setIsActive] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -386,15 +387,10 @@ export default function HomeScreen() {
               <Text style={styles.statusCardTitle}>Notification Access</Text>
             </View>
             <Text style={styles.statusCardText}>
-              {hasPermission
-                ? 'Landline can capture notifications'
-                : 'Required for Landline Mode'}
+              {hasPermission ? 'Landline can capture notifications' : 'Required for Landline Mode'}
             </Text>
             {!hasPermission && (
-              <TouchableOpacity
-                style={styles.statusCardButton}
-                onPress={handleRequestPermission}
-              >
+              <TouchableOpacity style={styles.statusCardButton} onPress={handleRequestPermission}>
                 <Text style={styles.statusCardButtonText}>Grant Access</Text>
               </TouchableOpacity>
             )}
@@ -424,6 +420,12 @@ export default function HomeScreen() {
               <Text style={styles.viewAllText}>Tap to view all →</Text>
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Recent Sessions Section */}
+        <View style={styles.recentSessionsSection}>
+          <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
+          <Text style={styles.recentSessionsPlaceholder}>No recent sessions</Text>
         </View>
 
         {/* Info Section */}
@@ -701,6 +703,25 @@ const styles = StyleSheet.create({
     color: COLORS.dark.primary,
     textAlign: 'center',
     marginTop: 12,
+  },
+  recentSessionsSection: {
+    backgroundColor: COLORS.dark.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.dark.border,
+    marginBottom: 24,
+  },
+  recentSessionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark.text,
+    marginBottom: 12,
+  },
+  recentSessionsPlaceholder: {
+    fontSize: 14,
+    color: COLORS.dark.textMuted,
+    textAlign: 'center',
   },
   infoSection: {
     backgroundColor: COLORS.dark.card,

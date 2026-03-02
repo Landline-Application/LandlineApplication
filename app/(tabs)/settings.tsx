@@ -214,6 +214,27 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Demo Screens Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Demo Screens</Text>
+
+        <TouchableOpacity
+          style={[styles.actionButton, styles.demoButton]}
+          onPress={() => router.push('/notif-permissions')}
+        >
+          <Text style={styles.actionButtonText}>📱 Notification Permissions</Text>
+          <Text style={styles.actionButtonSubtext}>View app notification settings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, styles.demoButton]}
+          onPress={() => router.push('/widget-demo')}
+        >
+          <Text style={styles.actionButtonText}>🎨 Widget Demo</Text>
+          <Text style={styles.actionButtonSubtext}>View the home screen widget demo</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Delete Confirmation Modal */}
       <Modal
         animationType="fade"
@@ -345,6 +366,9 @@ const styles = StyleSheet.create({
   },
   debugButton: {
     backgroundColor: '#8B5A8E',
+  },
+  demoButton: {
+    backgroundColor: '#5AC8FA',
   },
   infoText: {
     fontSize: 14,
