@@ -25,6 +25,8 @@ interface AppItem {
   notificationCount?: number;
 }
 
+// TODO: Replace INITIAL_APPS with real app data from NotificationListenerService
+// Should fetch list of installed apps from the device
 // Mock data - in production, this would come from NotificationListenerService
 const INITIAL_APPS: AppItem[] = [
   {
@@ -158,6 +160,8 @@ const CATEGORY_ICONS: Record<AppItem['category'], string> = {
 };
 
 export default function AppSelectionScreen() {
+  // TODO: Load initial app selection from storage/state management on component mount
+  // TODO: Add loading state while fetching real app list from device
   const [apps, setApps] = useState<AppItem[]>(INITIAL_APPS);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
@@ -238,7 +242,9 @@ export default function AppSelectionScreen() {
   };
 
   const handleSave = () => {
-    // TODO: Save to storage/state management
+    // TODO: Persist selected apps to storage/state management
+    // Should save which apps are included in Landline Mode
+    // Format: { appId: boolean, appId: boolean, ... }
     Alert.alert(
       'Settings Saved',
       `${includedCount} apps will have their notifications captured during Landline Mode.`,
