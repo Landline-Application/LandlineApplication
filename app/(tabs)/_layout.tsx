@@ -37,17 +37,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="landline-mode-test"
+        name="debug-tools"
         options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="background-service-demo"
-        options={{
-          title: 'BG Service',
+          title: 'Debug',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="checkmark.circle.fill" color={color} />
+            <IconSymbol size={28} name="wrench.and.screwdriver.fill" color={color} />
           ),
         }}
       />
@@ -58,14 +52,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="slider.horizontal.3" color={color} />
           ),
-        }}
-      />
-      {/* Debug Screen - Hidden from tab bar */}
-      <Tabs.Screen
-        name="debug-screen"
-        options={{
-          title: 'Debug Screen',
-          href: null,
         }}
       />
     </Tabs>
