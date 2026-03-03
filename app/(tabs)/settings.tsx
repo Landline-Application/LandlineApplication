@@ -203,38 +203,6 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
-      {/* Debug Screen Section */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.debugButton]}
-          onPress={() => router.push('/(tabs)/debug-screen')}
-        >
-          <Text style={styles.actionButtonText}>🐛 Debug Screen</Text>
-          <Text style={styles.actionButtonSubtext}>View development testing tools</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Demo Screens Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Demo Screens</Text>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.demoButton]}
-          onPress={() => router.push('/notif-permissions')}
-        >
-          <Text style={styles.actionButtonText}>📱 Notification Permissions</Text>
-          <Text style={styles.actionButtonSubtext}>View app notification settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.demoButton]}
-          onPress={() => router.push('/widget-demo')}
-        >
-          <Text style={styles.actionButtonText}>🎨 Widget Demo</Text>
-          <Text style={styles.actionButtonSubtext}>View the home screen widget demo</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Delete Confirmation Modal */}
       <Modal
         animationType="fade"
@@ -363,12 +331,6 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#fff',
-  },
-  debugButton: {
-    backgroundColor: '#8B5A8E',
-  },
-  demoButton: {
-    backgroundColor: '#5AC8FA',
   },
   infoText: {
     fontSize: 14,
