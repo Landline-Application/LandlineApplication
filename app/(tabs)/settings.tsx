@@ -166,6 +166,29 @@ export default function SettingsScreen() {
         />
       </View>
 
+      {/* App Permissions Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>App Permissions</Text>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/permissions' as any)}
+        >
+          <Text style={styles.actionButtonText}>🔐 Manage Permissions</Text>
+          <Text style={styles.actionButtonSubtext}>Review and grant app permissions</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/app-selection' as any)}
+        >
+          <Text style={styles.actionButtonText}>📱 App Selection</Text>
+          <Text style={styles.actionButtonSubtext}>
+            Choose which apps to include in Landline Mode
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Data Management Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Data Management</Text>
