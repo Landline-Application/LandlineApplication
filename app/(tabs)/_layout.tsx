@@ -10,7 +10,13 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.tabBg,
+        tabBarActiveTintColor: COLORS.textPrimary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarStyle: {
+          backgroundColor: COLORS.cardBg,
+          borderTopColor: COLORS.cardBorder,
+          borderTopWidth: 1,
+        },
         headerShown: false,
         tabBarButton: HapticTab,
       }}
@@ -33,7 +39,7 @@ export default function TabLayout() {
         name="debug-tools"
         options={{
           title: 'Debug',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="command" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="code" color={color} />,
         }}
       />
       <Tabs.Screen
