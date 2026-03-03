@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLandlineStore } from '@/hooks/useLandlineStore';
 import { hasAcceptedTerms } from '@/utils/acceptance-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
@@ -23,6 +24,10 @@ export default function RootLayout() {
   useEffect(() => {
     // Simple ready check to ensure app is initialized
     setIsReady(true);
+
+    // Initialize Landline Mode store from native state
+    const { checkStatus } = useLandlineStore.getState();
+    checkStatus();
   }, []);
 
   useEffect(() => {
