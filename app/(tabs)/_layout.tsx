@@ -33,7 +33,7 @@ export default function TabLayout() {
         name="debug-tools"
         options={{
           title: 'Debug',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="command" color={color} />,
         }}
       />
       <Tabs.Screen
