@@ -170,22 +170,22 @@ export default function DebugToolsScreen() {
           <Button title="Refresh Status" onPress={refreshStatus} color={COLORS.dark.primary} />
           <Button
             title="Start Foreground Service"
-            onPress={() => {
+            onPress={async () => {
               const success = BackgroundServiceManager.startForegroundService(
                 'Debug Service',
                 'Testing background service',
               );
               Alert.alert('Result', success ? 'Service started' : 'Failed to start service');
-              refreshStatus();
+              await refreshStatus();
             }}
             color={COLORS.dark.primary}
           />
           <Button
             title="Stop Foreground Service"
-            onPress={() => {
+            onPress={async () => {
               const success = BackgroundServiceManager.stopForegroundService();
               Alert.alert('Result', success ? 'Service stopped' : 'Failed to stop service');
-              refreshStatus();
+              await refreshStatus();
             }}
             color={COLORS.dark.primary}
           />
