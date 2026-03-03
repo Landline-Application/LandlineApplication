@@ -57,3 +57,5 @@ app-example
 **/build/
 **/.gradle/
 **/DerivedData/
+
+tmp/
