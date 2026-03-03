@@ -70,9 +70,6 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            {/* Demo/Test screens - to be reorganized */}
-            <Stack.Screen name="notif-permissions" options={{ headerShown: false }} />
-            <Stack.Screen name="widget-demo" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
