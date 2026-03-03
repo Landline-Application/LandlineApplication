@@ -171,21 +171,57 @@ export default function DebugToolsScreen() {
           <Button
             title="Start Foreground Service"
             onPress={async () => {
-              const success = BackgroundServiceManager.startForegroundService(
-                'Debug Service',
-                'Testing background service',
-              );
-              Alert.alert('Result', success ? 'Service started' : 'Failed to start service');
-              await refreshStatus();
+              try {
+                console.log('[DEBUG] Starting foreground service...');
+                const success = BackgroundServiceManager.startForegroundService(
+                  'Landline Monitor',
+                  'Monitoring notifications',
+                );
+                console.log('[DEBUG] Start service result:', success);
+
+                // Wait a bit for the native call to complete
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                // Check status after starting
+                const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
+                console.log('[DEBUG] Service running after start:', isRunning);
+
+                Alert.alert(
+                  'Foreground Service',
+                  `Call result: ${success}\nActual status: ${isRunning ? 'Running' : 'Not running'}`,
+                );
+                await refreshStatus();
+              } catch (error) {
+                console.error('[DEBUG] Error starting service:', error);
+                Alert.alert('Error', `Failed to start service: ${error}`);
+              }
             }}
             color={COLORS.dark.primary}
           />
           <Button
             title="Stop Foreground Service"
             onPress={async () => {
-              const success = BackgroundServiceManager.stopForegroundService();
-              Alert.alert('Result', success ? 'Service stopped' : 'Failed to stop service');
-              await refreshStatus();
+              try {
+                console.log('[DEBUG] Stopping foreground service...');
+                const success = BackgroundServiceManager.stopForegroundService();
+                console.log('[DEBUG] Stop service result:', success);
+
+                // Wait a bit for the native call to complete
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                // Check status after stopping
+                const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
+                console.log('[DEBUG] Service running after stop:', isRunning);
+
+                Alert.alert(
+                  'Foreground Service',
+                  `Call result: ${success}\nActual status: ${isRunning ? 'Running' : 'Not running'}`,
+                );
+                await refreshStatus();
+              } catch (error) {
+                console.error('[DEBUG] Error stopping service:', error);
+                Alert.alert('Error', `Failed to stop service: ${error}`);
+              }
             }}
             color={COLORS.dark.primary}
           />
