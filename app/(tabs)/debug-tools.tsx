@@ -73,7 +73,8 @@ export default function DebugToolsScreen() {
     setWorkScheduled(BackgroundServiceManager.isBackgroundWorkScheduled());
     setBatteryOptimizationIgnored(BackgroundServiceManager.isIgnoringBatteryOptimizations());
     setIsDozeMode(BackgroundServiceManager.isDeviceIdleMode());
-    setAndroidVersion(BackgroundServiceManager.getAndroidVersion());
+    const versionInfo = BackgroundServiceManager.getAndroidVersion();
+    setAndroidVersion(versionInfo?.release || 'Unknown');
 
     // Landline
     await checkStatus();
@@ -125,7 +126,7 @@ export default function DebugToolsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📱 System Status</Text>
 
-        {androidVersion && (
+        {androidVersion && typeof androidVersion === 'string' && (
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Android Version:</Text>
             <Text style={styles.statusValue}>{androidVersion}</Text>
