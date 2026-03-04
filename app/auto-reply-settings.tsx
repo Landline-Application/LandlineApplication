@@ -12,8 +12,9 @@ import {
   View,
 } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 
+import { useAppTheme } from '@/contexts/theme-context';
 import {
   getAllowedApps,
   getReplyMessage,
@@ -24,7 +25,6 @@ import {
   setAutoReplyEnabled,
   setReplyMessage,
 } from '@/modules/auto-reply-manager';
-import { useAppTheme } from '@/contexts/theme-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ─── Templates ────────────────────────────────────────────────────────────────
@@ -49,8 +49,7 @@ const TEMPLATES = [
   {
     id: 'focus',
     label: 'Focus Time',
-    message:
-      "I'm in focus mode and not checking messages right now. I'll catch up with you later.",
+    message: "I'm in focus mode and not checking messages right now. I'll catch up with you later.",
   },
   {
     id: 'away',
@@ -91,7 +90,6 @@ const APP_PRESETS = [
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function AutoReplySettingsScreen() {
-  const router = useRouter();
   const { isDark } = useAppTheme();
   const t = isDark ? dark : light;
 
@@ -114,9 +112,7 @@ export default function AutoReplySettingsScreen() {
     const apps = getAllowedApps();
     setAllowedAppsState(apps);
     const match = APP_PRESETS.find(
-      (p) =>
-        p.packages.length === apps.length &&
-        p.packages.every((pkg) => apps.includes(pkg)),
+      (p) => p.packages.length === apps.length && p.packages.every((pkg) => apps.includes(pkg)),
     );
     setSelectedPreset(match?.id ?? 'custom');
   }, []);
@@ -183,20 +179,8 @@ export default function AutoReplySettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: t.border }]}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Text style={[styles.backText, { color: t.accent }]}>Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: t.text }]}>Auto-Reply</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Enable / Disable */}
         <View style={[styles.card, { backgroundColor: t.card }]}>
           <View style={styles.toggleRow}>
@@ -215,9 +199,7 @@ export default function AutoReplySettingsScreen() {
           </View>
           {!hasPermission && (
             <View style={[styles.warningBanner, { backgroundColor: t.warningBg }]}>
-              <Text style={styles.warningText}>
-                Notification Listener permission required
-              </Text>
+              <Text style={styles.warningText}>Notification Listener permission required</Text>
             </View>
           )}
         </View>
@@ -273,9 +255,7 @@ export default function AutoReplySettingsScreen() {
                 onPress={() => setIsEditing(true)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.editTriggerText, { color: t.accent }]}>
-                  Edit Message
-                </Text>
+                <Text style={[styles.editTriggerText, { color: t.accent }]}>Edit Message</Text>
               </TouchableOpacity>
             </>
           )}
@@ -295,9 +275,7 @@ export default function AutoReplySettingsScreen() {
                 onPress={() => handleSelectTemplate(tmpl)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.templateChipLabel, { color: t.text }]}>
-                  {tmpl.label}
-                </Text>
+                <Text style={[styles.templateChipLabel, { color: t.text }]}>{tmpl.label}</Text>
                 <Text
                   style={[styles.templateChipPreview, { color: t.textSecondary }]}
                   numberOfLines={1}
@@ -400,26 +378,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  headerSpacer: {
-    width: 40,
   },
 
   scrollContent: {
