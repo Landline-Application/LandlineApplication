@@ -4,6 +4,7 @@ import { Alert, Button, Platform, ScrollView, StyleSheet, Text, View } from 'rea
 
 import * as Notifications from 'expo-notifications';
 
+import { useAppTheme } from '@/contexts/theme-context';
 import {
   clearReplyHistory,
   getActiveNotifications,
@@ -19,10 +20,27 @@ import {
   setAutoReplyEnabled,
   setReplyMessage,
 } from '@/modules/auto-reply-manager';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+function formatResult(result: any): string {
+  if (result && typeof result === 'object') {
+    return result.message || (result.success ? 'Success' : 'Failed');
+  }
+  return String(result);
+}
 
 export default function AutoReplyTestScreen() {
+  const { isDark } = useAppTheme();
   const [status, setStatus] = useState('');
   const [notificationCount, setNotificationCount] = useState(0);
+
+  const t = {
+    bg: isDark ? '#121212' : '#FFFFFF',
+    text: isDark ? '#FFFFFF' : '#000000',
+    secondaryText: isDark ? '#AAAAAA' : '#666666',
+    sectionBg: isDark ? '#1E1E1E' : '#F5F5F5',
+    statusBg: isDark ? '#1A2A3A' : '#E8F4FD',
+  };
 
   useEffect(() => {
     requestNotificationPermissions();
@@ -42,44 +60,47 @@ export default function AutoReplyTestScreen() {
 
   async function checkListenerPermission() {
     const hasPermission = isListenerEnabled();
-    Alert.alert('Listener Permission', `Has permission: ${hasPermission}`);
+    Alert.alert(
+      'Listener Permission',
+      hasPermission ? 'Notification listener is enabled ✓' : 'Notification listener is not enabled ✗',
+    );
   }
 
   async function requestPermission() {
     const result = await requestListenerPermission();
-    Alert.alert('Request Permission', JSON.stringify(result, null, 2));
+    Alert.alert('Request Permission', formatResult(result));
   }
 
   async function checkAutoReplyStatus() {
     const enabled = isAutoReplyEnabled();
     const running = isServiceRunning();
     setStatus(`Auto-reply: ${enabled ? 'ON' : 'OFF'}, Service: ${running ? 'Running' : 'Stopped'}`);
-    Alert.alert('Auto-Reply Status', `Enabled: ${enabled}\nService Running: ${running}`);
+    Alert.alert('Auto-Reply Status', `Enabled: ${enabled ? 'Yes ✓' : 'No ✗'}\nService Running: ${running ? 'Yes ✓' : 'No ✗'}`);
   }
 
   async function enableAutoReply() {
     const result = await setAutoReplyEnabled(true);
-    Alert.alert('Enable Auto-Reply', JSON.stringify(result, null, 2));
+    Alert.alert('Enable Auto-Reply', formatResult(result));
   }
 
   async function disableAutoReply() {
     const result = await setAutoReplyEnabled(false);
-    Alert.alert('Disable Auto-Reply', JSON.stringify(result, null, 2));
+    Alert.alert('Disable Auto-Reply', formatResult(result));
   }
 
   async function updateReplyMessage() {
     const result = await setReplyMessage("I'm in a meeting right now. I'll get back to you soon!");
-    Alert.alert('Update Message', JSON.stringify(result, null, 2));
+    Alert.alert('Update Message', formatResult(result));
   }
 
   async function showCurrentMessage() {
     const message = getReplyMessage();
-    Alert.alert('Current Reply Message', message);
+    Alert.alert('Current Reply Message', message || 'No message set');
   }
 
   async function setWhatsAppOnly() {
     const result = await setAllowedApps(['com.whatsapp']);
-    Alert.alert('Set WhatsApp Only', JSON.stringify(result, null, 2));
+    Alert.alert('Set WhatsApp Only', formatResult(result));
   }
 
   async function setMessagingApps() {
@@ -91,15 +112,12 @@ export default function AutoReplyTestScreen() {
       'com.google.android.apps.messaging',
     ];
     const result = await setAllowedApps(apps);
-    Alert.alert(
-      'Set Messaging Apps',
-      `Set ${apps.length} apps\n${JSON.stringify(result, null, 2)}`,
-    );
+    Alert.alert('Set Messaging Apps', `Configured ${apps.length} apps`);
   }
 
   async function allowAllApps() {
     const result = await setAllowedApps([]);
-    Alert.alert('Allow All Apps', JSON.stringify(result, null, 2));
+    Alert.alert('Allow All Apps', formatResult(result));
   }
 
   async function showAllowedApps() {
@@ -148,7 +166,12 @@ export default function AutoReplyTestScreen() {
     }
 
     const first = notifications[0];
-    const details = JSON.stringify(first, null, 2);
+    const details = [
+      `Package: ${first.packageName}`,
+      `Title: ${first.title || 'N/A'}`,
+      `Text: ${first.text || 'N/A'}`,
+      `Has Reply: ${first.hasReplyAction ? 'Yes ✓' : 'No ✗'}`,
+    ].join('\n');
     Alert.alert('First Notification', details);
   }
 
@@ -156,19 +179,7 @@ export default function AutoReplyTestScreen() {
     const result = await sendTestNotification('John Doe', 'Hey! Are you available for a call?');
     Alert.alert(
       'Test Notification Sent',
-      `${JSON.stringify(result, null, 2)}\n\n✅ Pull down from the top of the screen to see the notification!\n\nIf you don't see it, the emulator might have display issues. Try on a real device.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Programmatically open notification shade
-            const { Platform } = require('react-native');
-            if (Platform.OS === 'android') {
-              require('react-native').NativeModules.StatusBarManager?.expandNotifications?.();
-            }
-          },
-        },
-      ],
+      `${formatResult(result)}\n\n✅ Pull down from the top of the screen to see the notification!\n\nIf you don't see it, the emulator might have display issues. Try on a real device.`,
     );
   }
 
@@ -212,119 +223,127 @@ export default function AutoReplyTestScreen() {
 
   async function clearHistory() {
     const result = await clearReplyHistory();
-    Alert.alert('Clear History', JSON.stringify(result, null, 2));
+    Alert.alert('Clear History', formatResult(result));
   }
 
   return (
-    <ScrollView>
-      <View style={styles.titleContainer}>
-        <Text>Auto-Reply Test</Text>
-      </View>
-
-      {status && (
-        <View style={styles.statusContainer}>
-          <Text>{status}</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: t.bg }]} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.titleText, { color: t.text }]}>Auto-Reply Test</Text>
         </View>
-      )}
 
-      {notificationCount > 0 && (
-        <View style={styles.statusContainer}>
-          <Text>Active notifications: {notificationCount}</Text>
-        </View>
-      )}
+        {status !== '' && (
+          <View style={[styles.statusContainer, { backgroundColor: t.statusBg }]}>
+            <Text style={{ color: t.text }}>{status}</Text>
+          </View>
+        )}
 
-      <View style={styles.sectionContainer}>
-        <Text>Permissions</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Check Listener Permission" onPress={checkListenerPermission} />
-          <Button title="Request Listener Permission" onPress={requestPermission} />
-        </View>
-      </View>
+        {notificationCount > 0 && (
+          <View style={[styles.statusContainer, { backgroundColor: t.statusBg }]}>
+            <Text style={{ color: t.text }}>Active notifications: {notificationCount}</Text>
+          </View>
+        )}
 
-      <View style={styles.sectionContainer}>
-        <Text>Auto-Reply Control</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Check Status" onPress={checkAutoReplyStatus} />
-          <Button title="Enable Auto-Reply" onPress={enableAutoReply} />
-          <Button title="Disable Auto-Reply" onPress={disableAutoReply} />
-          <Button title="Check Service Running" onPress={checkServiceStatus} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Permissions</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Check Listener Permission" onPress={checkListenerPermission} />
+            <Button title="Request Listener Permission" onPress={requestPermission} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.sectionContainer}>
-        <Text>Reply Message</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Show Current Message" onPress={showCurrentMessage} />
-          <Button title="Update Message" onPress={updateReplyMessage} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Auto-Reply Control</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Check Status" onPress={checkAutoReplyStatus} />
+            <Button title="Enable Auto-Reply" onPress={enableAutoReply} />
+            <Button title="Disable Auto-Reply" onPress={disableAutoReply} />
+            <Button title="Check Service Running" onPress={checkServiceStatus} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.sectionContainer}>
-        <Text>Allowed Apps</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Show Allowed Apps" onPress={showAllowedApps} />
-          <Button title="Set WhatsApp Only" onPress={setWhatsAppOnly} />
-          <Button title="Set Messaging Apps" onPress={setMessagingApps} />
-          <Button title="Allow All Apps" onPress={allowAllApps} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Reply Message</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Show Current Message" onPress={showCurrentMessage} />
+            <Button title="Update Message" onPress={updateReplyMessage} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.sectionContainer}>
-        <Text>Test Notifications (Emulator)</Text>
-        <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-          ⚠️ Note: Test notifications won&apos;t trigger auto-reply (Android limitation). Use real
-          messaging apps for full testing.
-        </Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Send Test Message" onPress={sendTestMessage} />
-          <Button title="Send Multiple Test Messages" onPress={sendMultipleTests} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Allowed Apps</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Show Allowed Apps" onPress={showAllowedApps} />
+            <Button title="Set WhatsApp Only" onPress={setWhatsAppOnly} />
+            <Button title="Set Messaging Apps" onPress={setMessagingApps} />
+            <Button title="Allow All Apps" onPress={allowAllApps} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.sectionContainer}>
-        <Text>Notifications</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="Show Active Notifications" onPress={showActiveNotifications} />
-          <Button title="Show First Notification Details" onPress={showNotificationDetails} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Test Notifications (Emulator)</Text>
+          <Text style={{ fontSize: 12, color: t.secondaryText, marginBottom: 8 }}>
+            ⚠️ Note: Test notifications won&apos;t trigger auto-reply (Android limitation). Use real
+            messaging apps for full testing.
+          </Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Send Test Message" onPress={sendTestMessage} />
+            <Button title="Send Multiple Test Messages" onPress={sendMultipleTests} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.sectionContainer}>
-        <Text>Reply History</Text>
-        <View style={styles.buttonGroup}>
-          <Button title="View Reply History" onPress={viewReplyHistory} />
-          <Button title="Clear History" onPress={clearHistory} />
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Notifications</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="Show Active Notifications" onPress={showActiveNotifications} />
+            <Button title="Show First Notification Details" onPress={showNotificationDetails} />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Reply History</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="View Reply History" onPress={viewReplyHistory} />
+            <Button title="Clear History" onPress={clearHistory} />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 16,
+  },
   titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   statusContainer: {
     padding: 12,
-    backgroundColor: '#f0f0f0',
     borderRadius: 8,
-    marginBottom: 16,
   },
   sectionContainer: {
     gap: 8,
-    marginBottom: 24,
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   buttonGroup: {
     gap: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
   },
 });
