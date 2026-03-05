@@ -29,6 +29,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="landline"
+        options={{
+          title: 'Landline',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',
