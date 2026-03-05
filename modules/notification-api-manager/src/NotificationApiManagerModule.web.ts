@@ -1,9 +1,7 @@
 import { NativeModule, registerWebModule } from 'expo';
 
-import { ChangeEventPayload } from './NotificationApiManager.types';
-
 type NotificationApiManagerModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
+  onChange: (params: { value: string }) => void;
 };
 
 class NotificationApiManagerModule extends NativeModule<NotificationApiManagerModuleEvents> {
@@ -13,6 +11,77 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   }
   hello() {
     return 'Hello world! 👋';
+  }
+
+  // Notification Permission (Web stubs - not supported)
+  hasPostPermission() {
+    return false;
+  }
+  async requestPostPermission() {
+    return false;
+  }
+  createChannel() {
+    return false;
+  }
+  notify() {
+    return false;
+  }
+
+  // Notification Listener (Web stubs - not supported)
+  hasNotificationListenerPermission() {
+    return false;
+  }
+  async requestNotificationListenerPermission() {
+    return false;
+  }
+  setLandlineMode() {
+    return false;
+  }
+  isLandlineModeActive() {
+    return false;
+  }
+  async getLoggedNotifications() {
+    return [];
+  }
+  clearLoggedNotifications() {
+    return false;
+  }
+
+  // Auto-Reply (Web stubs - not supported)
+  isAutoReplyEnabled() {
+    return false;
+  }
+  setAutoReplyEnabled() {
+    return false;
+  }
+  setReplyMessage() {
+    return false;
+  }
+  getReplyMessage() {
+    return '';
+  }
+  setAllowedApps() {
+    return false;
+  }
+  getAllowedApps() {
+    return [];
+  }
+  async getReplyHistory() {
+    return [];
+  }
+  clearReplyHistory() {
+    return false;
+  }
+  isServiceRunning() {
+    return false;
+  }
+  async getActiveNotifications() {
+    return [];
+  }
+
+  // Data Management
+  async clearAllData() {
+    return false;
   }
 }
 
