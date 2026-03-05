@@ -1,8 +1,10 @@
 package expo.modules.backgroundservicemanager
 
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -25,7 +27,8 @@ class NotificationForegroundService : Service() {
         const val NOTIFICATION_ID = 1001
         const val ACTION_START_SERVICE = "ACTION_START_SERVICE"
         const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE"
-        
+        const val ACTION_UPDATE_NOTIFICATION = "com.landlineapp.UPDATE_NOTIFICATION"
+
         private var isRunning = false
         
         fun isServiceRunning(): Boolean = isRunning
@@ -53,10 +56,29 @@ class NotificationForegroundService : Service() {
     }
     
     private var wakeLock: PowerManager.WakeLock? = null
-    
+    private var updateReceiver: BroadcastReceiver? = null
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        registerUpdateReceiver()
+    }
+
+    private fun registerUpdateReceiver() {
+        updateReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == ACTION_UPDATE_NOTIFICATION) {
+                    val message = intent.getStringExtra("message") ?: "Service is running"
+                    updateNotification("Landline", message)
+                }
+            }
+        }
+        val filter = IntentFilter(ACTION_UPDATE_NOTIFICATION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(updateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(updateReceiver, filter)
+        }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -87,6 +109,12 @@ class NotificationForegroundService : Service() {
     }
     
     override fun onDestroy() {
+        try {
+            updateReceiver?.let { unregisterReceiver(it) }
+        } catch (e: Exception) {
+            // already unregistered
+        }
+        updateReceiver = null
         super.onDestroy()
         isRunning = false
         releaseWakeLock()
