@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import NotificationApiManager from '@/modules/notification-api-manager';
 import { useRouter } from 'expo-router';
+
+import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LandlineScreen() {
@@ -78,9 +79,7 @@ export default function LandlineScreen() {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.title}>Landline Mode</Text>
-        <Text style={styles.description}>
-          Landline Mode is only available on Android devices.
-        </Text>
+        <Text style={styles.description}>Landline Mode is only available on Android devices.</Text>
       </View>
     );
   }
@@ -110,9 +109,8 @@ export default function LandlineScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>What is Landline Mode?</Text>
         <Text style={styles.cardBody}>
-          Landline Mode temporarily captures your notifications, so you
-          can stay focused. Afterward, you can review everything that came in from the
-          Notifications tab.
+          Landline Mode temporarily captures your notifications, so you can stay focused. Afterward,
+          you can review everything that came in from the Notifications tab.
         </Text>
       </View>
 
@@ -128,9 +126,7 @@ export default function LandlineScreen() {
               hasPermission ? styles.statusPillActive : styles.statusPillInactive,
             ]}
           >
-            <Text style={styles.statusPillText}>
-              {hasPermission ? 'Granted' : 'Not Granted'}
-            </Text>
+            <Text style={styles.statusPillText}>{hasPermission ? 'Granted' : 'Not Granted'}</Text>
           </View>
         </View>
 
@@ -142,9 +138,7 @@ export default function LandlineScreen() {
               isLandlineModeActive ? styles.statusPillActive : styles.statusPillInactive,
             ]}
           >
-            <Text style={styles.statusPillText}>
-              {isLandlineModeActive ? 'On' : 'Off'}
-            </Text>
+            <Text style={styles.statusPillText}>{isLandlineModeActive ? 'On' : 'Off'}</Text>
           </View>
         </View>
       </View>
@@ -330,5 +324,4 @@ const styles = StyleSheet.create({
     color: '#F9F2DF',
     textAlign: 'center',
   },
-})
-
+});
