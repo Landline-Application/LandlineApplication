@@ -37,6 +37,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="landline-mode-test"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="background-service-demo"
         options={{
           title: 'BG Service',

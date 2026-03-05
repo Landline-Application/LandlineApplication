@@ -47,8 +47,13 @@ export default function LandlineModeTest() {
   };
 
   const loadNotifications = async () => {
-    const logs = await NotificationApiManager.getLoggedNotifications();
-    setNotifications(logs);
+    try {
+      const logs = await NotificationApiManager.getLoggedNotifications();
+      setNotifications(logs);
+    } catch (error) {
+      console.error('Failed to load logged notifications', error);
+      Alert.alert('Error', 'Failed to load logged notifications');
+    }
   };
 
   const handleRequestPermission = async () => {
