@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -99,7 +99,6 @@ export default function LandlineScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Landline Mode</Text>
-          <Text style={styles.subtitle}>Focus like it&apos;s 1995.</Text>
         </View>
 
         <TouchableOpacity style={styles.debugButton} onPress={handleOpenDebug}>
@@ -111,7 +110,7 @@ export default function LandlineScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>What is Landline Mode?</Text>
         <Text style={styles.cardBody}>
-          Landline Mode temporarily captures your notifications while you&apos;re on a call, so you
+          Landline Mode temporarily captures your notifications, so you
           can stay focused. Afterward, you can review everything that came in from the
           Notifications tab.
         </Text>
@@ -168,7 +167,7 @@ export default function LandlineScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>Control</Text>
           <Text style={styles.cardBody}>
-            Turn Landline Mode on at the start of a call, then turn it off when you&apos;re done.
+            Turn Landline Mode on to capture notifications, then turn it off when you&apos;re done.
           </Text>
           <TouchableOpacity
             style={[
