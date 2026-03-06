@@ -1,52 +1,57 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { useRouter } from 'expo-router';
-
-import NotificationApiManager from '@/modules/notification-api-manager';
+import { useLandlineStore } from '@/hooks/useLandlineStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LandlineScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
-  const [hasPermission, setHasPermission] = useState(false);
-  const [isLandlineModeActive, setIsLandlineModeActive] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const {
+    hasPermission,
+    isActive,
+    isLoading,
+    checkStatus,
+    requestPermission,
+    activateLandlineMode,
+    deactivateLandlineMode,
+  } = useLandlineStore();
 
-  const loadStatus = useCallback(() => {
-    if (Platform.OS !== 'android') {
-      setLoading(false);
-      return;
-    }
-
-    const permission = NotificationApiManager.hasNotificationListenerPermission();
-    const active = NotificationApiManager.isLandlineModeActive();
-
-    setHasPermission(permission);
-    setIsLandlineModeActive(active);
-    setLoading(false);
-  }, []);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    checkStatus().finally(() => setInitialLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRequestPermission = useCallback(async () => {
     try {
-      await NotificationApiManager.requestNotificationListenerPermission();
+      await requestPermission();
       Alert.alert(
         'Grant Permission',
         'Please enable notification access for this app, then come back to confirm status.',
       );
+    } catch {
+      // Error is already set in store
+      console.error('Permission request failed');
     } finally {
       // Give the system a moment, then re-check
-      setTimeout(loadStatus, 1000);
+      setTimeout(() => {
+        checkStatus();
+      }, 1000);
     }
-  }, [loadStatus]);
+  }, [requestPermission, checkStatus]);
 
-  const handleToggleLandlineMode = useCallback(() => {
+  const handleToggleLandlineMode = useCallback(async () => {
     if (Platform.OS !== 'android') {
       return;
     }
@@ -59,21 +64,18 @@ export default function LandlineScreen() {
       return;
     }
 
-    const next = !isLandlineModeActive;
-    const success = NotificationApiManager.setLandlineMode(next);
-
-    if (!success) {
+    try {
+      if (isActive) {
+        await deactivateLandlineMode();
+        Alert.alert('Landline Mode', 'Landline Mode is now OFF.');
+      } else {
+        await activateLandlineMode();
+        Alert.alert('Landline Mode', 'Landline Mode is now ON.');
+      }
+    } catch {
       Alert.alert('Error', 'Unable to update Landline Mode. Please try again.');
-      return;
     }
-
-    setIsLandlineModeActive(next);
-    Alert.alert('Landline Mode', next ? 'Landline Mode is now ON.' : 'Landline Mode is now OFF.');
-  }, [hasPermission, isLandlineModeActive]);
-
-  const handleOpenDebug = useCallback(() => {
-    router.push('/(tabs)/landline-mode-test');
-  }, [router]);
+  }, [hasPermission, isActive, activateLandlineMode, deactivateLandlineMode]);
 
   if (Platform.OS !== 'android') {
     return (
@@ -84,9 +86,10 @@ export default function LandlineScreen() {
     );
   }
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#D4AF7A" />
         <Text style={styles.loadingText}>Checking Landline status...</Text>
       </View>
     );
@@ -96,13 +99,7 @@ export default function LandlineScreen() {
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Landline Mode</Text>
-        </View>
-
-        <TouchableOpacity style={styles.debugButton} onPress={handleOpenDebug}>
-          <Text style={styles.debugButtonText}>LANDLINE MODE TEST</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Landline Mode</Text>
       </View>
 
       {/* Explanation */}
@@ -135,10 +132,10 @@ export default function LandlineScreen() {
           <View
             style={[
               styles.statusPill,
-              isLandlineModeActive ? styles.statusPillActive : styles.statusPillInactive,
+              isActive ? styles.statusPillActive : styles.statusPillInactive,
             ]}
           >
-            <Text style={styles.statusPillText}>{isLandlineModeActive ? 'On' : 'Off'}</Text>
+            <Text style={styles.statusPillText}>{isActive ? 'On' : 'Off'}</Text>
           </View>
         </View>
       </View>
@@ -166,13 +163,19 @@ export default function LandlineScreen() {
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              isLandlineModeActive ? styles.buttonOn : styles.buttonOff,
+              isActive ? styles.buttonOn : styles.buttonOff,
+              isLoading && styles.buttonDisabled,
             ]}
             onPress={handleToggleLandlineMode}
+            disabled={isLoading}
           >
-            <Text style={styles.primaryButtonText}>
-              {isLandlineModeActive ? 'Turn Landline Mode Off' : 'Turn Landline Mode On'}
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#3d3325" />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {isActive ? 'Turn Landline Mode Off' : 'Turn Landline Mode On'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -202,9 +205,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#3d3325',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 24,
   },
   title: {
@@ -219,20 +219,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#F4E4C1',
-  },
-  debugButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D4AF7A',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  debugButtonText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8,
     color: '#F4E4C1',
   },
   card: {
@@ -300,6 +286,9 @@ const styles = StyleSheet.create({
   },
   buttonOff: {
     backgroundColor: '#27ae60',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     fontSize: 15,
