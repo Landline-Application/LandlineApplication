@@ -3,8 +3,8 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import NotebookLogView from '@/components/notebook-log-view';
-import { useActiveRefresh } from '@/hooks/useActiveRefresh';
-import { useLandlineStore } from '@/hooks/useLandlineStore';
+import { useActiveRefresh } from '@/hooks/use-active-refresh';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

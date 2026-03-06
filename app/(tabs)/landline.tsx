@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { useLandlineStore } from '@/hooks/useLandlineStore';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LandlineScreen() {

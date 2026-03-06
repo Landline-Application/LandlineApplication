@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { router, useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
@@ -139,20 +139,6 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
-      </View>
-
-      {/* Auto-Reply Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Auto-Reply</Text>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/auto-reply-settings')}
-        >
-          <Text style={styles.actionButtonText}>Configure Auto-Reply</Text>
-          <Text style={styles.actionButtonSubtext}>
-            Set up out-of-office message templates and reply preferences
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Storage Info Section */}
