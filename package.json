@@ -7,6 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "prebuild": "expo prebuild --clean --platform android",
     "lint": "expo lint",
     "format": "prettier --write ."
   },
