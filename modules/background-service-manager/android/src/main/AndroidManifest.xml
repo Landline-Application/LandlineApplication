@@ -11,5 +11,18 @@
   
   <!-- Request ignore battery optimizations (user must explicitly grant) -->
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  
+  <application>
+    <!-- Foreground Service for background operations -->
+    <service
+      android:name="expo.modules.backgroundservicemanager.NotificationForegroundService"
+      android:enabled="true"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Notification monitoring service for Landline Mode" />
+    </service>
+  </application>
 </manifest>
 
