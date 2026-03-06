@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLandlineStore } from '@/hooks/useLandlineStore';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { hasAcceptedTerms } from '@/utils/acceptance-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
