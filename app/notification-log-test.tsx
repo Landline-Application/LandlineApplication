@@ -22,7 +22,10 @@ export default function NotificationLogTestScreen() {
   async function checkNotificationPermission() {
     const hasPerms = NotificationApiManager.hasPostPermission();
     setHasPermission(hasPerms);
-    Alert.alert('Notification Permission', hasPerms ? 'Permission granted ✓' : 'Permission not granted ✗');
+    Alert.alert(
+      'Notification Permission',
+      hasPerms ? 'Permission granted ✓' : 'Permission not granted ✗',
+    );
   }
 
   async function requestNotificationPermission() {
@@ -129,7 +132,9 @@ export default function NotificationLogTestScreen() {
               color="#ff6b6b"
             />
           </View>
-          <Text style={[styles.statusText, { color: t.text }]}>Logged Notifications: {notifCount}</Text>
+          <Text style={[styles.statusText, { color: t.text }]}>
+            Logged Notifications: {notifCount}
+          </Text>
         </View>
 
         <View style={[styles.section, { backgroundColor: t.sectionBg }]}>
@@ -141,9 +146,15 @@ export default function NotificationLogTestScreen() {
 
         <View style={[styles.section, { backgroundColor: t.instructionBg }]}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>ℹ️ Instructions</Text>
-          <Text style={[styles.instructionText, { color: t.text }]}>1. Grant notification permission</Text>
-          <Text style={[styles.instructionText, { color: t.text }]}>2. Send test notifications</Text>
-          <Text style={[styles.instructionText, { color: t.text }]}>3. View them in the Notifications tab</Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>
+            1. Grant notification permission
+          </Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>
+            2. Send test notifications
+          </Text>
+          <Text style={[styles.instructionText, { color: t.text }]}>
+            3. View them in the Notifications tab
+          </Text>
           <Text style={[styles.instructionText, { color: t.text }]}>
             4. Use clear to remove all logged notifications
           </Text>
