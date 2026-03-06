@@ -23,6 +23,7 @@ export const COLORS = {
     border: '#3a3a3a',
     divider: '#333333',
     warning: '#ea580c',
+    buttonDisabled: '#404040',
     // App-specific notification colors
     instagram: '#E1306C',
     messages: '#00B4D8',

@@ -12,6 +12,16 @@ import { requireNativeModule } from 'expo-modules-core';
  * - isLandlineModeActive(): boolean
  * - getLoggedNotifications(): Array
  * - clearLoggedNotifications(): boolean
+ * - isAutoReplyEnabled(): boolean
+ * - setAutoReplyEnabled(enabled: boolean): boolean
+ * - setReplyMessage(message: string): boolean
+ * - getReplyMessage(): string
+ * - setAllowedApps(packageNames: string[]): boolean
+ * - getAllowedApps(): string[]
+ * - getReplyHistory(): Array
+ * - clearReplyHistory(): boolean
+ * - isServiceRunning(): boolean
+ * - getActiveNotifications(): Array
  * - clearAllData(): Promise<boolean>
  */
 type NotificationApiNativeModule = {
@@ -26,6 +36,17 @@ type NotificationApiNativeModule = {
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
   clearLoggedNotifications(): boolean;
+  // Auto-Reply
+  isAutoReplyEnabled(): boolean;
+  setAutoReplyEnabled(enabled: boolean): boolean;
+  setReplyMessage(message: string): boolean;
+  getReplyMessage(): string;
+  setAllowedApps(packageNames: string[]): boolean;
+  getAllowedApps(): string[];
+  getReplyHistory(): Promise<any[]>;
+  clearReplyHistory(): boolean;
+  isServiceRunning(): boolean;
+  getActiveNotifications(): Promise<any[]>;
   // Data Management
   clearAllData(): Promise<boolean>;
 };
@@ -81,6 +102,50 @@ export function clearLoggedNotifications() {
 }
 
 // ============================================================
+// AUTO-REPLY
+// ============================================================
+
+export function isAutoReplyEnabled() {
+  return Native.isAutoReplyEnabled();
+}
+
+export function setAutoReplyEnabled(enabled: boolean) {
+  return Native.setAutoReplyEnabled(enabled);
+}
+
+export function setReplyMessage(message: string) {
+  return Native.setReplyMessage(message);
+}
+
+export function getReplyMessage() {
+  return Native.getReplyMessage();
+}
+
+export function setAllowedApps(packageNames: string[]) {
+  return Native.setAllowedApps(packageNames);
+}
+
+export function getAllowedApps() {
+  return Native.getAllowedApps();
+}
+
+export function getReplyHistory() {
+  return Native.getReplyHistory();
+}
+
+export function clearReplyHistory() {
+  return Native.clearReplyHistory();
+}
+
+export function isServiceRunning() {
+  return Native.isServiceRunning();
+}
+
+export function getActiveNotifications() {
+  return Native.getActiveNotifications();
+}
+
+// ============================================================
 // DATA MANAGEMENT
 // ============================================================
 
@@ -99,5 +164,15 @@ export default {
   isLandlineModeActive,
   getLoggedNotifications,
   clearLoggedNotifications,
+  isAutoReplyEnabled,
+  setAutoReplyEnabled,
+  setReplyMessage,
+  getReplyMessage,
+  setAllowedApps,
+  getAllowedApps,
+  getReplyHistory,
+  clearReplyHistory,
+  isServiceRunning,
+  getActiveNotifications,
   clearAllData,
 };

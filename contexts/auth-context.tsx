@@ -1,99 +1,96 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface User {
-  email: string;
-  id?: string;
-}
+import {
+  auth,
+  createUserDocument,
+  createUserWithEmailAndPassword,
+  firebaseSignOut,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithGoogle as firebaseSignInWithGoogle,
+  type FirebaseAuthTypes,
+} from '@/utils/firebase';
 
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseAuthTypes.User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
-    checkAuthStatus();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          await createUserDocument(firebaseUser);
+        } catch (error) {
+          console.warn('Failed to update user document:', error);
+        }
+      }
+      setUser(firebaseUser);
+      setIsLoading(false);
+    });
+
+    return unsubscribe;
   }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      const userJson = await AsyncStorage.getItem('@user');
-      if (userJson) {
-        setUser(JSON.parse(userJson));
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const signUp = async (email: string, password: string) => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    await createUserDocument(credential.user);
     try {
-      // TODO: Implement actual API call to your authentication service
-      // For now, we'll simulate a signup
-      const newUser: User = {
-        email,
-        id: `user_${Date.now()}`,
-      };
-
-      // Store user data
-      await AsyncStorage.setItem('@user', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
-      console.error('Signup error:', error);
+      await sendEmailVerification(credential.user);
+    } catch (verificationError: any) {
+      const code = verificationError?.code;
+      const message =
+        code === 'auth/too-many-requests'
+          ? 'Too many verification emails. Please try again later.'
+          : verificationError?.message || 'We could not send the verification email.';
+      const error = new Error(message) as Error & { code?: string };
+      error.code = code ?? 'verification-email-failed';
       throw error;
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // TODO: Implement actual API call to your authentication service
-      const user: User = {
-        email,
-        id: `user_${Date.now()}`,
-      };
-
-      await AsyncStorage.setItem('@user', JSON.stringify(user));
-      setUser(user);
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
-    }
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signOut = async () => {
-    try {
-      await AsyncStorage.removeItem('@user');
-      setUser(null);
-    } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
-    }
+    await firebaseSignOut(auth);
+  };
+
+  const signInWithGoogle = async () => {
+    await firebaseSignInWithGoogle();
+  };
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        signUp,
-        signIn,
-        signOut,
-      }}
+        value={{
+          user,
+          isLoading,
+          isAuthenticated: !!user,
+          signUp,
+          signIn,
+          signInWithGoogle,
+          signOut,
+          resetPassword,
+        }}
     >
       {children}
     </AuthContext.Provider>

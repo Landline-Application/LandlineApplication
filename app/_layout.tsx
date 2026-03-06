@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { hasAcceptedTerms } from '@/utils/acceptance-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
@@ -23,6 +24,10 @@ export default function RootLayout() {
   useEffect(() => {
     // Simple ready check to ensure app is initialized
     setIsReady(true);
+
+    // Initialize Landline Mode store from native state
+    const { checkStatus } = useLandlineStore.getState();
+    checkStatus();
   }, []);
 
   useEffect(() => {
@@ -64,12 +69,10 @@ export default function RootLayout() {
             <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
             <Stack.Screen name="permissions" options={{ headerShown: false }} />
             <Stack.Screen name="app-selection" options={{ headerShown: false }} />
+            <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            {/* Demo/Test screens - to be reorganized */}
-            <Stack.Screen name="notif-permissions" options={{ headerShown: false }} />
-            <Stack.Screen name="widget-demo" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
