@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -106,9 +115,7 @@ export default function LandlineModeTest() {
     <ScrollView
       style={[styles.container, { backgroundColor: t.bg }]}
       contentContainerStyle={{ paddingTop: insets.top }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handlePullRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handlePullRefresh} />}
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: t.text }]}>Landline Mode Test</Text>
@@ -120,33 +127,39 @@ export default function LandlineModeTest() {
 
         <View style={styles.statusRow}>
           <Text style={{ color: t.text }}>Notification Listener Permission:</Text>
-          <Text style={[
-            styles.statusBadge,
-            {
-              backgroundColor: hasPermission ? t.badgeActiveBg : t.badgeInactiveBg,
-              color: hasPermission ? t.badgeActiveText : t.badgeInactiveText,
-            },
-          ]}>
+          <Text
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: hasPermission ? t.badgeActiveBg : t.badgeInactiveBg,
+                color: hasPermission ? t.badgeActiveText : t.badgeInactiveText,
+              },
+            ]}
+          >
             {hasPermission ? 'Granted' : 'Not Granted'}
           </Text>
         </View>
 
         <View style={styles.statusRow}>
           <Text style={{ color: t.text }}>Landline Mode:</Text>
-          <Text style={[
-            styles.statusBadge,
-            {
-              backgroundColor: isLandlineModeActive ? t.badgeActiveBg : t.badgeInactiveBg,
-              color: isLandlineModeActive ? t.badgeActiveText : t.badgeInactiveText,
-            },
-          ]}>
+          <Text
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: isLandlineModeActive ? t.badgeActiveBg : t.badgeInactiveBg,
+                color: isLandlineModeActive ? t.badgeActiveText : t.badgeInactiveText,
+              },
+            ]}
+          >
             {isLandlineModeActive ? 'Active' : 'Inactive'}
           </Text>
         </View>
 
         <View style={styles.statusRow}>
           <Text style={{ color: t.text }}>Logged Notifications:</Text>
-          <Text style={[styles.statusBadge, { backgroundColor: t.cardBg, color: t.badgeNeutralText }]}>
+          <Text
+            style={[styles.statusBadge, { backgroundColor: t.cardBg, color: t.badgeNeutralText }]}
+          >
             {notifications.length}
           </Text>
         </View>
@@ -158,7 +171,11 @@ export default function LandlineModeTest() {
           <Text style={[styles.description, { color: t.secondaryText }]}>
             This app needs Notification Access permission to log notifications during Landline mode.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={handleRequestPermission} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRequestPermission}
+            activeOpacity={0.8}
+          >
             <Text style={styles.buttonText}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
@@ -170,7 +187,11 @@ export default function LandlineModeTest() {
           <Text style={[styles.description, { color: t.secondaryText }]}>
             When active, all notifications will be logged and can be viewed later.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={handleToggleLandlineMode} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleToggleLandlineMode}
+            activeOpacity={0.8}
+          >
             <Text style={styles.buttonText}>
               {isLandlineModeActive ? 'Deactivate' : 'Activate'} Landline Mode
             </Text>
