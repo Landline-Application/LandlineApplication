@@ -18,8 +18,8 @@ import {
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
-import { useActiveRefresh } from '@/hooks/useActiveRefresh';
-import { useLandlineStore } from '@/hooks/useLandlineStore';
+import { useActiveRefresh } from '@/hooks/use-active-refresh';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
