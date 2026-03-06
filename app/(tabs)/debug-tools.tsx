@@ -262,10 +262,62 @@ export default function DebugToolsScreen() {
 
         <View style={{ gap: 8 }}>
           <Button title="Refresh Status" onPress={refreshStatus} color={COLORS.dark.primary} />
+          {!batteryOptimizationIgnored && (
+            <Button
+              title="Request Battery Optimization Exemption"
+              onPress={async () => {
+                try {
+                  const granted =
+                    await BackgroundServiceManager.requestIgnoreBatteryOptimizations();
+                  Alert.alert(
+                    'Battery Optimization',
+                    granted
+                      ? 'Permission granted! Background service will run more reliably.'
+                      : 'Permission denied. The app may be restricted in the background.',
+                  );
+                  await refreshStatus();
+                } catch (error) {
+                  console.error('[DEBUG] Error requesting battery optimization:', error);
+                  Alert.alert('Error', `Failed to request permission: ${error}`);
+                }
+              }}
+              color={COLORS.dark.warning}
+            />
+          )}
           <Button
             title="Start Foreground Service"
             onPress={async () => {
               try {
+                // Check if POST_NOTIFICATIONS permission is granted (required on Android 13+)
+                if (!NotificationApiManager.hasPostPermission()) {
+                  Alert.alert(
+                    'Permission Required',
+                    'POST_NOTIFICATIONS permission is required to start the foreground service. Please grant it first.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Grant Permission',
+                        onPress: async () => {
+                          const granted = await NotificationApiManager.requestPostPermission();
+                          if (granted) {
+                            Alert.alert(
+                              'Success',
+                              'Permission granted! You can now start the service.',
+                            );
+                            await refreshStatus();
+                          } else {
+                            Alert.alert(
+                              'Error',
+                              'Permission denied. Cannot start foreground service.',
+                            );
+                          }
+                        },
+                      },
+                    ],
+                  );
+                  return;
+                }
+
                 console.log('[DEBUG] Starting foreground service...');
                 const success = BackgroundServiceManager.startForegroundService(
                   'Landline Monitor',
