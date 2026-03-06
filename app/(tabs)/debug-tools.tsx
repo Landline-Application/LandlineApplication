@@ -887,15 +887,18 @@ export default function DebugToolsScreen() {
           >
             Quick Templates:
           </Text>
+          <Text style={{ fontSize: 12, color: COLORS.dark.textMuted, marginBottom: 4 }}>
+            Tap a template to load it into the editor
+          </Text>
 
           <Button
-            title="📧 Meeting"
+            title="In a Meeting"
             onPress={async () => {
               try {
                 await setAutoReplyMessage(
-                  "I'm currently in a meeting. I'll get back to you as soon as it's over.",
+                  "I'm currently in a meeting. I'll get back to you as soon as possible.",
                 );
-                Alert.alert('Message Updated', 'Meeting template set');
+                Alert.alert('Template Set', 'Meeting auto-reply message activated');
                 await refreshStatus();
               } catch {
                 Alert.alert('Error', 'Could not update message');
@@ -905,13 +908,61 @@ export default function DebugToolsScreen() {
           />
 
           <Button
-            title="🏖️ Vacation"
+            title="On Vacation"
             onPress={async () => {
               try {
                 await setAutoReplyMessage(
-                  "I'm currently out of office on vacation. I'll respond when I return.",
+                  "I'm currently out of office on vacation. I'll respond when I return. Thank you for your patience!",
                 );
-                Alert.alert('Message Updated', 'Vacation template set');
+                Alert.alert('Template Set', 'Vacation auto-reply message activated');
+                await refreshStatus();
+              } catch {
+                Alert.alert('Error', 'Could not update message');
+              }
+            }}
+            color={COLORS.dark.primary}
+          />
+
+          <Button
+            title="Driving"
+            onPress={async () => {
+              try {
+                await setAutoReplyMessage(
+                  "I'm driving right now and can't respond. I'll reply when I arrive safely.",
+                );
+                Alert.alert('Template Set', 'Driving auto-reply message activated');
+                await refreshStatus();
+              } catch {
+                Alert.alert('Error', 'Could not update message');
+              }
+            }}
+            color={COLORS.dark.primary}
+          />
+
+          <Button
+            title="Focus Time"
+            onPress={async () => {
+              try {
+                await setAutoReplyMessage(
+                  "I'm in focus mode and not checking messages right now. I'll get back to you later today.",
+                );
+                Alert.alert('Template Set', 'Focus time auto-reply message activated');
+                await refreshStatus();
+              } catch {
+                Alert.alert('Error', 'Could not update message');
+              }
+            }}
+            color={COLORS.dark.primary}
+          />
+
+          <Button
+            title="Away"
+            onPress={async () => {
+              try {
+                await setAutoReplyMessage(
+                  "I'm away from my phone right now. I'll get back to you shortly.",
+                );
+                Alert.alert('Template Set', 'Away auto-reply message activated');
                 await refreshStatus();
               } catch {
                 Alert.alert('Error', 'Could not update message');
@@ -984,13 +1035,16 @@ export default function DebugToolsScreen() {
           >
             Reply to Apps:
           </Text>
+          <Text style={{ fontSize: 12, color: COLORS.dark.textMuted, marginBottom: 4 }}>
+            Choose which apps trigger an auto-reply
+          </Text>
 
           <Button
-            title="WhatsApp Only"
+            title="All Apps"
             onPress={async () => {
               try {
-                await setAutoReplyAllowedApps(['com.whatsapp']);
-                Alert.alert('Apps Updated', 'Now replying to WhatsApp only');
+                await setAutoReplyAllowedApps([]);
+                Alert.alert('Apps Updated', 'Now replying to any app with a reply action');
               } catch {
                 Alert.alert('Error', 'Could not update allowed apps');
               }
@@ -999,7 +1053,7 @@ export default function DebugToolsScreen() {
           />
 
           <Button
-            title="All Messaging Apps"
+            title="Messaging Only"
             onPress={async () => {
               try {
                 await setAutoReplyAllowedApps([
@@ -1008,7 +1062,20 @@ export default function DebugToolsScreen() {
                   'org.telegram.messenger',
                   'com.google.android.apps.messaging',
                 ]);
-                Alert.alert('Apps Updated', 'Replying to all messaging apps');
+                Alert.alert('Apps Updated', 'Replying to WhatsApp, Messenger, Telegram, SMS');
+              } catch {
+                Alert.alert('Error', 'Could not update allowed apps');
+              }
+            }}
+            color={COLORS.dark.primary}
+          />
+
+          <Button
+            title="WhatsApp Only"
+            onPress={async () => {
+              try {
+                await setAutoReplyAllowedApps(['com.whatsapp']);
+                Alert.alert('Apps Updated', 'Only replying to WhatsApp messages');
               } catch {
                 Alert.alert('Error', 'Could not update allowed apps');
               }
