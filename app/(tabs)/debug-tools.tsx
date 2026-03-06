@@ -260,8 +260,113 @@ export default function DebugToolsScreen() {
           </Text>
         </View>
 
+        {/* Battery Optimization Disclaimer */}
+        <View
+          style={{
+            backgroundColor: COLORS.dark.card,
+            padding: 12,
+            borderRadius: 8,
+            borderLeftWidth: 3,
+            borderLeftColor: COLORS.dark.warning,
+            borderCurve: 'continuous',
+          }}
+        >
+          <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, lineHeight: 18 }}>
+            ⚠️ Use with caution. Google Play may reject apps that unnecessarily request to ignore
+            battery optimization.
+          </Text>
+        </View>
+
         <View style={{ gap: 8 }}>
           <Button title="Refresh Status" onPress={refreshStatus} color={COLORS.dark.primary} />
+
+          {/* Foreground Service Dynamic Toggle */}
+          <Button
+            key={`foreground-${serviceRunning}`}
+            title={serviceRunning ? 'Stop Foreground Service' : 'Start Foreground Service'}
+            onPress={async () => {
+              try {
+                if (serviceRunning) {
+                  console.log('[DEBUG] Stopping foreground service...');
+                  const success = BackgroundServiceManager.stopForegroundService();
+                  console.log('[DEBUG] Stop service result:', success);
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                  const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
+                  console.log('[DEBUG] Service running after stop:', isRunning);
+                  Alert.alert('Foreground Service', 'Service stopped');
+                  await refreshStatus();
+                } else {
+                  // Check if POST_NOTIFICATIONS permission is granted (required on Android 13+)
+                  if (!NotificationApiManager.hasPostPermission()) {
+                    Alert.alert(
+                      'Permission Required',
+                      'POST_NOTIFICATIONS permission is required to start the foreground service. Please grant it first.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Grant Permission',
+                          onPress: async () => {
+                            const granted = await NotificationApiManager.requestPostPermission();
+                            if (granted) {
+                              Alert.alert(
+                                'Success',
+                                'Permission granted! You can now start the service.',
+                              );
+                              await refreshStatus();
+                            } else {
+                              Alert.alert(
+                                'Error',
+                                'Permission denied. Cannot start foreground service.',
+                              );
+                            }
+                          },
+                        },
+                      ],
+                    );
+                    return;
+                  }
+
+                  console.log('[DEBUG] Starting foreground service...');
+                  const success = BackgroundServiceManager.startForegroundService(
+                    'Landline Monitor',
+                    'Monitoring notifications',
+                  );
+                  console.log('[DEBUG] Start service result:', success);
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                  const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
+                  console.log('[DEBUG] Service running after start:', isRunning);
+                  Alert.alert('Foreground Service', 'Service started');
+                  await refreshStatus();
+                }
+              } catch (error) {
+                console.error('[DEBUG] Error toggling service:', error);
+                Alert.alert('Error', `Failed to toggle service: ${error}`);
+              }
+            }}
+            color={serviceRunning ? COLORS.dark.error : COLORS.dark.success}
+          />
+
+          {/* Background Work Dynamic Toggle */}
+          <Button
+            key={`work-${workScheduled}`}
+            title={workScheduled ? 'Cancel Background Work' : 'Schedule Background Work'}
+            onPress={async () => {
+              try {
+                if (workScheduled) {
+                  Alert.alert('Background Work', 'Work cancelled (method not exposed yet)');
+                } else {
+                  Alert.alert('Background Work', 'Work scheduled (method not exposed yet)');
+                }
+                await refreshStatus();
+              } catch (error) {
+                console.error('[DEBUG] Error toggling background work:', error);
+                Alert.alert('Error', `Failed to toggle background work: ${error}`);
+              }
+            }}
+            color={workScheduled ? COLORS.dark.error : COLORS.dark.success}
+          />
+
+          {/* Battery Optimization */}
           {!batteryOptimizationIgnored && (
             <Button
               title="Request Battery Optimization Exemption"
@@ -284,83 +389,6 @@ export default function DebugToolsScreen() {
               color={COLORS.dark.warning}
             />
           )}
-          <Button
-            title="Start Foreground Service"
-            onPress={async () => {
-              try {
-                // Check if POST_NOTIFICATIONS permission is granted (required on Android 13+)
-                if (!NotificationApiManager.hasPostPermission()) {
-                  Alert.alert(
-                    'Permission Required',
-                    'POST_NOTIFICATIONS permission is required to start the foreground service. Please grant it first.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Grant Permission',
-                        onPress: async () => {
-                          const granted = await NotificationApiManager.requestPostPermission();
-                          if (granted) {
-                            Alert.alert(
-                              'Success',
-                              'Permission granted! You can now start the service.',
-                            );
-                            await refreshStatus();
-                          } else {
-                            Alert.alert(
-                              'Error',
-                              'Permission denied. Cannot start foreground service.',
-                            );
-                          }
-                        },
-                      },
-                    ],
-                  );
-                  return;
-                }
-
-                console.log('[DEBUG] Starting foreground service...');
-                const success = BackgroundServiceManager.startForegroundService(
-                  'Landline Monitor',
-                  'Monitoring notifications',
-                );
-                console.log('[DEBUG] Start service result:', success);
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
-                console.log('[DEBUG] Service running after start:', isRunning);
-                Alert.alert(
-                  'Foreground Service',
-                  `Call result: ${success}\nActual status: ${isRunning ? 'Running' : 'Not running'}`,
-                );
-                await refreshStatus();
-              } catch (error) {
-                console.error('[DEBUG] Error starting service:', error);
-                Alert.alert('Error', `Failed to start service: ${error}`);
-              }
-            }}
-            color={COLORS.dark.primary}
-          />
-          <Button
-            title="Stop Foreground Service"
-            onPress={async () => {
-              try {
-                console.log('[DEBUG] Stopping foreground service...');
-                const success = BackgroundServiceManager.stopForegroundService();
-                console.log('[DEBUG] Stop service result:', success);
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
-                console.log('[DEBUG] Service running after stop:', isRunning);
-                Alert.alert(
-                  'Foreground Service',
-                  `Call result: ${success}\nActual status: ${isRunning ? 'Running' : 'Not running'}`,
-                );
-                await refreshStatus();
-              } catch (error) {
-                console.error('[DEBUG] Error stopping service:', error);
-                Alert.alert('Error', `Failed to stop service: ${error}`);
-              }
-            }}
-            color={COLORS.dark.primary}
-          />
         </View>
       </View>
 
