@@ -62,7 +62,9 @@ export default function AutoReplyTestScreen() {
     const hasPermission = isListenerEnabled();
     Alert.alert(
       'Listener Permission',
-      hasPermission ? 'Notification listener is enabled ✓' : 'Notification listener is not enabled ✗',
+      hasPermission
+        ? 'Notification listener is enabled ✓'
+        : 'Notification listener is not enabled ✗',
     );
   }
 
@@ -75,7 +77,10 @@ export default function AutoReplyTestScreen() {
     const enabled = isAutoReplyEnabled();
     const running = isServiceRunning();
     setStatus(`Auto-reply: ${enabled ? 'ON' : 'OFF'}, Service: ${running ? 'Running' : 'Stopped'}`);
-    Alert.alert('Auto-Reply Status', `Enabled: ${enabled ? 'Yes ✓' : 'No ✗'}\nService Running: ${running ? 'Yes ✓' : 'No ✗'}`);
+    Alert.alert(
+      'Auto-Reply Status',
+      `Enabled: ${enabled ? 'Yes ✓' : 'No ✗'}\nService Running: ${running ? 'Yes ✓' : 'No ✗'}`,
+    );
   }
 
   async function enableAutoReply() {
@@ -282,7 +287,9 @@ export default function AutoReplyTestScreen() {
         </View>
 
         <View style={[styles.sectionContainer, { backgroundColor: t.sectionBg }]}>
-          <Text style={[styles.sectionTitle, { color: t.text }]}>Test Notifications (Emulator)</Text>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>
+            Test Notifications (Emulator)
+          </Text>
           <Text style={{ fontSize: 12, color: t.secondaryText, marginBottom: 8 }}>
             ⚠️ Note: Test notifications won&apos;t trigger auto-reply (Android limitation). Use real
             messaging apps for full testing.
