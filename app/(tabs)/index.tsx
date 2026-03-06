@@ -18,6 +18,7 @@ import {
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
+import { useActiveRefresh } from '@/hooks/useActiveRefresh';
 import { useLandlineStore } from '@/hooks/useLandlineStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,11 +39,11 @@ export default function HomeScreen() {
     hasPermission,
     notifications,
     sessionStartTime,
-    error,
     activateLandlineMode,
     deactivateLandlineMode,
     requestPermission,
     checkStatus,
+    refreshNotifications,
   } = useLandlineStore();
 
   // Component-specific UI state (keep these)
@@ -60,6 +61,9 @@ export default function HomeScreen() {
     checkStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
+  useActiveRefresh(refreshNotifications, isActive);
 
   // Pulse animation when active
   useEffect(() => {
