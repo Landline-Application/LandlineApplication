@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import * as Contacts from 'expo-contacts';
+import React, { useCallback, useState } from 'react';
 
 import {
   Alert,
@@ -100,6 +101,7 @@ export default function AutoReplySettingsScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [allowedApps, setAllowedAppsState] = useState<string[]>([]);
   const [selectedPreset, setSelectedPreset] = useState('all');
+  const [emergencyContact, setEmergencyContact] = useState<any>(null);
 
   const refresh = useCallback(() => {
     if (Platform.OS !== 'android') return;
@@ -177,6 +179,24 @@ export default function AutoReplySettingsScreen() {
       </SafeAreaView>
     );
   }
+const selectEmergencyContact = async () => {
+    const { status } = await Contacts.requestPermissionsAsync();
+  
+    if (status !== 'granted') {
+      Alert.alert("Permission denied", "Contacts permission is required.");
+      return;
+    }
+  
+    const { data } = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.PhoneNumbers],
+    });
+  
+    const contact = data.find(c => c.phoneNumbers && c.phoneNumbers.length > 0);
+
+    if (contact) {
+      setEmergencyContact(contact);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]}>
@@ -335,7 +355,32 @@ export default function AutoReplySettingsScreen() {
             </View>
           )}
         </View>
+{/* Emergency Contact */}
+<View style={[styles.card, { backgroundColor: t.card }]}>
+  <Text style={[styles.cardTitle, { color: t.text }]}>Emergency Contact</Text>
+  <Text style={[styles.cardSubtitle, { color: t.textSecondary }]}>
+    Select a contact to notify in emergencies
+  </Text>
 
+  {emergencyContact ? (
+    <View style={[styles.messagePreview, { backgroundColor: t.inputBg }]}>
+      <Text style={{ color: t.text }}>
+        {emergencyContact.name}
+      </Text>
+    </View>
+  ) : (
+    <Text style={{ color: t.textSecondary }}>No contact selected</Text>
+  )}
+
+  <TouchableOpacity
+    style={[styles.editTrigger, { borderColor: t.accent }]}
+    onPress={selectEmergencyContact}
+  >
+    <Text style={[styles.editTriggerText, { color: t.accent }]}>
+      Select Emergency Contact
+    </Text>
+  </TouchableOpacity>
+</View>
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
