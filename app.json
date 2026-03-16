@@ -8,10 +8,7 @@
     "scheme": "landlineapplication",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.outersnail.Landline"
-    },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -24,20 +21,28 @@
       "permissions": [
         "android.permission.ACCESS_NOTIFICATION_POLICY",
         "android.permission.BIND_APPWIDGET",
-        "android.permission.RECEIVE_SMS",
-        "android.permission.SEND_SMS",
-        "android.permission.READ_PHONE_STATE",
+        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
         "android.permission.CALL_PHONE",
-        "android.permission.READ_CONTACTS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
         "android.permission.POST_NOTIFICATIONS",
-        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-      ]
+        "android.permission.READ_CONTACTS",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.RECEIVE_SMS",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.SEND_SMS",
+        "android.permission.WAKE_LOCK"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin",
       "expo-router",
       [
         "expo-splash-screen",
@@ -52,7 +57,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "./plugins/withAndroidForegroundService.js"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -10,7 +10,13 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.tabBg,
+        tabBarActiveTintColor: COLORS.cardBg,
+        tabBarInactiveTintColor: '#b8a876',
+        tabBarStyle: {
+          backgroundColor: COLORS.textPrimary,
+          borderTopColor: COLORS.cardBorder,
+          borderTopWidth: 2,
+        },
         headerShown: false,
         tabBarButton: HapticTab,
       }}
@@ -23,13 +29,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Notifications',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="landline"
         options={{
           title: 'Landline',
@@ -37,18 +36,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="landline-mode-test"
+        name="notifications"
         options={{
-          href: null,
+          title: 'Notifications',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="background-service-demo"
+        name="debug-tools"
         options={{
-          title: 'BG Service',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="checkmark.circle.fill" color={color} />
-          ),
+          title: 'Debug',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="code" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -58,14 +56,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="slider.horizontal.3" color={color} />
           ),
-        }}
-      />
-      {/* Debug Screen - Hidden from tab bar */}
-      <Tabs.Screen
-        name="debug-screen"
-        options={{
-          title: 'Debug Screen',
-          href: null,
         }}
       />
     </Tabs>

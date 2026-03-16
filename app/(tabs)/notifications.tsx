@@ -1,39 +1,29 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import NotebookLogView from '@/components/notebook-log-view';
+import { useActiveRefresh } from '@/hooks/use-active-refresh';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface Notification {
-  timestamp: number;
-  packageName: string;
-  appName: string;
-  title: string;
-  text: string;
-  postTime: number;
-  id: number;
-}
-
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
   const [viewMode, setViewMode] = useState<'notebook' | 'classic'>('notebook');
+
+  // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
+  useActiveRefresh(refreshNotifications, isActive);
 
   const loadNotifications = useCallback(async () => {
     try {
-      setLoading(true);
-      const notifs = await NotificationApiManager.getLoggedNotifications();
-      setNotifications(notifs);
+      await refreshNotifications();
     } catch (error) {
       console.error('Failed to load notifications:', error);
       Alert.alert('Error', 'Failed to load notifications');
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [refreshNotifications]);
 
   const handleClearAll = useCallback(() => {
     Alert.alert(
@@ -51,7 +41,7 @@ export default function NotificationsScreen() {
             try {
               const success = await NotificationApiManager.clearAllData();
               if (success) {
-                setNotifications([]);
+                await refreshNotifications();
                 Alert.alert('Success', 'All notifications cleared');
               } else {
                 Alert.alert('Error', 'Failed to clear notifications');
@@ -64,13 +54,9 @@ export default function NotificationsScreen() {
         },
       ],
     );
-  }, []);
+  }, [refreshNotifications]);
 
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#8B7355" />

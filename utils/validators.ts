@@ -1,3 +1,4 @@
+// TODO: Remove maybe, Firebase handles validation?
 export const validateEmail = (value: string): string => {
   if (!value) {
     return 'Email is required';

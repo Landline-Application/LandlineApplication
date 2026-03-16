@@ -29,15 +29,8 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
 3. Run the application:
 
    ```bash
-   pnpm start
-   ```
-
-4. To run the application on a specific platform, use one of the following commands:
-
-   ```bash
-   pnpm android # for Android
-   pnpm ios     # for iOS
-   pnpm web     # for Web
+   pnpm prebuild
+   pnpm android # we prioritize android
    ```
 
 ## Troubleshooting
