@@ -1,14 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  Alert,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -39,6 +31,58 @@ export default function VerifyPhoneScreen() {
     inputRefs.current[0]?.focus();
   }, []);
 
+  const handleKeyPress = useCallback(
+    (key: string, index: number) => {
+      if (key === 'Backspace' && !code[index] && index > 0) {
+        const newCode = [...code];
+        newCode[index - 1] = '';
+        setCode(newCode);
+        inputRefs.current[index - 1]?.focus();
+      }
+    },
+    [code],
+  );
+
+  const handleSubmit = useCallback(
+    async (verificationCode?: string) => {
+      const finalCode = verificationCode || code.join('');
+      if (finalCode.length !== CODE_LENGTH) {
+        Alert.alert('Invalid Code', 'Please enter the full 6-digit code.');
+        return;
+      }
+
+      const confirmation = getPhoneConfirmation();
+      if (!confirmation) {
+        Alert.alert('Session Expired', 'Please go back and request a new code.');
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        await confirmation.confirm(finalCode);
+        setPhoneConfirmation(null);
+        router.replace('/(tabs)');
+      } catch (error: any) {
+        const errorCode = error?.code;
+        if (errorCode === 'auth/invalid-verification-code') {
+          Alert.alert('Wrong Code', 'The code you entered is incorrect. Please try again.');
+        } else if (errorCode === 'auth/session-expired') {
+          Alert.alert(
+            'Code Expired',
+            'The verification code has expired. Please request a new one.',
+          );
+        } else {
+          Alert.alert('Verification Failed', error?.message || 'An unexpected error occurred.');
+        }
+        setCode(Array(CODE_LENGTH).fill(''));
+        inputRefs.current[0]?.focus();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [code],
+  );
+
   const handleCodeChange = useCallback(
     (text: string, index: number) => {
       const digit = text.replace(/\D/g, '').slice(-1);
@@ -54,54 +98,8 @@ export default function VerifyPhoneScreen() {
         handleSubmit(newCode.join(''));
       }
     },
-    [code],
+    [code, handleSubmit],
   );
-
-  const handleKeyPress = useCallback(
-    (key: string, index: number) => {
-      if (key === 'Backspace' && !code[index] && index > 0) {
-        const newCode = [...code];
-        newCode[index - 1] = '';
-        setCode(newCode);
-        inputRefs.current[index - 1]?.focus();
-      }
-    },
-    [code],
-  );
-
-  const handleSubmit = async (verificationCode?: string) => {
-    const finalCode = verificationCode || code.join('');
-    if (finalCode.length !== CODE_LENGTH) {
-      Alert.alert('Invalid Code', 'Please enter the full 6-digit code.');
-      return;
-    }
-
-    const confirmation = getPhoneConfirmation();
-    if (!confirmation) {
-      Alert.alert('Session Expired', 'Please go back and request a new code.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await confirmation.confirm(finalCode);
-      setPhoneConfirmation(null);
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      const errorCode = error?.code;
-      if (errorCode === 'auth/invalid-verification-code') {
-        Alert.alert('Wrong Code', 'The code you entered is incorrect. Please try again.');
-      } else if (errorCode === 'auth/session-expired') {
-        Alert.alert('Code Expired', 'The verification code has expired. Please request a new one.');
-      } else {
-        Alert.alert('Verification Failed', error?.message || 'An unexpected error occurred.');
-      }
-      setCode(Array(CODE_LENGTH).fill(''));
-      inputRefs.current[0]?.focus();
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleResend = () => {
     Alert.alert('Resend Code', 'Please go back and submit your phone number again.', [

@@ -62,7 +62,9 @@ export default function LoginEmailPage() {
         setGenericLoginError('');
       } else if (code === 'auth/invalid-credential') {
         setPasswordError('Invalid email or password');
-        setGenericLoginError('Invalid email or password. Please check your email and password and try again.');
+        setGenericLoginError(
+          'Invalid email or password. Please check your email and password and try again.',
+        );
         setWrongPasswordSection(false);
       } else if (code === 'auth/too-many-requests') {
         Alert.alert('Too Many Attempts', 'Please try again later.');
@@ -92,7 +94,7 @@ export default function LoginEmailPage() {
       await resetPassword(email);
       Alert.alert(
         'Check your email',
-        'If an account exists for this email, we\'ve sent a password reset link. Please check your inbox and spam folder.',
+        "If an account exists for this email, we've sent a password reset link. Please check your inbox and spam folder.",
         [{ text: 'OK' }],
       );
     } catch (error: any) {
@@ -154,7 +156,12 @@ export default function LoginEmailPage() {
             accessibilityRole="button"
             accessibilityLabel="Forgot password"
           >
-            <Text style={[styles.forgotPasswordText, isResettingPassword && styles.forgotPasswordDisabled]}>
+            <Text
+              style={[
+                styles.forgotPasswordText,
+                isResettingPassword && styles.forgotPasswordDisabled,
+              ]}
+            >
               Forgot Password?
             </Text>
           </TouchableOpacity>

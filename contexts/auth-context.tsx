@@ -1,16 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
+  type FirebaseAuthTypes,
   auth,
   createUserDocument,
   createUserWithEmailAndPassword,
+  signInWithGoogle as firebaseSignInWithGoogle,
   firebaseSignOut,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  signInWithGoogle as firebaseSignInWithGoogle,
-  type FirebaseAuthTypes,
 } from '@/utils/firebase';
 
 interface AuthContextType {
@@ -81,16 +81,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-        value={{
-          user,
-          isLoading,
-          isAuthenticated: !!user,
-          signUp,
-          signIn,
-          signInWithGoogle,
-          signOut,
-          resetPassword,
-        }}
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        signOut,
+        resetPassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

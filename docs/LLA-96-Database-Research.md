@@ -4,7 +4,7 @@
 **EPIC:** Data Management and Privacy  
 **Assignee:** Alec Morris  
 **Date:** January 29, 2026  
-**Status:** In Progress  
+**Status:** In Progress
 
 ---
 
@@ -18,11 +18,12 @@ This document evaluates database solutions for the Landline Android Application.
 
 ## 2. Requirements Analysis
 
-*Based on the Landline Design Document*
+_Based on the Landline Design Document_
 
 ### User Authentication Requirements (Design Doc Section 1a)
 
 The app requires users to:
+
 1. **Register with email address** - primary identifier
 2. **Register with phone number** - for SMS verification
 3. **Verify email** - via confirmation link/code
@@ -31,16 +32,16 @@ The app requires users to:
 
 ### What Landline Needs to Store
 
-| Data Type | Description | Design Doc Reference |
-|-----------|-------------|---------------------|
-| **User Account** | Email, phone number, verification status | Section 1a - Initial Setup |
-| **Terms Acceptance** | Record of ToU acceptance per email/phone | Section 1a, Section 1 (Terms Agreement) |
-| **Emergency Contacts** | Contacts that can bypass Landline Mode | Section 1e |
-| **OOO Reply Contacts** | Contacts to send "I'm on Landline" replies to | Section 1d |
-| **App Selection** | Which apps to include/exclude in Landline Mode | Section 1b, 1c |
-| **Auto-Reply Message** | Custom out-of-office message text | Section 2d, 3d-f |
-| **Notification Logs** | Categorized: Texts, Emails, Calls, Voicemails, App notifications | Section 3 (Notification Log Categories) |
-| **User Preferences** | UI style, themes, color schemes | Section 1f |
+| Data Type              | Description                                                      | Design Doc Reference                    |
+| ---------------------- | ---------------------------------------------------------------- | --------------------------------------- |
+| **User Account**       | Email, phone number, verification status                         | Section 1a - Initial Setup              |
+| **Terms Acceptance**   | Record of ToU acceptance per email/phone                         | Section 1a, Section 1 (Terms Agreement) |
+| **Emergency Contacts** | Contacts that can bypass Landline Mode                           | Section 1e                              |
+| **OOO Reply Contacts** | Contacts to send "I'm on Landline" replies to                    | Section 1d                              |
+| **App Selection**      | Which apps to include/exclude in Landline Mode                   | Section 1b, 1c                          |
+| **Auto-Reply Message** | Custom out-of-office message text                                | Section 2d, 3d-f                        |
+| **Notification Logs**  | Categorized: Texts, Emails, Calls, Voicemails, App notifications | Section 3 (Notification Log Categories) |
+| **User Preferences**   | UI style, themes, color schemes                                  | Section 1f                              |
 
 ### Privacy & Compliance Requirements (Design Doc - Success Criteria)
 
@@ -73,11 +74,11 @@ Firebase is Google's mobile development platform providing backend services incl
 
 ### Relevant Services
 
-| Service | Purpose | Pricing (Free Tier) |
-|---------|---------|---------------------|
-| Firebase Authentication | User login/signup | 50K MAU free |
-| Cloud Firestore | NoSQL document database | 1GB storage, 50K reads/day |
-| Realtime Database | JSON real-time sync | 1GB storage, 10GB transfer |
+| Service                 | Purpose                 | Pricing (Free Tier)        |
+| ----------------------- | ----------------------- | -------------------------- |
+| Firebase Authentication | User login/signup       | 50K MAU free               |
+| Cloud Firestore         | NoSQL document database | 1GB storage, 50K reads/day |
+| Realtime Database       | JSON real-time sync     | 1GB storage, 10GB transfer |
 
 ### Pros
 
@@ -101,13 +102,14 @@ Firebase is Google's mobile development platform providing backend services incl
 - **Time Estimate:** 4-6 hours for initial setup
 
 **Required Packages:**
+
 - @react-native-firebase/app
 - @react-native-firebase/auth
 - @react-native-firebase/firestore
 
 ### Proposed Data Model (Firestore)
 
-*Based on Landline Design Document requirements*
+_Based on Landline Design Document requirements_
 
 ```
 users (collection)
@@ -184,7 +186,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+
       match /{subcollection}/{document} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
@@ -195,11 +197,11 @@ service cloud.firestore {
 
 ### Cost Estimate
 
-| User Base | Monthly Reads | Monthly Writes | Estimated Cost |
-|-----------|---------------|----------------|----------------|
-| 100 users | ~50K | ~10K | Free |
-| 1,000 users | ~500K | ~100K | $5-10 |
-| 10,000 users | ~5M | ~1M | $50-100 |
+| User Base    | Monthly Reads | Monthly Writes | Estimated Cost |
+| ------------ | ------------- | -------------- | -------------- |
+| 100 users    | ~50K          | ~10K           | Free           |
+| 1,000 users  | ~500K         | ~100K          | $5-10          |
+| 10,000 users | ~5M           | ~1M            | $50-100        |
 
 ---
 
@@ -211,11 +213,11 @@ Supabase is an open-source Firebase alternative built on PostgreSQL. It provides
 
 ### Relevant Services
 
-| Service | Purpose | Pricing (Free Tier) |
-|---------|---------|---------------------|
-| Supabase Auth | User authentication | 50K MAU free |
-| PostgreSQL Database | Relational database | 500MB storage |
-| Realtime | Subscribe to changes | Included |
+| Service             | Purpose              | Pricing (Free Tier) |
+| ------------------- | -------------------- | ------------------- |
+| Supabase Auth       | User authentication  | 50K MAU free        |
+| PostgreSQL Database | Relational database  | 500MB storage       |
+| Realtime            | Subscribe to changes | Included            |
 
 ### Pros
 
@@ -238,6 +240,7 @@ Supabase is an open-source Firebase alternative built on PostgreSQL. It provides
 - **Time Estimate:** 3-5 hours for initial setup
 
 **Required Packages:**
+
 - @supabase/supabase-js
 - @react-native-async-storage/async-storage
 
@@ -280,11 +283,11 @@ CREATE TABLE notification_logs (
 
 ### Cost Estimate
 
-| User Base | Storage Used | Estimated Cost |
-|-----------|--------------|----------------|
-| 100 users | ~10MB | Free |
-| 1,000 users | ~100MB | Free |
-| 10,000 users | ~1GB | $25/month |
+| User Base    | Storage Used | Estimated Cost |
+| ------------ | ------------ | -------------- |
+| 100 users    | ~10MB        | Free           |
+| 1,000 users  | ~100MB       | Free           |
+| 10,000 users | ~1GB         | $25/month      |
 
 ---
 
@@ -326,16 +329,16 @@ CREATE TABLE notification_logs (
 
 ## 6. Comparison Matrix
 
-| Criteria | Firebase | Supabase | AWS Amplify | Custom |
-|----------|----------|----------|-------------|--------|
-| Auth Included | Yes | Yes | Yes | No |
-| Offline Support | Built-in | Manual | Built-in | Manual |
-| React Native Support | Excellent | Good | Complex | N/A |
-| Setup Time | 4-6 hrs | 3-5 hrs | 8-12 hrs | 20+ hrs |
-| Free Tier | Generous | Good | Limited | N/A |
-| Documentation | Extensive | Good | Good | N/A |
-| Vendor Lock-in | High | Low | High | None |
-| Team Familiarity | Medium | Low | Low | N/A |
+| Criteria             | Firebase  | Supabase | AWS Amplify | Custom  |
+| -------------------- | --------- | -------- | ----------- | ------- |
+| Auth Included        | Yes       | Yes      | Yes         | No      |
+| Offline Support      | Built-in  | Manual   | Built-in    | Manual  |
+| React Native Support | Excellent | Good     | Complex     | N/A     |
+| Setup Time           | 4-6 hrs   | 3-5 hrs  | 8-12 hrs    | 20+ hrs |
+| Free Tier            | Generous  | Good     | Limited     | N/A     |
+| Documentation        | Extensive | Good     | Good        | N/A     |
+| Vendor Lock-in       | High      | Low      | High        | None    |
+| Team Familiarity     | Medium    | Low      | Low         | N/A     |
 
 ---
 
@@ -353,14 +356,14 @@ CREATE TABLE notification_logs (
 
 ### Implementation Plan
 
-| Phase | Task | Time Estimate |
-|-------|------|---------------|
-| 1 | Create Firebase project | 30 min |
-| 2 | Configure Authentication | 1 hour |
-| 3 | Set up Firestore database | 1 hour |
-| 4 | Write security rules | 1 hour |
-| 5 | Integrate with React Native | 2-3 hours |
-| 6 | Test auth flow | 1-2 hours |
+| Phase | Task                        | Time Estimate |
+| ----- | --------------------------- | ------------- |
+| 1     | Create Firebase project     | 30 min        |
+| 2     | Configure Authentication    | 1 hour        |
+| 3     | Set up Firestore database   | 1 hour        |
+| 4     | Write security rules        | 1 hour        |
+| 5     | Integrate with React Native | 2-3 hours     |
+| 6     | Test auth flow              | 1-2 hours     |
 
 **Total Estimated Time:** 6-8 hours
 
