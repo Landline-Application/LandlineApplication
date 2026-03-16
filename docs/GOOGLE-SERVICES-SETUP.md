@@ -43,4 +43,3 @@ pnpm android
 ## 4. Getting it from a teammate
 
 If you don't have access to Firebase Console, ask a teammate who does. Do not share it in public chat or commit it to the repo.
-

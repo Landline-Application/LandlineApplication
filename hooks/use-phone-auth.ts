@@ -4,8 +4,8 @@ import { Alert } from 'react-native';
 
 import { router } from 'expo-router';
 
-import { getCountryCodeFromNumber, validatePhoneNumber } from '@/utils/phone-number';
 import { auth, setPhoneConfirmation, signInWithPhoneNumber } from '@/utils/firebase';
+import { getCountryCodeFromNumber, validatePhoneNumber } from '@/utils/phone-number';
 
 interface UsePhoneAuthProps {
   initialValue?: string;
@@ -60,9 +60,15 @@ export function usePhoneAuth({ initialValue }: UsePhoneAuthProps): UsePhoneAuthR
       } else if (code === 'auth/too-many-requests') {
         Alert.alert('Too Many Attempts', 'You have been rate limited. Please try again later.');
       } else if (code === 'auth/quota-exceeded') {
-        Alert.alert('SMS Quota Exceeded', 'The SMS verification quota has been exceeded. Please try again later.');
+        Alert.alert(
+          'SMS Quota Exceeded',
+          'The SMS verification quota has been exceeded. Please try again later.',
+        );
       } else {
-        Alert.alert('Error', error?.message || 'Failed to send verification code. Please try again.');
+        Alert.alert(
+          'Error',
+          error?.message || 'Failed to send verification code. Please try again.',
+        );
       }
       console.error('Phone auth error:', error);
     } finally {

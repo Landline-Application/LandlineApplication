@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 import {
-  Dimensions,
   Platform,
   RefreshControl,
   ScrollView,
@@ -27,7 +26,6 @@ interface NotebookLogViewProps {
   onRefresh?: () => void;
 }
 
-const { width } = Dimensions.get('window');
 const TAB_WIDTH = 40;
 const PAGE_MARGIN = 20;
 
@@ -38,7 +36,7 @@ export default function NotebookLogView({ notifications, onRefresh }: NotebookLo
   const handleRefresh = async () => {
     if (onRefresh) {
       setRefreshing(true);
-      await onRefresh();
+      onRefresh();
       setRefreshing(false);
     }
   };

@@ -1,16 +1,16 @@
 import { getApp } from '@react-native-firebase/app';
 import {
-  createUserWithEmailAndPassword,
-  getAuth,
+  type FirebaseAuthTypes,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  getAuth,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
-  signOut as firebaseSignOut,
-  type FirebaseAuthTypes,
 } from '@react-native-firebase/auth';
 import {
   collection,
