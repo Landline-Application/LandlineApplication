@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { router, useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
@@ -141,20 +141,6 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Settings</Text>
       </View>
 
-      {/* Auto-Reply Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Auto-Reply</Text>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/auto-reply-settings')}
-        >
-          <Text style={styles.actionButtonText}>Configure Auto-Reply</Text>
-          <Text style={styles.actionButtonSubtext}>
-            Set up out-of-office message templates and reply preferences
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Storage Info Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Storage Information</Text>
@@ -238,38 +224,6 @@ export default function SettingsScreen() {
         <Text style={[styles.infoText, styles.warningText]}>
           This action cannot be undone. Consider exporting your data first.
         </Text>
-      </View>
-
-      {/* Debug Screen Section */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.debugButton]}
-          onPress={() => router.push('/(tabs)/debug-screen')}
-        >
-          <Text style={styles.actionButtonText}>🐛 Debug Screen</Text>
-          <Text style={styles.actionButtonSubtext}>View development testing tools</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Demo Screens Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Demo Screens</Text>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.demoButton]}
-          onPress={() => router.push('/notif-permissions')}
-        >
-          <Text style={styles.actionButtonText}>📱 Notification Permissions</Text>
-          <Text style={styles.actionButtonSubtext}>View app notification settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.demoButton]}
-          onPress={() => router.push('/widget-demo')}
-        >
-          <Text style={styles.actionButtonText}>🎨 Widget Demo</Text>
-          <Text style={styles.actionButtonSubtext}>View the home screen widget demo</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Delete Confirmation Modal */}
@@ -400,12 +354,6 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#fff',
-  },
-  debugButton: {
-    backgroundColor: '#8B5A8E',
-  },
-  demoButton: {
-    backgroundColor: '#5AC8FA',
   },
   infoText: {
     fontSize: 14,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
   Alert,
@@ -18,9 +18,8 @@ import {
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
-import * as BackgroundServiceManager from '@/modules/background-service-manager';
-import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager from '@/modules/notification-api-manager';
+import { useActiveRefresh } from '@/hooks/use-active-refresh';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -34,27 +33,37 @@ interface NotificationSummary {
 
 // Redirect to landline screen as the main entry point
 export default function HomeScreen() {
-  const [isActive, setIsActive] = useState(false);
+  // Get state from Zustand store
+  const {
+    isActive,
+    hasPermission,
+    notifications,
+    sessionStartTime,
+    activateLandlineMode,
+    deactivateLandlineMode,
+    requestPermission,
+    checkStatus,
+    refreshNotifications,
+  } = useLandlineStore();
+
+  // Component-specific UI state (keep these)
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [hasPermission, setHasPermission] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState('0:00');
 
-  // Animations
+  // Animations (keep these - component-specific)
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Check permissions and status on mount
+  // Initialize store on mount (FIXED: no broken dependencies)
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      checkPermission();
-      checkLandlineMode();
-      loadNotifications();
-    }
-  }, [checkLandlineMode, checkPermission, loadNotifications]);
+    checkStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
+  useActiveRefresh(refreshNotifications, isActive);
 
   // Pulse animation when active
   useEffect(() => {
@@ -91,7 +100,7 @@ export default function HomeScreen() {
 
   // Timer for session duration
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isActive && sessionStartTime) {
       interval = setInterval(() => {
         const now = new Date();
@@ -112,43 +121,13 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [isActive, sessionStartTime]);
 
-  const checkPermission = useCallback(() => {
-    try {
-      const granted = NotificationApiManager.hasNotificationListenerPermission();
-      setHasPermission(granted);
-    } catch {
-      setHasPermission(false);
-    }
-  }, []);
-
-  const checkLandlineMode = useCallback(() => {
-    try {
-      const active = NotificationApiManager.isLandlineModeActive();
-      setIsActive(active);
-      if (active) {
-        setSessionStartTime(new Date());
-      }
-    } catch {
-      setIsActive(false);
-    }
-  }, []);
-
-  const loadNotifications = useCallback(async () => {
-    try {
-      const logs = await NotificationApiManager.getLoggedNotifications();
-      setNotifications(Array.isArray(logs) ? logs : []);
-    } catch {
-      setNotifications([]);
-    }
-  }, []);
-
   const handleRequestPermission = async () => {
     try {
-      await NotificationApiManager.requestNotificationListenerPermission();
+      await requestPermission();
       Alert.alert(
         'Grant Permission',
         'Please enable notification access for Landline in your device settings, then return to the app.',
-        [{ text: 'OK', onPress: () => setTimeout(checkPermission, 2000) }],
+        [{ text: 'OK', onPress: () => setTimeout(() => checkStatus(), 2000) }],
       );
     } catch {
       Alert.alert('Error', 'Could not open permission settings.');
@@ -193,30 +172,8 @@ export default function HomeScreen() {
     ]).start();
 
     try {
-      // Activate Landline Mode
-      NotificationApiManager.setLandlineMode(true);
-
-      // Try to enable DND
-      try {
-        if (DndManager.hasPermission()) {
-          await DndManager.setDNDEnabled(true);
-        }
-      } catch {
-        // DND not available, continue anyway
-      }
-
-      // Start foreground service for reliability
-      try {
-        BackgroundServiceManager.startForegroundService(
-          'Landline Mode Active',
-          'Your notifications are being captured',
-        );
-      } catch {
-        // Service not available, continue anyway
-      }
-
-      setIsActive(true);
-      setSessionStartTime(new Date());
+      // Activate via store (handles all native calls, verification, auto-refresh)
+      await activateLandlineMode();
       setElapsedTime('0:00');
     } catch {
       Alert.alert('Error', 'Could not activate Landline Mode. Please try again.');
@@ -236,29 +193,8 @@ export default function HomeScreen() {
     }
 
     try {
-      // Deactivate Landline Mode
-      NotificationApiManager.setLandlineMode(false);
-
-      // Disable DND
-      try {
-        if (DndManager.hasPermission()) {
-          await DndManager.setDNDEnabled(false);
-        }
-      } catch {
-        // Continue anyway
-      }
-
-      // Stop foreground service
-      try {
-        BackgroundServiceManager.stopForegroundService();
-      } catch {
-        // Continue anyway
-      }
-
-      setIsActive(false);
-
-      // Refresh notifications
-      await loadNotifications();
+      // Deactivate via store (handles all native calls, verification, stop refresh)
+      await deactivateLandlineMode();
     } catch {
       Alert.alert('Error', 'Could not deactivate Landline Mode. Please try again.');
     }
@@ -301,7 +237,14 @@ export default function HomeScreen() {
 
           <View style={styles.toggleContainer}>
             <Pressable
-              onPress={() => setIsActive(!isActive)}
+              onPress={() => {
+                // Web fallback - just toggle for demo
+                if (isActive) {
+                  deactivateLandlineMode();
+                } else {
+                  activateLandlineMode();
+                }
+              }}
               style={[styles.mainToggle, isActive && styles.mainToggleActive]}
             >
               <Text style={styles.toggleIcon}>{isActive ? '🔕' : '📱'}</Text>

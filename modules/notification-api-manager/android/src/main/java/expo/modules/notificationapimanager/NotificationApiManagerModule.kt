@@ -2,6 +2,7 @@ package expo.modules.notificationapimanager
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -196,6 +197,7 @@ class NotificationApiManagerModule : Module() {
          * This includes:
          * - Landline mode state (landline_mode_prefs)
          * - All notification logs (landline_notifications)
+         * - Auto-reply preferences
          * 
          * Used for data deletion functionality
          */
@@ -211,10 +213,148 @@ class NotificationApiManagerModule : Module() {
                 val notifPrefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
                 notifPrefs.edit().clear().apply()
                 
+                // Clear auto-reply preferences
+                val autoReplyPrefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+                autoReplyPrefs.edit().clear().apply()
+                
                 true
             } catch (e: Exception) {
                 android.util.Log.e("NotificationApiManager", "Error clearing all data: ${e.message}", e)
                 false
+            }
+        }
+
+        // ============================================================
+        // AUTO-REPLY FUNCTIONALITY
+        // ============================================================
+
+        /**
+         * Check if auto-reply is currently enabled
+         */
+        Function("isAutoReplyEnabled") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.getBoolean("auto_reply_enabled", false)
+        }
+
+        /**
+         * Enable or disable auto-reply
+         */
+        Function("setAutoReplyEnabled") { enabled: Boolean ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("auto_reply_enabled", enabled).apply()
+            true
+        }
+
+        /**
+         * Set the default auto-reply message
+         */
+        Function("setReplyMessage") { message: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putString("default_reply_message", message).apply()
+            true
+        }
+
+        /**
+         * Get the current auto-reply message
+         */
+        Function("getReplyMessage") {
+            val ctx = appContext.reactContext ?: return@Function "Auto-reply: I'll get back to you soon."
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.getString("default_reply_message", "Auto-reply: I'll get back to you soon.") 
+                ?: "Auto-reply: I'll get back to you soon."
+        }
+
+        /**
+         * Set which apps are allowed for auto-reply
+         * Pass empty list to allow all apps
+         */
+        Function("setAllowedApps") { packageNames: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("allowed_apps", packageNames.toSet()).apply()
+            true
+        }
+
+        /**
+         * Get list of apps allowed for auto-reply
+         */
+        Function("getAllowedApps") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            val allowedApps = prefs.getStringSet("allowed_apps", emptySet()) ?: emptySet()
+            allowedApps.toList()
+        }
+
+        /**
+         * Get auto-reply history
+         */
+        Function("getReplyHistory") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<Map<String, Any?>>()
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            val historyJson = prefs.getString("reply_history", "[]") ?: "[]"
+            
+            try {
+                val history = org.json.JSONArray(historyJson)
+                val result = mutableListOf<Map<String, Any?>>()
+                
+                for (i in 0 until history.length()) {
+                    val item = history.getJSONObject(i)
+                    result.add(mapOf(
+                        "message" to item.getString("message"),
+                        "timestamp" to item.getLong("timestamp")
+                    ))
+                }
+                
+                result
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationApiManager", "Error parsing reply history: ${e.message}", e)
+                emptyList<Map<String, Any?>>()
+            }
+        }
+
+        /**
+         * Clear auto-reply history
+         */
+        Function("clearReplyHistory") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putString("reply_history", "[]").apply()
+            true
+        }
+
+        /**
+         * Check if the unified service is running
+         */
+        Function("isServiceRunning") {
+            LandlineNotificationListenerService.isServiceRunning()
+        }
+
+        /**
+         * Get list of active notifications (from the listener service)
+         */
+        Function("getActiveNotifications") {
+            val serviceInstance = LandlineNotificationListenerService::class.java
+                .getDeclaredField("serviceInstance")
+                .get(null) as? LandlineNotificationListenerService
+            
+            val notifications = serviceInstance?.getActiveNotificationsList() ?: emptyArray()
+            
+            notifications.map { sbn ->
+                val notification = sbn.notification
+                val extras = notification.extras
+                
+                mapOf(
+                    "packageName" to sbn.packageName,
+                    "title" to extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
+                    "text" to extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                    "timestamp" to sbn.postTime,
+                    "hasReplyAction" to (notification.actions?.any { action ->
+                        action.remoteInputs?.any { it.allowFreeFormInput } == true
+                    } ?: false)
+                )
             }
         }
     }

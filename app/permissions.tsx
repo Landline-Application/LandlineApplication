@@ -186,7 +186,7 @@ export default function PermissionsScreen() {
           ],
         );
       }
-    } catch (error) {
+    } catch {
       Alert.alert(
         'Error',
         `Could not request ${permission.name}. Please try again or grant it manually in settings.`,

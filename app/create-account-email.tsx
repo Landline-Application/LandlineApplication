@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -10,6 +10,7 @@ import { ContinueWithSocials } from '@/components/ui/form/continue-socials-butto
 import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
+import { useAuth } from '@/contexts/auth-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateAccountEmailPage() {
@@ -19,6 +20,7 @@ export default function CreateAccountEmailPage() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [ageVerified, setAgeVerified] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,11 +46,44 @@ export default function CreateAccountEmailPage() {
     }
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await signUp(email, password);
+      Alert.alert(
+        'Verify Your Email',
+        'A verification link has been sent to your email address. Please check your inbox and verify your email.',
+        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+      );
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/email-already-in-use') {
+        setEmailError('An account with this email already exists');
+      } else if (code === 'auth/weak-password') {
+        setPasswordError('Password is too weak');
+      } else if (code === 'auth/invalid-email') {
+        setEmailError('Please enter a valid email address');
+      } else if (code === 'verification-email-failed' || code === 'auth/too-many-requests') {
+        Alert.alert(
+          'Account Created',
+          'Your account was created, but we could not send the verification email. Please check your spam folder, or request a new verification link later from Settings.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+        );
+      } else {
+        Alert.alert('Sign Up Failed', error?.message || 'An unexpected error occurred.');
+      }
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
       router.replace('/(tabs)');
-    }, 1500);
+    } catch (error: any) {
+      if (error?.code !== 'SIGN_IN_CANCELLED') {
+        Alert.alert('Google Sign-In Failed', error?.message || 'An unexpected error occurred.');
+      }
+    }
   };
 
   const isFormValid = validateEmail(email) && password.length >= 6 && ageVerified;
@@ -103,7 +138,7 @@ export default function CreateAccountEmailPage() {
         {/* Social Buttons */}
         <ContinueWithSocials
           buttons={['google', 'phone']}
-          onGooglePress={() => console.log('Google sign up')}
+          onGooglePress={handleGoogleSignIn}
           onPhonePress={() => router.push('/create-account')}
         />
 
