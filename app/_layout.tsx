@@ -61,18 +61,17 @@ export default function RootLayout() {
       <AuthProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
-            <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="login-email" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="app-selection" options={{ headerShown: false }} />
             <Stack.Screen name="create-account" options={{ headerShown: false }} />
             <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
-            <Stack.Screen name="permissions" options={{ headerShown: false }} />
-            <Stack.Screen name="app-selection" options={{ headerShown: false }} />
-            <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="login-email" options={{ headerShown: false }} />
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="permissions" options={{ headerShown: false }} />
+            <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
+            <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
