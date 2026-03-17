@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.google.devtools.ksp'
 
 group = 'expo.modules.notificationapimanager'
 version = '0.7.6'
@@ -30,7 +31,13 @@ if (useManagedAndroidSdkVersions) {
     }
   }
 }
+dependencies {
+    val room_version = "2.8.4"
 
+    implementation("androidx.room:room-runtime:$room_version") 
+
+    ksp("androidx.room:room-compiler:$room_version") //Using ksp instead of kapt
+}
 android {
   namespace "expo.modules.notificationapimanager"
   defaultConfig {
