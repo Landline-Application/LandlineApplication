@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import { ENABLE_FOREGROUND_SERVICE } from '@/constants/feature-flags';
 import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -92,15 +93,17 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         // Continue anyway - DND is optional
       }
 
-      // Start foreground service for reliability
-      try {
-        BackgroundServiceManager.startForegroundService(
-          'Landline Mode Active',
-          'Your notifications are being captured',
-        );
-      } catch (serviceErr) {
-        console.warn('Background service not available:', serviceErr);
-        // Continue anyway - service is optional
+      // Start foreground service for reliability (disabled via feature flag for initial release)
+      if (ENABLE_FOREGROUND_SERVICE) {
+        try {
+          BackgroundServiceManager.startForegroundService(
+            'Landline Mode Active',
+            'Your notifications are being captured',
+          );
+        } catch (serviceErr) {
+          console.warn('Background service not available:', serviceErr);
+          // Continue anyway - service is optional
+        }
       }
 
       // Verify it actually activated
@@ -148,12 +151,14 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         // Continue anyway
       }
 
-      // Stop foreground service
-      try {
-        BackgroundServiceManager.stopForegroundService();
-      } catch (serviceErr) {
-        console.warn('Service stop failed:', serviceErr);
-        // Continue anyway
+      // Stop foreground service (disabled via feature flag for initial release)
+      if (ENABLE_FOREGROUND_SERVICE) {
+        try {
+          BackgroundServiceManager.stopForegroundService();
+        } catch (serviceErr) {
+          console.warn('Service stop failed:', serviceErr);
+          // Continue anyway
+        }
       }
 
       // Verify it actually deactivated
