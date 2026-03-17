@@ -13,357 +13,432 @@
         padding: 0;
       }
 
+      :root {
+        --bg: #2b2b2b;
+        --card-bg: #f5f1e8;
+        --card-border: #d4c5a0;
+        --tab-bg: #c8b88a;
+        --tab-border: #a89968;
+        --text-primary: #5d4e37;
+        --text-secondary: #7a6a4a;
+        --text-muted: #9a8a6a;
+      }
+
       body {
+        background-color: var(--bg);
+        min-height: 100vh;
+        padding: 48px 16px 80px;
         font-family:
           -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 40px 16px;
-        color: #333;
+        color: var(--text-primary);
       }
 
-      .card {
-        max-width: 720px;
+      /* ── Rolodex wrapper ── */
+      .rolodex {
+        max-width: 660px;
         margin: 0 auto;
-        background: #fff;
-        border-radius: 16px;
+        position: relative;
+      }
+
+      /* ── Tab label on top ── */
+      .tab {
+        display: table;
+        margin: 0 auto;
+        background: var(--tab-bg);
+        border: 1px solid var(--tab-border);
+        border-bottom: none;
+        border-radius: 10px 10px 0 0;
+        padding: 6px 24px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .tab span {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-primary);
+      }
+
+      /* ── Card ── */
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        position: relative;
+        z-index: 1;
         overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
       }
 
-      .hero {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 48px 40px 36px;
+      .shadow-layer {
+        position: absolute;
+        top: 10px;
+        left: 0;
+        right: 0;
+        bottom: -10px;
+        background: rgba(0, 0, 0, 0.28);
+        border-radius: 12px;
+        z-index: 0;
+      }
+
+      /* ── Card content ── */
+      .content {
+        padding: 40px 48px 80px;
+      }
+
+      /* ── Header ── */
+      .card-header {
         text-align: center;
-        color: #fff;
+        margin-bottom: 36px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--card-border);
       }
 
-      .hero-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
+      .brand {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 26px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 10px;
       }
 
-      .hero h1 {
-        font-size: 32px;
+      .card-header h1 {
+        font-size: 13px;
         font-weight: 700;
-        margin-bottom: 8px;
-      }
-
-      .hero p {
-        font-size: 15px;
-        opacity: 0.85;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        margin-bottom: 6px;
       }
 
       .updated {
-        display: inline-block;
-        margin-top: 14px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        padding: 4px 14px;
-        font-size: 13px;
-        opacity: 0.9;
+        font-size: 12px;
+        color: var(--text-muted);
+        letter-spacing: 0.4px;
       }
 
-      .content {
-        padding: 40px 40px 48px;
-      }
-
+      /* ── Sections ── */
       section {
-        margin-bottom: 32px;
+        margin-bottom: 28px;
       }
-
       section:last-child {
         margin-bottom: 0;
       }
 
       h2 {
-        font-size: 18px;
-        font-weight: 700;
-        color: #667eea;
-        margin-bottom: 12px;
-        padding-bottom: 8px;
-        border-bottom: 2px solid #f0f0f0;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--card-border);
       }
 
       p {
         font-size: 15px;
-        line-height: 1.7;
-        color: #444;
-        margin-bottom: 10px;
+        line-height: 1.75;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      p:last-child {
+        margin-bottom: 0;
+      }
+
+      .sub {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin: 14px 0 5px;
       }
 
       ul {
         list-style: none;
         padding: 0;
+        margin-bottom: 6px;
       }
 
       ul li {
         font-size: 15px;
-        line-height: 1.7;
-        color: #444;
-        padding: 4px 0 4px 20px;
+        line-height: 1.75;
+        color: var(--text-primary);
+        padding-left: 16px;
         position: relative;
       }
 
       ul li::before {
-        content: '•';
+        content: '–';
         position: absolute;
         left: 0;
-        color: #667eea;
-        font-weight: bold;
+        color: var(--text-muted);
       }
 
-      .highlight-box {
-        background: #f7f6ff;
-        border-left: 4px solid #667eea;
-        border-radius: 0 8px 8px 0;
-        padding: 14px 18px;
-        margin: 12px 0;
+      /* callout block */
+      .callout {
+        background: rgba(212, 197, 160, 0.25);
+        border-left: 3px solid var(--tab-border);
+        border-radius: 0 6px 6px 0;
+        padding: 12px 16px;
+        margin: 8px 0;
       }
 
-      .highlight-box p,
-      .highlight-box li {
-        margin-bottom: 4px;
+      /* ── Punch holes ── */
+      .punch-holes {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 80px;
+        z-index: 10;
       }
 
+      .hole {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+      }
+
+      /* ── Footer ── */
       footer {
         text-align: center;
-        padding: 20px 40px 32px;
-        border-top: 1px solid #f0f0f0;
-        font-size: 13px;
-        color: #999;
-      }
-
-      footer a {
-        color: #667eea;
-        text-decoration: none;
+        margin-top: 24px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.25);
+        letter-spacing: 0.5px;
       }
 
       @media (max-width: 560px) {
-        .hero {
-          padding: 36px 24px 28px;
-        }
         .content {
-          padding: 28px 24px 36px;
+          padding: 28px 24px 72px;
         }
-        footer {
-          padding: 16px 24px 28px;
-        }
-        .hero h1 {
-          font-size: 26px;
+        .brand {
+          font-size: 20px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="card">
-      <div class="hero">
-        <div class="hero-icon">&#128274;</div>
-        <h1>Privacy Policy</h1>
-        <p>Landline &mdash; Notification capture &amp; review</p>
-        <span class="updated">Last updated: March 2026</span>
-      </div>
+    <div class="rolodex">
+      <div class="tab"><span>Landline</span></div>
 
-      <div class="content">
-        <section>
-          <h2>1. Introduction</h2>
-          <p>
-            Welcome to Landline ("we," "our," or "us"). We respect your privacy and are committed to
-            protecting your personal data. This privacy policy explains how we handle your
-            information when you use our app.
-          </p>
-        </section>
-
-        <section>
-          <h2>2. Information We Collect</h2>
-
-          <p><strong>2.1 Notification Data</strong></p>
-          <ul>
-            <li>
-              The app reads notifications from your device to provide notification management
-              features
-            </li>
-            <li>Notification content is processed locally on your device</li>
-            <li>We do not transmit notification content to external servers</li>
-          </ul>
-
-          <p style="margin-top: 12px"><strong>2.2 Usage Data</strong></p>
-          <ul>
-            <li>App usage statistics (feature usage, settings preferences)</li>
-            <li>Device information (OS version, device model)</li>
-            <li>Performance and error logs</li>
-          </ul>
-
-          <p style="margin-top: 12px"><strong>2.3 Automatically Collected Information</strong></p>
-          <ul>
-            <li>Device identifiers</li>
-            <li>App version information</li>
-            <li>Crash reports and diagnostic data</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2>3. How We Use Your Information</h2>
-          <p>We use the collected information to:</p>
-          <ul>
-            <li>Provide and maintain the app's core functionality</li>
-            <li>Manage and organize your notifications</li>
-            <li>Improve and optimize the app experience</li>
-            <li>Troubleshoot and fix technical issues</li>
-            <li>Analyze usage patterns to enhance features</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2>4. Data Storage and Processing</h2>
-          <div class="highlight-box">
-            <ul>
-              <li>All notification data is stored locally on your device</li>
-              <li>We do not upload or transmit your notification content to our servers</li>
-              <li>App preferences and settings are stored on your device</li>
-              <li>Anonymous usage statistics may be collected for analytics purposes</li>
-            </ul>
+      <div class="card">
+        <div class="content">
+          <div class="card-header">
+            <div class="brand">Landline</div>
+            <h1>Privacy Policy</h1>
+            <span class="updated">Last updated: March 2026</span>
           </div>
-        </section>
 
-        <section>
-          <h2>5. Data Sharing and Disclosure</h2>
-          <p>
-            We do not sell, trade, or otherwise transfer your personal information to third parties.
-            We may share information only in the following circumstances:
-          </p>
-          <ul>
-            <li>With your explicit consent</li>
-            <li>To comply with legal obligations</li>
-            <li>To protect our rights and safety</li>
-            <li>In connection with a business transfer or acquisition</li>
-          </ul>
-        </section>
+          <section>
+            <h2>1. Introduction</h2>
+            <p>
+              Welcome to Landline ("we," "our," or "us"). We respect your privacy and are committed
+              to protecting your personal data. This policy explains how we handle your information
+              when you use our app.
+            </p>
+          </section>
 
-        <section>
-          <h2>6. Your Rights and Choices</h2>
-          <p>You have the right to:</p>
-          <ul>
-            <li>Access the data we collect about you</li>
-            <li>Request deletion of your data</li>
-            <li>Export your data for backup purposes</li>
-            <li>Opt-out of data collection where applicable</li>
-            <li>Revoke notification access permissions at any time</li>
-            <li>Disable background services through app settings</li>
-          </ul>
+          <section>
+            <h2>2. Information We Collect</h2>
+            <p class="sub">2.1 Notification Data</p>
+            <ul>
+              <li>
+                The app reads notifications from your device to provide notification management
+                features
+              </li>
+              <li>Notification content is processed locally on your device</li>
+              <li>We do not transmit notification content to external servers</li>
+            </ul>
+            <p class="sub">2.2 Usage Data</p>
+            <ul>
+              <li>App usage statistics (feature usage, settings preferences)</li>
+              <li>Device information (OS version, device model)</li>
+              <li>Performance and error logs</li>
+            </ul>
+            <p class="sub">2.3 Automatically Collected Information</p>
+            <ul>
+              <li>Device identifiers</li>
+              <li>App version information</li>
+              <li>Crash reports and diagnostic data</li>
+            </ul>
+          </section>
 
-          <p style="margin-top: 14px"><strong>6.1 Data Deletion</strong></p>
-          <p>
-            You can permanently delete all your data from the app at any time through the Settings
-            screen. This will remove:
-          </p>
-          <ul>
-            <li>Terms of Use acceptance records</li>
-            <li>All captured notification logs</li>
-            <li>Landline mode settings and preferences</li>
-            <li>All other app data</li>
-          </ul>
-          <p style="margin-top: 8px">
-            This action is permanent and cannot be undone. We recommend exporting your data before
-            deletion if you wish to keep a backup.
-          </p>
-        </section>
+          <section>
+            <h2>3. How We Use Your Information</h2>
+            <ul>
+              <li>Provide and maintain the app's core functionality</li>
+              <li>Manage and organize your notifications</li>
+              <li>Improve and optimize the app experience</li>
+              <li>Troubleshoot and fix technical issues</li>
+              <li>Analyze usage patterns to enhance features</li>
+            </ul>
+          </section>
 
-        <section>
-          <h2>7. Data Retention</h2>
-          <ul>
-            <li>Notification data is retained only as long as necessary for the app to function</li>
-            <li>You can clear notification history at any time through the app</li>
-            <li>
-              You can delete all your data permanently through Settings &gt; Delete All My Data
-            </li>
-            <li>Uninstalling the app removes all locally stored data</li>
-          </ul>
-        </section>
+          <section>
+            <h2>4. Data Storage and Processing</h2>
+            <div class="callout">
+              <ul>
+                <li>All notification data is stored locally on your device</li>
+                <li>We do not upload or transmit your notification content to our servers</li>
+                <li>App preferences and settings are stored on your device</li>
+                <li>Anonymous usage statistics may be collected for analytics purposes</li>
+              </ul>
+            </div>
+          </section>
 
-        <section>
-          <h2>8. Security</h2>
-          <p>
-            We implement appropriate technical and organizational measures to protect your data:
-          </p>
-          <ul>
-            <li>Local encryption for sensitive data</li>
-            <li>Secure storage practices</li>
-            <li>Regular security updates</li>
-            <li>No transmission of notification content over networks</li>
-          </ul>
-        </section>
+          <section>
+            <h2>5. Data Sharing and Disclosure</h2>
+            <p>
+              We do not sell, trade, or otherwise transfer your personal information to third
+              parties. We may share information only in the following circumstances:
+            </p>
+            <ul>
+              <li>With your explicit consent</li>
+              <li>To comply with legal obligations</li>
+              <li>To protect our rights and safety</li>
+              <li>In connection with a business transfer or acquisition</li>
+            </ul>
+          </section>
 
-        <section>
-          <h2>9. Third-Party Services</h2>
-          <p>
-            The app may use third-party services for analytics, crash reporting, and performance
-            monitoring. These services have their own privacy policies. We encourage you to review
-            them.
-          </p>
-        </section>
+          <section>
+            <h2>6. Your Rights and Choices</h2>
+            <ul>
+              <li>Access the data we collect about you</li>
+              <li>Request deletion of your data</li>
+              <li>Export your data for backup purposes</li>
+              <li>Opt-out of data collection where applicable</li>
+              <li>Revoke notification access permissions at any time</li>
+              <li>Disable background services through app settings</li>
+            </ul>
+            <p class="sub">6.1 Data Deletion</p>
+            <p>
+              You can permanently delete all your data from the app at any time through the Settings
+              screen. This will remove:
+            </p>
+            <ul>
+              <li>Terms of Use acceptance records</li>
+              <li>All captured notification logs</li>
+              <li>Landline mode settings and preferences</li>
+              <li>All other app data</li>
+            </ul>
+            <p style="margin-top: 8px">
+              This action is permanent and cannot be undone. We recommend exporting your data before
+              deletion if you wish to keep a backup.
+            </p>
+          </section>
 
-        <section>
-          <h2>10. Children's Privacy</h2>
-          <p>
-            The app is not intended for children under 13 years of age. We do not knowingly collect
-            personal information from children under 13.
-          </p>
-        </section>
+          <section>
+            <h2>7. Data Retention</h2>
+            <ul>
+              <li>
+                Notification data is retained only as long as necessary for the app to function
+              </li>
+              <li>You can clear notification history at any time through the app</li>
+              <li>
+                You can delete all your data permanently through Settings &rsaquo; Delete All My
+                Data
+              </li>
+              <li>Uninstalling the app removes all locally stored data</li>
+            </ul>
+          </section>
 
-        <section>
-          <h2>11. Changes to This Policy</h2>
-          <p>
-            We may update our Privacy Policy from time to time. We will notify you of any changes by
-            updating the "Last Updated" date, prompting you to review changes on app update, and
-            posting a notice in the app.
-          </p>
-        </section>
+          <section>
+            <h2>8. Security</h2>
+            <ul>
+              <li>Local encryption for sensitive data</li>
+              <li>Secure storage practices</li>
+              <li>Regular security updates</li>
+              <li>No transmission of notification content over networks</li>
+            </ul>
+          </section>
 
-        <section>
-          <h2>12. Do Not Track</h2>
-          <p>
-            We do not track users across third-party websites. However, some third-party services
-            may track your browsing activities.
-          </p>
-        </section>
+          <section>
+            <h2>9. Third-Party Services</h2>
+            <p>
+              The app may use third-party services for analytics, crash reporting, and performance
+              monitoring. These services have their own privacy policies. We encourage you to review
+              them.
+            </p>
+          </section>
 
-        <section>
-          <h2>13. California Privacy Rights (CCPA)</h2>
-          <p>
-            If you are a California resident, you have specific rights regarding your personal
-            information under the California Consumer Privacy Act (CCPA).
-          </p>
-        </section>
+          <section>
+            <h2>10. Children's Privacy</h2>
+            <p>
+              The app is not intended for children under 13 years of age. We do not knowingly
+              collect personal information from children under 13.
+            </p>
+          </section>
 
-        <section>
-          <h2>14. European Users (GDPR)</h2>
-          <p>
-            If you are in the European Economic Area (EEA), you have certain data protection rights
-            under the General Data Protection Regulation (GDPR).
-          </p>
-        </section>
+          <section>
+            <h2>11. Changes to This Policy</h2>
+            <p>
+              We may update our Privacy Policy from time to time. We will notify you by updating the
+              "Last Updated" date, prompting review on app update, and posting a notice in the app.
+            </p>
+          </section>
 
-        <section>
-          <h2>15. Contact Us</h2>
-          <p>
-            If you have questions about this Privacy Policy, please contact us through the in-app
-            support section.
-          </p>
-        </section>
+          <section>
+            <h2>12. Do Not Track</h2>
+            <p>
+              We do not track users across third-party websites. However, some third-party services
+              may track your browsing activities.
+            </p>
+          </section>
 
-        <section>
-          <h2>16. Consent</h2>
-          <p>
-            By using the app, you hereby consent to our Privacy Policy and agree to its terms. Your
-            use of the app signifies your acceptance of this privacy policy.
-          </p>
-        </section>
+          <section>
+            <h2>13. California Privacy Rights (CCPA)</h2>
+            <p>
+              If you are a California resident, you have specific rights regarding your personal
+              information under the California Consumer Privacy Act.
+            </p>
+          </section>
+
+          <section>
+            <h2>14. European Users (GDPR)</h2>
+            <p>
+              If you are in the European Economic Area, you have certain data protection rights
+              under the General Data Protection Regulation.
+            </p>
+          </section>
+
+          <section>
+            <h2>15. Contact Us</h2>
+            <p>
+              If you have questions about this Privacy Policy, please contact us through the in-app
+              support section.
+            </p>
+          </section>
+
+          <section>
+            <h2>16. Consent</h2>
+            <p>
+              By using the app, you hereby consent to our Privacy Policy and agree to its terms.
+              Your use of the app signifies your acceptance of this privacy policy.
+            </p>
+          </section>
+        </div>
+
+        <div class="punch-holes">
+          <div class="hole"></div>
+          <div class="hole"></div>
+        </div>
       </div>
 
-      <footer>
-        <p>&copy; 2026 Landline. All rights reserved.</p>
-      </footer>
+      <div class="shadow-layer"></div>
     </div>
+
+    <footer>&copy; 2026 Landline</footer>
   </body>
 </html>
