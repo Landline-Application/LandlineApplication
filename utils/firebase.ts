@@ -55,6 +55,7 @@ export async function createUserDocument(user: FirebaseAuthTypes.User) {
   if (user.email) {
     data.email = user.email;
   }
+  // FIX: We currently dont support phone number so this field will be empty for now
   if (user.phoneNumber) {
     data.phoneNumber = user.phoneNumber;
   }
@@ -71,7 +72,6 @@ export async function signInWithGoogle() {
   }
   const credential = GoogleAuthProvider.credential(idToken);
   const userCredential = await signInWithCredential(auth, credential);
-  await createUserDocument(userCredential.user);
   return userCredential;
 }
 
