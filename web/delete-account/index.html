@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Delete Account - Landline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       *,
       *::before,
@@ -14,7 +20,13 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
         background-color: #2b2b2b;
         color: #5d4e37;
         min-height: 100vh;
@@ -393,6 +405,33 @@
 
             <!-- Step 1: Sign In -->
             <div id="step-signin" class="step active">
+              <div
+                id="reauth-message"
+                style="
+                  display: none;
+                  background-color: #fdf2f0;
+                  border: 1.5px solid #e8ada7;
+                  border-radius: 8px;
+                  padding: 14px;
+                  margin-bottom: 16px;
+                "
+              >
+                <div
+                  style="
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: #c44536;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 6px;
+                  "
+                >
+                  Re-authentication required
+                </div>
+                <div style="font-size: 14px; color: #8b3a30; line-height: 1.5">
+                  For security, please sign in again before deleting your account.
+                </div>
+              </div>
               <div class="form-group">
                 <label class="form-label" for="email">Email</label>
                 <input
@@ -639,13 +678,31 @@
         setLoading('btn-delete', true);
 
         var user = auth.currentUser;
+
         deleteUser(user)
           .then(function () {
             showStep('step-success');
           })
           .catch(function (error) {
             setLoading('btn-delete', false);
-            alert('Failed to delete account: ' + error.message);
+
+            if (error.code === 'auth/requires-recent-login') {
+              // Session went stale — send the user back to sign in again.
+              currentUserEmail = '';
+              document.getElementById('confirm-text').value = '';
+              document.getElementById('btn-delete').disabled = true;
+              document.getElementById('email').value = '';
+              document.getElementById('password').value = '';
+              clearErrors();
+              setLoading('btn-google', false);
+              setLoading('btn-signin', false);
+              showStep('step-signin');
+              // Show a clear explanation above the form.
+              var msg = document.getElementById('reauth-message');
+              if (msg) msg.style.display = 'block';
+            } else {
+              alert('Failed to delete account: ' + error.message);
+            }
           });
       };
 
@@ -658,6 +715,8 @@
         clearErrors();
         setLoading('btn-google', false);
         setLoading('btn-signin', false);
+        var msg = document.getElementById('reauth-message');
+        if (msg) msg.style.display = 'none';
         showStep('step-signin');
       };
 
