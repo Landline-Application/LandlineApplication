@@ -136,15 +136,11 @@ export default function CreateAccountEmailPage() {
         </View>
 
         {/* Social Buttons */}
-        <ContinueWithSocials
-          buttons={['google', 'phone']}
-          onGooglePress={handleGoogleSignIn}
-          onPhonePress={() => router.push('/create-account')}
-        />
+        <ContinueWithSocials buttons={['google']} onGooglePress={handleGoogleSignIn} />
 
         {/* Login Link */}
         <View style={styles.loginLinkContainer}>
-          <Button onPress={() => router.push('/login-email')} variant="text">
+          <Button onPress={() => router.push('/login')} variant="text">
             Already have an account?
           </Button>
         </View>

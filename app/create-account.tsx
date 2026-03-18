@@ -1,30 +1,79 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
 import { FormLayout } from '@/components/ui/form-layout';
 import { Button } from '@/components/ui/form/button';
 import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
-import { PhoneInput } from '@/components/ui/form/phone-number';
+import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
-import { usePhoneAuth } from '@/hooks/use-phone-auth';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateAccountPage() {
-  const { signInWithGoogle } = useAuth();
-  const {
-    detectedCountry,
-    phoneInput,
-    isLoading,
-    isFormValid,
-    handlePhoneNumberChange,
-    submitPhone,
-  } = usePhoneAuth({
-    onSuccess: () => router.replace('/(tabs)'),
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [ageVerified, setAgeVerified] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth();
+
+  const validateEmail = (value: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(value);
+  };
+
+  const handleSubmit = async () => {
+    setEmailError('');
+    setPasswordError('');
+
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = password.length >= 6;
+
+    if (!isEmailValid) {
+      setEmailError('Please enter a valid email');
+    }
+    if (!isPasswordValid) {
+      setPasswordError('Password must be at least 6 characters');
+    }
+
+    if (!isEmailValid || !isPasswordValid || !ageVerified) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signUp(email, password);
+      Alert.alert(
+        'Verify Your Email',
+        'A verification link has been sent to your email address. Please check your inbox and verify your email.',
+        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+      );
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/email-already-in-use') {
+        setEmailError('An account with this email already exists');
+      } else if (code === 'auth/weak-password') {
+        setPasswordError('Password is too weak');
+      } else if (code === 'auth/invalid-email') {
+        setEmailError('Please enter a valid email address');
+      } else if (code === 'verification-email-failed' || code === 'auth/too-many-requests') {
+        Alert.alert(
+          'Account Created',
+          'Your account was created, but we could not send the verification email. Please check your spam folder, or request a new verification link later from Settings.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+        );
+      } else {
+        Alert.alert('Sign Up Failed', error?.message || 'An unexpected error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -37,6 +86,8 @@ export default function CreateAccountPage() {
     }
   };
 
+  const isFormValid = validateEmail(email) && password.length >= 6 && ageVerified;
+
   return (
     <FormLayout>
       <RolodexCard title="LANDLINE">
@@ -45,15 +96,30 @@ export default function CreateAccountPage() {
           <Text style={styles.headerSubtitle}>Stay connected, stay present</Text>
         </View>
 
-        <PhoneInput
-          value={phoneInput}
-          onChangeText={handlePhoneNumberChange}
-          detectedCountry={detectedCountry}
-          isValid={isFormValid}
+        <EmailPasswordInput
+          email={email}
+          password={password}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          emailError={emailError}
+          passwordError={passwordError}
         />
 
+        {/* Age Verification Checkbox */}
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => setAgeVerified(!ageVerified)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: ageVerified }}
+        >
+          <View style={[styles.checkbox, ageVerified && styles.checkboxChecked]}>
+            {ageVerified && <Ionicons name="checkmark" size={16} color={COLORS.cardBg} />}
+          </View>
+          <Text style={styles.checkboxLabel}>I am 13 years or older</Text>
+        </TouchableOpacity>
+
         <Button
-          onPress={submitPhone}
+          onPress={handleSubmit}
           disabled={!isFormValid || isLoading}
           loading={isLoading}
           variant="primary"
@@ -68,11 +134,7 @@ export default function CreateAccountPage() {
           <View style={styles.dividerLine} />
         </View>
 
-        <ContinueWithSocials
-          buttons={['google', 'email']}
-          onGooglePress={handleGoogleSignIn}
-          onEmailPress={() => router.push('/create-account-email')}
-        />
+        <ContinueWithSocials buttons={['google']} onGooglePress={handleGoogleSignIn} />
 
         {/* Login Link */}
         <View style={styles.loginLinkContainer}>
@@ -106,6 +168,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 4,
+  },
+
+  // --- Checkbox ---
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: COLORS.textPrimary,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.textPrimary,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
 
   // Divider Section
