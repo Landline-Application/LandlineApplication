@@ -16,7 +16,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         activeOpacity={0.8}
       >
         <IconSymbol
-          name="chevron.right"
+          name="chevron-right"
           size={18}
           color={COLORS.textSecondary}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}

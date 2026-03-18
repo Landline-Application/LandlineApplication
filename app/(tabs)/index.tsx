@@ -17,6 +17,7 @@ import {
 
 import { router } from 'expo-router';
 
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS } from '@/constants/colors';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { useLandlineStore } from '@/hooks/use-landline-store';
@@ -247,7 +248,12 @@ export default function HomeScreen() {
               }}
               style={[styles.mainToggle, isActive && styles.mainToggleActive]}
             >
-              <Text style={styles.toggleIcon}>{isActive ? '🔕' : '📱'}</Text>
+              <MaterialIcons
+                name={isActive ? 'notifications-off' : 'notifications'}
+                size={56}
+                color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
+                style={styles.toggleIcon}
+              />
               <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
                 {isActive ? 'ACTIVE' : 'INACTIVE'}
               </Text>
@@ -296,7 +302,12 @@ export default function HomeScreen() {
             ]}
           >
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Text style={styles.toggleIcon}>{isActive ? '🔕' : '📱'}</Text>
+              <MaterialIcons
+                name={isActive ? 'notifications-off' : 'notifications'}
+                size={56}
+                color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
+                style={styles.toggleIcon}
+              />
               <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
                 {isActive ? 'ACTIVE' : 'INACTIVE'}
               </Text>
@@ -326,7 +337,12 @@ export default function HomeScreen() {
           {/* Permission Status */}
           <View style={[styles.statusCard, !hasPermission && styles.statusCardWarning]}>
             <View style={styles.statusCardHeader}>
-              <Text style={styles.statusCardIcon}>{hasPermission ? '✓' : '!'}</Text>
+              <MaterialIcons
+                name={hasPermission ? 'check-circle' : 'warning'}
+                size={18}
+                color={hasPermission ? COLORS.dark.primary : COLORS.dark.warning}
+                style={styles.statusCardIcon}
+              />
               <Text style={styles.statusCardTitle}>Notification Access</Text>
             </View>
             <Text style={styles.statusCardText}>
@@ -343,7 +359,12 @@ export default function HomeScreen() {
           {(isActive || notifications.length > 0) && (
             <TouchableOpacity style={styles.statusCard} onPress={handleViewNotifications}>
               <View style={styles.statusCardHeader}>
-                <Text style={styles.statusCardIcon}>📬</Text>
+                <MaterialIcons
+                  name="all-inbox"
+                  size={18}
+                  color={COLORS.dark.textSecondary}
+                  style={styles.statusCardIcon}
+                />
                 <Text style={styles.statusCardTitle}>Captured Notifications</Text>
               </View>
               <View style={styles.notificationBreakdown}>
@@ -375,19 +396,39 @@ export default function HomeScreen() {
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>How it works</Text>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🔔</Text>
+            <MaterialIcons
+              name="move-to-inbox"
+              size={20}
+              color={COLORS.dark.textSecondary}
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>Notifications are silently captured and logged</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🤫</Text>
+            <MaterialIcons
+              name="volume-off"
+              size={20}
+              color={COLORS.dark.textSecondary}
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>Your phone stays silent - no sounds or vibrations</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>📋</Text>
+            <MaterialIcons
+              name="fact-check"
+              size={20}
+              color={COLORS.dark.textSecondary}
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>Review all notifications later at your convenience</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🚨</Text>
+            <MaterialIcons
+              name="contact-emergency"
+              size={20}
+              color={COLORS.dark.textSecondary}
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>Emergency contacts can still reach you</Text>
           </View>
         </View>
@@ -402,7 +443,12 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalIcon}>🔕</Text>
+            <MaterialIcons
+              name="notifications-off"
+              size={56}
+              color={COLORS.dark.primary}
+              style={styles.modalIcon}
+            />
             <Text style={styles.modalTitle}>Activate Landline Mode?</Text>
             <Text style={styles.modalText}>
               Your phone will go silent and all notifications will be captured for later review.
@@ -436,7 +482,12 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalIcon}>📱</Text>
+            <MaterialIcons
+              name="notifications-active"
+              size={56}
+              color={COLORS.dark.warning}
+              style={styles.modalIcon}
+            />
             <Text style={styles.modalTitle}>End Landline Mode?</Text>
             <Text style={styles.modalText}>
               You&apos;ll start receiving notifications normally again.
@@ -526,7 +577,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   toggleIcon: {
-    fontSize: 56,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -591,7 +641,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusCardIcon: {
-    fontSize: 18,
     marginRight: 10,
     width: 24,
     textAlign: 'center',
@@ -685,7 +734,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoIcon: {
-    fontSize: 20,
     marginRight: 12,
     width: 28,
     textAlign: 'center',
@@ -713,7 +761,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalIcon: {
-    fontSize: 56,
     marginBottom: 16,
   },
   modalTitle: {

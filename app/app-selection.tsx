@@ -13,6 +13,7 @@ import {
 
 import { router } from 'expo-router';
 
+import { MaterialIconName, MaterialIcons } from '@/components/ui/icon-symbol';
 import { LandlineColors } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -151,12 +152,12 @@ const CATEGORY_LABELS: Record<AppItem['category'], string> = {
   other: 'Other Apps',
 };
 
-const CATEGORY_ICONS: Record<AppItem['category'], string> = {
-  social: '👥',
-  messaging: '💬',
-  entertainment: '🎬',
-  productivity: '💼',
-  other: '📱',
+const CATEGORY_ICONS: Record<AppItem['category'], MaterialIconName> = {
+  social: 'group',
+  messaging: 'chat',
+  entertainment: 'movie',
+  productivity: 'work',
+  other: 'apps',
 };
 
 export default function AppSelectionScreen() {
@@ -295,7 +296,12 @@ export default function AppSelectionScreen() {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <MaterialIcons
+            name="search"
+            size={16}
+            color={LandlineColors.dark.textMuted}
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search apps..."
@@ -317,7 +323,12 @@ export default function AppSelectionScreen() {
           <View key={category} style={styles.categorySection}>
             <View style={styles.categoryHeader}>
               <View style={styles.categoryTitleRow}>
-                <Text style={styles.categoryIcon}>{CATEGORY_ICONS[category]}</Text>
+                <MaterialIcons
+                  name={CATEGORY_ICONS[category]}
+                  size={18}
+                  color={LandlineColors.dark.textSecondary}
+                  style={styles.categoryIcon}
+                />
                 <Text style={styles.categoryTitle}>{CATEGORY_LABELS[category]}</Text>
                 <Text style={styles.categoryCount}>
                   {categoryApps.filter((a) => a.isIncluded).length}/{categoryApps.length}
@@ -361,7 +372,12 @@ export default function AppSelectionScreen() {
         {/* Empty State */}
         {filteredApps.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>🔍</Text>
+            <MaterialIcons
+              name="search-off"
+              size={48}
+              color={LandlineColors.dark.textMuted}
+              style={styles.emptyStateIcon}
+            />
             <Text style={styles.emptyStateTitle}>No apps found</Text>
             <Text style={styles.emptyStateText}>Try a different search term</Text>
           </View>
@@ -507,7 +523,6 @@ const styles = StyleSheet.create({
     borderColor: LandlineColors.dark.border,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 12,
   },
   searchInput: {
@@ -537,7 +552,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryIcon: {
-    fontSize: 18,
     marginRight: 8,
   },
   categoryTitle: {
@@ -604,7 +618,6 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyStateIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyStateTitle: {

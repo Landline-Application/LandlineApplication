@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
 import { saveTermsAcceptance } from '@/utils/acceptance-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,7 +76,7 @@ export default function TermsAndPrivacyScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>📋</Text>
+            <MaterialIcons name="gavel" size={40} color="#fff" />
           </View>
           <Text style={styles.headerTitle}>Legal Agreement</Text>
           <Text style={styles.headerSubtitle}>Please review and accept our terms to continue</Text>
@@ -209,9 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  icon: {
-    fontSize: 40,
-  },
+
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',

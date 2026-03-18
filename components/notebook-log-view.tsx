@@ -12,6 +12,8 @@ import {
 
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { MaterialIcons } from '@/components/ui/icon-symbol';
+
 interface NotebookLogEntry {
   id: number;
   appName: string;
@@ -130,7 +132,12 @@ export default function NotebookLogView({
               <View style={styles.emptyState}>
                 {isActive ? (
                   <>
-                    <Text style={styles.emptyIcon}>👂</Text>
+                    <MaterialIcons
+                      name="hearing"
+                      size={64}
+                      color="#8B7355"
+                      style={styles.emptyIcon}
+                    />
                     <Text style={styles.emptyText}>Listening for notifications</Text>
                     <Text style={styles.emptySubtext}>
                       No notifications have been captured so far
@@ -138,7 +145,12 @@ export default function NotebookLogView({
                   </>
                 ) : (
                   <>
-                    <Text style={styles.emptyIcon}>📭</Text>
+                    <MaterialIcons
+                      name="inbox"
+                      size={64}
+                      color="#8B7355"
+                      style={styles.emptyIcon}
+                    />
                     <Text style={styles.emptyText}>No notifications logged yet</Text>
                     <Text style={styles.emptySubtext}>
                       Activate Landline Mode to start capturing
@@ -156,9 +168,12 @@ export default function NotebookLogView({
                   <View style={styles.entryContent}>
                     {/* Header Row */}
                     <View style={styles.entryHeader}>
-                      <Text style={styles.entryApp} numberOfLines={1}>
-                        📱 {notif.appName}
-                      </Text>
+                      <View style={styles.entryAppRow}>
+                        <MaterialIcons name="apps" size={12} color="#4A6FA5" />
+                        <Text style={styles.entryApp} numberOfLines={1}>
+                          {notif.appName}
+                        </Text>
+                      </View>
                       <Text style={styles.entryTime}>{formatTime(notif.postTime)}</Text>
                     </View>
 
@@ -360,8 +375,14 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyIcon: {
-    fontSize: 64,
     marginBottom: 16,
+  },
+  entryAppRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    marginRight: 10,
   },
   emptyText: {
     fontSize: 18,
@@ -403,7 +424,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4A6FA5',
     flex: 1,
-    marginRight: 10,
   },
   entryTime: {
     fontSize: 11,

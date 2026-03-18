@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import NotebookLogView from '@/components/notebook-log-view';
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -75,12 +76,24 @@ export default function NotificationsScreen() {
             style={styles.viewToggle}
             onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
           >
+            <MaterialIcons
+              name={viewMode === 'notebook' ? 'menu-book' : 'view-agenda'}
+              size={16}
+              color="#F4E4C1"
+              style={styles.viewToggleIcon}
+            />
             <Text style={styles.viewToggleText}>
-              {viewMode === 'notebook' ? '📔 Notebook' : '📱 Modern'}
+              {viewMode === 'notebook' ? 'Notebook' : 'Modern'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-            <Text style={styles.clearButtonText}>🗑️ Clear</Text>
+            <MaterialIcons
+              name="delete-outline"
+              size={16}
+              color="#fff"
+              style={styles.clearButtonIcon}
+            />
+            <Text style={styles.clearButtonText}>Clear</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -142,7 +155,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
+  viewToggleIcon: {},
   viewToggleText: {
     color: '#F4E4C1',
     fontSize: 14,
@@ -153,7 +170,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
+  clearButtonIcon: {},
   clearButtonText: {
     color: '#fff',
     fontSize: 14,
