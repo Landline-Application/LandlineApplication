@@ -66,6 +66,17 @@ class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModuleEvents> 
       message: 'Test notifications not supported on web',
     };
   }
+
+  getRateLimitMinutes(): number {
+    return 60;
+  }
+
+  async setRateLimitMinutes(_minutes: number): Promise<AutoReplyResult> {
+    return {
+      success: false,
+      message: 'AutoReplyManager is not supported on web',
+    };
+  }
 }
 
 export default registerWebModule(AutoReplyManagerModule, 'AutoReplyManager');

@@ -61,3 +61,11 @@ export function getReplyHistory(): ReplyHistoryItem[] {
 export function clearReplyHistory(): Promise<AutoReplyResult> {
   return AutoReplyManagerModule.clearReplyHistory();
 }
+
+export function getRateLimitMinutes(): number {
+  return AutoReplyManagerModule.getRateLimitMinutes();
+}
+
+export function setRateLimitMinutes(minutes: number): Promise<AutoReplyResult> {
+  return AutoReplyManagerModule.setRateLimitMinutes(minutes);
+}

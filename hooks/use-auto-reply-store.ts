@@ -10,6 +10,7 @@ interface AutoReplyState {
   isServiceRunning: boolean;
   message: string;
   allowedApps: string[];
+  rateLimitMinutes: number;
   isLoading: boolean;
   error: string | null;
 
@@ -19,6 +20,7 @@ interface AutoReplyState {
   disable: () => Promise<void>;
   setMessage: (message: string) => Promise<void>;
   setAllowedApps: (apps: string[]) => Promise<void>;
+  setRateLimit: (minutes: number) => Promise<void>;
   requestPermission: () => Promise<void>;
   clearError: () => void;
 }
@@ -30,6 +32,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   isServiceRunning: false,
   message: '',
   allowedApps: [],
+  rateLimitMinutes: 60,
   isLoading: false,
   error: null,
 
@@ -46,6 +49,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       const serviceRunning = AutoReplyManager.isServiceRunning();
       const msg = AutoReplyManager.getReplyMessage();
       const apps = AutoReplyManager.getAllowedApps();
+      const rateLimit = AutoReplyManager.getRateLimitMinutes();
 
       set({
         isEnabled: enabled,
@@ -53,6 +57,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
         isServiceRunning: serviceRunning,
         message: msg,
         allowedApps: apps,
+        rateLimitMinutes: rateLimit,
         error: null,
       });
     } catch (err) {
@@ -144,6 +149,27 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       const errorMessage = err instanceof Error ? err.message : 'Failed to set allowed apps';
       set({ error: errorMessage });
       console.error('setAllowedApps error:', err);
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Action: Set rate limit cooldown
+  setRateLimit: async (minutes: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await AutoReplyManager.setRateLimitMinutes(minutes);
+
+      if (result.success) {
+        set({ rateLimitMinutes: minutes });
+      } else {
+        throw new Error(result.message || 'Failed to set rate limit');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to set rate limit';
+      set({ error: errorMessage });
+      console.error('setRateLimit error:', err);
       throw err;
     } finally {
       set({ isLoading: false });

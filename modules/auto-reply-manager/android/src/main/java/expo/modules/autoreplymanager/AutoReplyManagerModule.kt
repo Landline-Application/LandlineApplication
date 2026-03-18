@@ -56,6 +56,8 @@ class AutoReplyManagerModule : Module() {
         private const val KEY_REPLY_MESSAGE = "default_reply_message"
         private const val KEY_ALLOWED_APPS = "allowed_apps"
         private const val KEY_REPLY_HISTORY = "reply_history"
+        private const val KEY_RATE_LIMIT_MINUTES = "rate_limit_minutes"
+        private const val DEFAULT_RATE_LIMIT_MINUTES = 60
     }
 
     override fun definition() = ModuleDefinition {
@@ -230,6 +232,27 @@ class AutoReplyManagerModule : Module() {
                 )
             } catch (e: Exception) {
                 promise.reject("CLEAR_HISTORY_FAILED", "Failed to clear history: ${e.message}", e)
+            }
+        }
+
+        Function("getRateLimitMinutes") {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return@Function prefs.getInt(KEY_RATE_LIMIT_MINUTES, DEFAULT_RATE_LIMIT_MINUTES)
+        }
+
+        AsyncFunction("setRateLimitMinutes") { minutes: Int, promise: Promise ->
+            try {
+                val clamped = minutes.coerceAtLeast(0)
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putInt(KEY_RATE_LIMIT_MINUTES, clamped).apply()
+                promise.resolve(
+                    createResult(
+                        success = true,
+                        message = if (clamped == 0) "Rate limit disabled" else "Rate limit set to $clamped minutes"
+                    )
+                )
+            } catch (e: Exception) {
+                promise.reject("SET_RATE_LIMIT_FAILED", "Failed to set rate limit: ${e.message}", e)
             }
         }
     }

@@ -21,6 +21,8 @@ declare class AutoReplyManagerModule extends NativeModule<AutoReplyManagerModule
   sendTestNotification(senderName: string, message: string): Promise<AutoReplyResult>;
   getReplyHistory(): ReplyHistoryItem[];
   clearReplyHistory(): Promise<AutoReplyResult>;
+  getRateLimitMinutes(): number;
+  setRateLimitMinutes(minutes: number): Promise<AutoReplyResult>;
 }
 
 export default requireNativeModule<AutoReplyManagerModule>('AutoReplyManager');

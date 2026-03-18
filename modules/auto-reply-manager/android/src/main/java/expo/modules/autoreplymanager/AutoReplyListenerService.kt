@@ -23,6 +23,8 @@ class AutoReplyListenerService : NotificationListenerService() {
         private const val KEY_REPLY_MESSAGE = "default_reply_message"
         private const val KEY_ALLOWED_APPS = "allowed_apps"
         private const val KEY_REPLY_HISTORY = "reply_history"
+        private const val KEY_RATE_LIMIT_MINUTES = "rate_limit_minutes"
+        private const val DEFAULT_RATE_LIMIT_MINUTES = 60
         
         private var serviceInstance: AutoReplyListenerService? = null
         
@@ -34,6 +36,7 @@ class AutoReplyListenerService : NotificationListenerService() {
     }
 
     private val repliedNotifications = mutableSetOf<String>()
+    private val senderLastReplyTime = mutableMapOf<String, Long>()
 
     override fun onCreate() {
         super.onCreate()
@@ -79,15 +82,23 @@ class AutoReplyListenerService : NotificationListenerService() {
             return
         }
 
-        // Simple deduplication using notification key
         val notificationKey = sbn.key
         if (repliedNotifications.contains(notificationKey)) {
             Log.d(TAG, "Already replied to notification with key: $notificationKey, skipping")
             return
         }
 
-        Log.d(TAG, "Processing notification from $packageName (Key: $notificationKey)")
+        val senderKey = buildSenderKey(sbn)
+        if (isSenderRateLimited(senderKey)) {
+            val remaining = getRemainingCooldownMs(senderKey) / 1000
+            Log.d(TAG, "Rate-limited: $senderKey (${remaining}s remaining), skipping")
+            repliedNotifications.add(notificationKey)
+            return
+        }
+
+        Log.d(TAG, "Processing notification from $packageName, sender=$senderKey (Key: $notificationKey)")
         repliedNotifications.add(notificationKey)
+        senderLastReplyTime[senderKey] = System.currentTimeMillis()
         handleAutoReply(notification, packageName)
     }
 
@@ -99,6 +110,33 @@ class AutoReplyListenerService : NotificationListenerService() {
     }
 
 
+
+    private fun buildSenderKey(sbn: StatusBarNotification): String {
+        val extras = sbn.notification.extras
+        val senderTitle = extras.getCharSequence("android.title")?.toString() ?: ""
+        return if (senderTitle.isNotEmpty()) {
+            "${sbn.packageName}:$senderTitle"
+        } else {
+            sbn.packageName
+        }
+    }
+
+    private fun getRateLimitMs(): Long {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val minutes = prefs.getInt(KEY_RATE_LIMIT_MINUTES, DEFAULT_RATE_LIMIT_MINUTES)
+        return minutes * 60L * 1000L
+    }
+
+    private fun isSenderRateLimited(senderKey: String): Boolean {
+        val lastReplyTime = senderLastReplyTime[senderKey] ?: return false
+        return System.currentTimeMillis() - lastReplyTime < getRateLimitMs()
+    }
+
+    private fun getRemainingCooldownMs(senderKey: String): Long {
+        val lastReplyTime = senderLastReplyTime[senderKey] ?: return 0
+        val elapsed = System.currentTimeMillis() - lastReplyTime
+        return (getRateLimitMs() - elapsed).coerceAtLeast(0)
+    }
 
     private fun isAutoReplyEnabled(): Boolean {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
