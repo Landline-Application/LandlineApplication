@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Button,
-  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -16,9 +15,12 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
+import { WebBrowserPresentationStyle, openBrowserAsync } from 'expo-web-browser';
 
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/contexts/auth-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
+import { auth, onAuthStateChanged } from '@/utils/firebase';
 import { StorageManager } from '@/utils/storage/storage-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -135,9 +137,43 @@ export default function SettingsScreen() {
   }
 
   async function handleDeleteAccount() {
-    await Linking.openURL(
+    let alreadyHandled = false;
+
+    async function handleLogout() {
+      if (alreadyHandled) return;
+      alreadyHandled = true;
+      unsubscribe();
+      await signOut().catch(() => {});
+      router.replace('/onboarding');
+    }
+
+    // Primary signal: Firebase pushes auth state to null when the account is deleted.
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser === null && !alreadyHandled) {
+        handleLogout();
+      }
+    });
+
+    await openBrowserAsync(
       'https://landline-application.github.io/LandlineApplication/delete-account/',
+      { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC },
     );
+
+    // Browser closed — if Firebase hasn't fired yet, force a token refresh to
+    // check whether the account still exists on the server.
+    if (!alreadyHandled) {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await currentUser.getIdToken(true);
+        }
+        // Token refreshed fine — user did not delete their account, cancel.
+        unsubscribe();
+      } catch {
+        // Token refresh failed — account was deleted. Sign out.
+        await handleLogout();
+      }
+    }
   }
 
   async function resetTermsAcceptance() {
@@ -239,7 +275,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Button
-          title="🔄 Reset Terms Acceptance (Testing)"
+          title="Reset Terms Acceptance (Testing)"
           onPress={resetTermsAcceptance}
           color="#ff6b6b"
         />
@@ -253,7 +289,10 @@ export default function SettingsScreen() {
           style={styles.actionButton}
           onPress={() => router.push('/permissions' as any)}
         >
-          <Text style={styles.actionButtonText}>🔐 Manage Permissions</Text>
+          <View style={styles.actionButtonRow}>
+            <MaterialIcons name="lock" size={18} color="#fff" style={styles.actionButtonIcon} />
+            <Text style={styles.actionButtonText}>Manage Permissions</Text>
+          </View>
           <Text style={styles.actionButtonSubtext}>Review and grant app permissions</Text>
         </TouchableOpacity>
 
@@ -261,7 +300,10 @@ export default function SettingsScreen() {
           style={styles.actionButton}
           onPress={() => router.push('/app-selection' as any)}
         >
-          <Text style={styles.actionButtonText}>📱 App Selection</Text>
+          <View style={styles.actionButtonRow}>
+            <MaterialIcons name="apps" size={18} color="#fff" style={styles.actionButtonIcon} />
+            <Text style={styles.actionButtonText}>App Selection</Text>
+          </View>
           <Text style={styles.actionButtonSubtext}>
             Choose which apps to include in Landline Mode
           </Text>
@@ -276,7 +318,15 @@ export default function SettingsScreen() {
           style={styles.actionButton}
           onPress={() => router.push('/(tabs)/landline' as any)}
         >
-          <Text style={styles.actionButtonText}>📞 Landline Mode</Text>
+          <View style={styles.actionButtonRow}>
+            <MaterialIcons
+              name="notifications-off"
+              size={18}
+              color="#fff"
+              style={styles.actionButtonIcon}
+            />
+            <Text style={styles.actionButtonText}>Landline Mode</Text>
+          </View>
           <Text style={styles.actionButtonSubtext}>Manage your Landline mode settings</Text>
         </TouchableOpacity>
 
@@ -284,7 +334,10 @@ export default function SettingsScreen() {
           style={styles.actionButton}
           onPress={() => router.push('/(tabs)/debug-tools' as any)}
         >
-          <Text style={styles.actionButtonText}>🛠 Debug Tools</Text>
+          <View style={styles.actionButtonRow}>
+            <MaterialIcons name="build" size={18} color="#fff" style={styles.actionButtonIcon} />
+            <Text style={styles.actionButtonText}>Debug Tools</Text>
+          </View>
           <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
         </TouchableOpacity>
       </View>
@@ -295,7 +348,10 @@ export default function SettingsScreen() {
           <Text style={styles.sectionHeader}>Data Management</Text>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
-            <Text style={styles.actionButtonText}>📤 Export My Data</Text>
+            <View style={styles.actionButtonRow}>
+              <MaterialIcons name="upload" size={18} color="#fff" style={styles.actionButtonIcon} />
+              <Text style={styles.actionButtonText}>Export My Data</Text>
+            </View>
             <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
           </TouchableOpacity>
 
@@ -303,9 +359,17 @@ export default function SettingsScreen() {
             style={[styles.actionButton, styles.dangerButton]}
             onPress={openDeleteModal}
           >
-            <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
-              🗑️ Delete All My Data
-            </Text>
+            <View style={styles.actionButtonRow}>
+              <MaterialIcons
+                name="delete-forever"
+                size={18}
+                color="#fff"
+                style={styles.actionButtonIcon}
+              />
+              <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
+                Delete All My Data
+              </Text>
+            </View>
             <Text style={styles.actionButtonSubtext}>
               Permanently remove all your data from this app
             </Text>
@@ -334,7 +398,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>⚠️ Confirm Data Deletion</Text>
+            <Text style={styles.modalTitle}>Confirm Data Deletion</Text>
 
             <Text style={styles.modalText}>
               This will permanently delete ALL your data from the Landline app, including:
@@ -437,11 +501,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  actionButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  actionButtonIcon: {},
   actionButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
   },
   actionButtonSubtext: {
     color: '#fff',

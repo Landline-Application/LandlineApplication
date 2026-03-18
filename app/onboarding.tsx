@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
+import { MaterialIconName, MaterialIcons } from '@/components/ui/icon-symbol';
 import Animated, {
   Extrapolation,
   SharedValue,
@@ -27,7 +28,7 @@ interface OnboardingSlide {
   id: number;
   title: string;
   description: string;
-  emoji: string;
+  icon: MaterialIconName;
   gradientColors: string[];
 }
 
@@ -37,7 +38,7 @@ const slides: OnboardingSlide[] = [
     title: 'Welcome to Landline',
     description:
       'Stay focused and manage your notifications intelligently with our powerful features.',
-    emoji: '📱',
+    icon: 'phone-android',
     gradientColors: ['#667eea', '#764ba2'],
   },
   {
@@ -45,7 +46,7 @@ const slides: OnboardingSlide[] = [
     title: 'Landline Mode',
     description:
       'Activate Landline mode to silence distractions while capturing all your notifications for later.',
-    emoji: '🔕',
+    icon: 'notifications-off',
     gradientColors: ['#f093fb', '#f5576c'],
   },
   {
@@ -53,7 +54,7 @@ const slides: OnboardingSlide[] = [
     title: 'Never Miss Important Updates',
     description:
       'Review all notifications you received while in Landline mode, clearly marked and easy to access.',
-    emoji: '📬',
+    icon: 'all-inbox',
     gradientColors: ['#4facfe', '#00f2fe'],
   },
   {
@@ -61,7 +62,7 @@ const slides: OnboardingSlide[] = [
     title: 'Background Services',
     description:
       'Our smart background services keep the app running efficiently while minimizing battery usage.',
-    emoji: '⚡',
+    icon: 'bolt',
     gradientColors: ['#43e97b', '#38f9d7'],
   },
   {
@@ -69,7 +70,7 @@ const slides: OnboardingSlide[] = [
     title: 'Grant Permissions',
     description:
       'To work properly, we need notification access and the ability to run in the background.',
-    emoji: '🔐',
+    icon: 'lock',
     gradientColors: ['#fa709a', '#fee140'],
   },
 ];
@@ -142,7 +143,7 @@ export default function OnboardingScreen() {
                 scrollEnabled={false}
               >
                 <View style={styles.emojiContainer}>
-                  <Text style={styles.emoji}>{slide.emoji}</Text>
+                  <MaterialIcons name={slide.icon} size={64} color="#fff" />
                 </View>
 
                 <Text style={styles.title}>{slide.title}</Text>
@@ -160,12 +161,12 @@ export default function OnboardingScreen() {
                 {slide.id === 5 && (
                   <View style={styles.permissionsList}>
                     <PermissionItem
-                      icon="🔔"
+                      icon="notifications"
                       title="Notification Access"
                       description="Read and log notifications"
                     />
                     <PermissionItem
-                      icon="⚙️"
+                      icon="settings"
                       title="Background Services"
                       description="Run efficiently in background"
                     />
@@ -248,14 +249,14 @@ function PermissionItem({
   title,
   description,
 }: {
-  icon: string;
+  icon: MaterialIconName;
   title: string;
   description: string;
 }) {
   return (
     <View style={styles.permissionItem}>
       <View style={styles.permissionIcon}>
-        <Text style={styles.permissionIconText}>{icon}</Text>
+        <MaterialIcons name={icon} size={24} color="#fff" />
       </View>
       <View style={styles.permissionContent}>
         <Text style={styles.permissionTitle}>{title}</Text>
@@ -307,13 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  emoji: {
-    fontSize: 64,
-    lineHeight: 72,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -392,13 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  permissionIconText: {
-    fontSize: 24,
-    lineHeight: 30,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
+
   permissionContent: {
     flex: 1,
     backgroundColor: 'transparent',

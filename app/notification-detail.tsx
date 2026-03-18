@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { MaterialIconName, MaterialIcons } from '@/components/ui/icon-symbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Notification {
@@ -26,20 +27,20 @@ export default function NotificationDetailScreen() {
     JSON.parse(notificationsData || '[]'),
   );
 
-  const getCategoryIcon = (cat: string): string => {
+  const getCategoryIcon = (cat: string): MaterialIconName => {
     switch (cat) {
       case 'Texts':
-        return '💬';
+        return 'sms';
       case 'Emails':
-        return '📧';
+        return 'email';
       case 'Missed Calls':
-        return '📞';
+        return 'phone-missed';
       case 'Voicemails':
-        return '🎙️';
+        return 'voicemail';
       case 'App Notifications':
-        return '🔔';
+        return 'notifications';
       default:
-        return '📬';
+        return 'all-inbox';
     }
   };
 
@@ -114,7 +115,12 @@ export default function NotificationDetailScreen() {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerIcon}>{getCategoryIcon(category)}</Text>
+          <MaterialIcons
+            name={getCategoryIcon(category)}
+            size={40}
+            color={getCategoryColor(category)}
+            style={styles.headerIcon}
+          />
           <View>
             <Text style={styles.headerTitle}>{category}</Text>
             <Text style={styles.headerSubtitle}>
@@ -128,7 +134,7 @@ export default function NotificationDetailScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {notifications.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>✅</Text>
+            <MaterialIcons name="check-circle" size={64} color="#4CAF50" style={styles.emptyIcon} />
             <Text style={styles.emptyText}>All caught up!</Text>
           </View>
         ) : (
@@ -201,7 +207,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerIcon: {
-    fontSize: 40,
     marginRight: 16,
   },
   headerTitle: {
@@ -226,7 +231,6 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
   },
   emptyIcon: {
-    fontSize: 64,
     marginBottom: 16,
   },
   emptyText: {
