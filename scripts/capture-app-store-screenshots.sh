@@ -7,7 +7,7 @@ if ! command -v adb >/dev/null 2>&1; then
   exit 1
 fi
 
-OUT_DIR="${1:-app-store-shots}"
+OUT_DIR="${1:-tmp}"
 mkdir -p "$OUT_DIR"
 
 SERIAL="${2:-}"
