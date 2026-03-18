@@ -20,13 +20,20 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    cd LandlineApplication
    ```
 
-2. Install dependencies using pnpm:
+2. Set up your `google-services.json` by adding its **absolute path** to `.env.local`:
+
+   ```bash
+   # .env.local — must be a hardcoded absolute path, not relative
+   GOOGLE_SERVICES_JSON=/absolute/path/to/google-services.json
+   ```
+
+3. Install dependencies using pnpm:
 
    ```bash
    pnpm install
    ```
 
-3. Run the application:
+4. Run the application:
 
    ```bash
    pnpm prebuild
