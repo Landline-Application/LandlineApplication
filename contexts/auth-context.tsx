@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   type FirebaseAuthTypes,
   auth,
-  createUserDocument,
   createUserWithEmailAndPassword,
   signInWithGoogle as firebaseSignInWithGoogle,
   firebaseSignOut,
@@ -31,14 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          await createUserDocument(firebaseUser);
-        } catch (error) {
-          console.warn('Failed to update user document:', error);
-        }
-      }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setIsLoading(false);
     });
@@ -48,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
-    await createUserDocument(credential.user);
     try {
       await sendEmailVerification(credential.user);
     } catch (verificationError: any) {
