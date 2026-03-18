@@ -1,4 +1,5 @@
 import androidx.room.Entity
+import androidx.room.PrimaryKey
 
 @Entity(tableName = "notification_db")
 data class NotificationEntity (
