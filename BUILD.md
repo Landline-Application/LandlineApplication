@@ -40,6 +40,58 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    pnpm android # we prioritize android
    ```
 
+## Android SDK & Emulator Setup
+
+For a full reference on `sdkmanager`, `avdmanager`, `emulator`, and `adb` see
+[docs/android-sdk-emulator.md](docs/android-sdk-emulator.md).
+
+### Quick Setup
+
+1. **Set environment variables** in your shell profile (`~/.bashrc` / `~/.zshrc` / or whatever windows uses):
+
+   ```bash
+   export ANDROID_HOME=$HOME/Android/Sdk          # Linux
+   # export ANDROID_HOME=$HOME/Library/Android/sdk  # macOS
+
+   export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+   export PATH=$PATH:$ANDROID_HOME/platform-tools
+   export PATH=$PATH:$ANDROID_HOME/emulator
+   ```
+
+2. **Install required SDK packages:**
+
+   ```bash
+   sdkmanager "platforms;android-35" \
+               "build-tools;35.0.0" \
+               "platform-tools" \
+               "emulator" \
+               "system-images;android-35;google_apis_playstore;x86_64"
+   sdkmanager --licenses   # accept all licences
+   ```
+
+3. **Create a virtual device (AVD):**
+
+   ```bash
+   avdmanager create avd \
+     --name "Pixel9_API35" \
+     --package "system-images;android-35;google_apis_playstore;x86_64" \
+     --device "pixel_9"
+   ```
+
+4. **Start the emulator:**
+
+   ```bash
+   emulator -avd Pixel9_API35
+   ```
+
+5. **Run the app** (in a separate terminal):
+
+   ```bash
+   pnpm android
+   ```
+
+---
+
 ## EAS Setup & Production Builds
 
 [EAS (Expo Application Services)](https://expo.dev/eas) is used for production builds.
