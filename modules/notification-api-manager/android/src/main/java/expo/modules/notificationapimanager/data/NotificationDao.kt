@@ -12,5 +12,5 @@ interface NotificationDao (
     suspend fun deleteNotifications(vararg notification: NotificationEntity)
 
     @Query("SELECT * FROM notification_db")
-    suspend fun loadAll_notifications() : FLOW<List<NotificationEntity>>
+    suspend fun loadAll_notifications() : LiveData<List<NotificationEntity>>
     )
