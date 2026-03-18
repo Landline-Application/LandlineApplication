@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Button,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -16,12 +17,14 @@ import {
 
 import { router } from 'expo-router';
 
+import { useAuth } from '@/contexts/auth-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { StorageManager } from '@/utils/storage/storage-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { user, isAuthenticated, signOut } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -117,6 +120,26 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleSignOut() {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.replace('/onboarding');
+        },
+      },
+    ]);
+  }
+
+  async function handleDeleteAccount() {
+    await Linking.openURL(
+      'https://landline-application.github.io/LandlineApplication/delete-account/',
+    );
+  }
+
   async function resetTermsAcceptance() {
     try {
       await clearAcceptance();
@@ -139,6 +162,62 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
+      </View>
+
+      {/* Account Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Account</Text>
+
+        {isAuthenticated ? (
+          <>
+            <View style={styles.accountCard}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarInitial}>
+                  {(user?.email || user?.phoneNumber || '?')[0].toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.accountInfo}>
+                <Text style={styles.accountLabel}>Signed in as</Text>
+                <Text style={styles.accountEmail} numberOfLines={1}>
+                  {user?.email || user?.phoneNumber || 'Unknown'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
+              <Text style={styles.outlineButtonText}>Sign Out</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.dangerButton]}
+              onPress={handleDeleteAccount}
+            >
+              <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Delete Account</Text>
+              <Text style={styles.actionButtonSubtext}>Permanently remove your account</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={styles.unauthCard}>
+              <Text style={styles.unauthTitle}>Join Landline</Text>
+              <Text style={styles.unauthSubtitle}>
+                Create an account to sync your settings and access features across devices.
+              </Text>
+              <TouchableOpacity
+                style={styles.primaryAuthButton}
+                onPress={() => router.push('/create-account')}
+              >
+                <Text style={styles.primaryAuthButtonText}>Create Account</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryAuthButton}
+                onPress={() => router.push('/login')}
+              >
+                <Text style={styles.secondaryAuthButtonText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Storage Info Section */}
@@ -210,42 +289,41 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Data Management Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Data Management</Text>
+      {/* Data Management Section — only shown when signed in */}
+      {isAuthenticated && (
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Data Management</Text>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
-          <Text style={styles.actionButtonText}>📤 Export My Data</Text>
-          <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
+            <Text style={styles.actionButtonText}>📤 Export My Data</Text>
+            <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.dangerButton]}
-          onPress={openDeleteModal}
-        >
-          <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
-            🗑️ Delete All My Data
-          </Text>
-          <Text style={styles.actionButtonSubtext}>
-            Permanently remove all your data from this app
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.dangerButton]}
+            onPress={openDeleteModal}
+          >
+            <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
+              🗑️ Delete All My Data
+            </Text>
+            <Text style={styles.actionButtonSubtext}>
+              Permanently remove all your data from this app
+            </Text>
+          </TouchableOpacity>
 
-      {/* Information Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>About Data Deletion</Text>
-        <Text style={styles.infoText}>
-          When you delete your data, the following will be permanently removed:
-        </Text>
-        <Text style={styles.bulletPoint}>• Terms of Use acceptance record</Text>
-        <Text style={styles.bulletPoint}>• All captured notification logs</Text>
-        <Text style={styles.bulletPoint}>• Landline mode settings</Text>
-        <Text style={styles.bulletPoint}>• All app preferences and settings</Text>
-        <Text style={[styles.infoText, styles.warningText]}>
-          This action cannot be undone. Consider exporting your data first.
-        </Text>
-      </View>
+          {/* Inline info about what gets deleted */}
+          <View style={styles.deletionInfoBox}>
+            <Text style={styles.deletionInfoTitle}>What gets deleted</Text>
+            <Text style={styles.bulletPoint}>• Terms of Use acceptance record</Text>
+            <Text style={styles.bulletPoint}>• All captured notification logs</Text>
+            <Text style={styles.bulletPoint}>• Landline mode settings</Text>
+            <Text style={styles.bulletPoint}>• All app preferences and settings</Text>
+            <Text style={[styles.infoText, styles.warningText, { marginBottom: 0 }]}>
+              This action cannot be undone. Export your data first.
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -375,6 +453,130 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#fff',
+  },
+  secondaryButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  secondaryButtonText: {
+    color: '#333',
+  },
+  secondaryButtonSubtext: {
+    color: '#555',
+  },
+  // Account card (authenticated)
+  accountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 2,
+  },
+  accountEmail: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111',
+  },
+  outlineButton: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  outlineButtonText: {
+    color: '#007AFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  // Unauthenticated card
+  unauthCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  unauthTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111',
+    marginBottom: 8,
+  },
+  unauthSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  primaryAuthButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
+  primaryAuthButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryAuthButton: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    width: '100%',
+  },
+  secondaryAuthButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deletionInfoBox: {
+    backgroundColor: '#fff5f5',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffd0cc',
+    padding: 14,
+    marginTop: 4,
+  },
+  deletionInfoTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#cc3b30',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  infoValueEllipsis: {
+    flex: 1,
+    textAlign: 'right',
   },
   infoText: {
     fontSize: 14,

@@ -656,6 +656,8 @@
         document.getElementById('email').value = '';
         document.getElementById('password').value = '';
         clearErrors();
+        setLoading('btn-google', false);
+        setLoading('btn-signin', false);
         showStep('step-signin');
       };
 
