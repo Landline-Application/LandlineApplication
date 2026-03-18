@@ -33,6 +33,61 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    pnpm android # we prioritize android
    ```
 
+## EAS Setup & Production Builds
+
+[EAS (Expo Application Services)](https://expo.dev/eas) is used for production builds.
+
+> **Warning:** EAS free tier allows **15 Android builds per month**. Be conservative — run EAS builds only when necessary and prefer local builds during development.
+
+### 1. Install EAS CLI & Log In
+
+```bash
+npm install -g eas-cli
+eas login
+```
+
+You'll be prompted for your Expo account credentials. To verify you're logged in:
+
+```bash
+eas whoami
+```
+
+### 2. Configure Credentials
+
+EAS manages the Android keystore used to sign releases. To set up or pull existing credentials:
+
+```bash
+eas credentials
+```
+
+When prompted, navigate: **Android** → **production** → **Keystore: Manage everything needed to build your project** → **Set up a new keystore**.
+
+The existing keystore for this project (`O55UgHZ17F`) is already configured on EAS. If you are setting up a new machine, selecting the existing default keystore will pull it down automatically. Once set up, quit the prompt — you're ready to build.
+
+Credentials are stored remotely on EAS and do not need to be committed to the repo.
+
+### 3. Production Build (EAS Cloud)
+
+Triggers a build on EAS servers. Useful for CI or when you don't have a local Android environment set up.
+
+```bash
+eas build --platform android --profile production
+```
+
+The resulting `.aab` file can be downloaded from the [Expo dashboard](https://expo.dev) and submitted to Google Play.
+
+### 4. Production Build (Local)
+
+Runs the build on your machine using your local Android SDK. Requires `ANDROID_HOME` to be set correctly in your environment.
+
+```bash
+eas build --platform android --profile production --local
+```
+
+The `.aab` output will be written to the project root. This does **not** count against your monthly EAS build quota.
+
+---
+
 ## Troubleshooting
 
 ### Metro Cache and TreeFS Errors

@@ -90,8 +90,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 ### Landline Mode Control
 
 - **Description:** Toggle notification logging on/off. When enabled, the `LandlineNotificationListenerService` silently captures all incoming notifications without displaying them.
-- **Current Implementation:** Test page at `(tabs)/landline-mode-test`
-- **Status:** Functional test page; exposed as a production tab (should not be)
+- **Current Implementation:** `(tabs)/landline` — accessible via the Tools section in Settings
+- **Status:** Functional; hidden from tab bar, navigable from Settings
 - **Backend:** `NotificationApiManager` native module; state stored in `landline_mode_prefs` SharedPreferences
 - **Note:** The self-notification filter in `LandlineNotificationListenerService` is temporarily disabled for testing. A broadcast intent (`com.landlineapp.NOTIFICATION_RECEIVED`) is emitted for real-time UI updates but no receiver exists in the React Native layer.
 
@@ -115,8 +115,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 ### Background Services Management
 
 - **Description:** Control foreground services (`START_STICKY` for auto-restart), schedule periodic background tasks via WorkManager, manage battery optimization settings, monitor Doze mode status.
-- **Current Implementation:** Test page at `(tabs)/background-service-demo`
-- **Status:** Functional test page; exposed in production tabs (should not be)
+- **Current Implementation:** `(tabs)/debug-tools` — accessible via the Tools section in Settings
+- **Status:** Functional; hidden from tab bar, navigable from Settings
 - **Backend:** `BackgroundServiceManager` native module
 - **Note:** `BackgroundWorker.performNotificationCheck()` is a TODO placeholder — the actual background work logic is not implemented. Foreground service uses `foregroundServiceType="specialUse"`. Wake lock support exists but is disabled in code.
 
@@ -133,8 +133,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 
 ### Landline Mode Integration
 
-- **Current State:** Test page exposed as production tab
-- **File:** `app/(tabs)/landline-mode-test.tsx`
+- **Current State:** Functional page, hidden from tab bar, accessible via Settings → Tools
+- **File:** `app/(tabs)/landline.tsx`
 
 ### Auto-Reply Configuration
 
@@ -148,8 +148,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 
 ### Background Services Control
 
-- **Current State:** Test page exposed as production tab
-- **File:** `app/(tabs)/background-service-demo.tsx`
+- **Current State:** Functional debug page, hidden from tab bar, accessible via Settings → Tools
+- **File:** `app/(tabs)/debug-tools.tsx`
 
 ### Notification Log "Classic View"
 
@@ -201,15 +201,15 @@ Root layout (`app/_layout.tsx`) wraps the app in `SafeAreaProvider` > `AuthProvi
 
 ### Tab Bar
 
-Five tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS press feedback.
+Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS press feedback. `landline` and `debug-tools` are registered but hidden from the tab bar (`href: null`) and accessible via the Tools section in Settings.
 
-| Tab                       | Title         | Production Ready  |
-| ------------------------- | ------------- | ----------------- |
-| `index`                   | Home          | No (test content) |
-| `notifications`           | Notifications | Partial           |
-| `landline-mode-test`      | Landline      | No (test page)    |
-| `background-service-demo` | BG Service    | No (test page)    |
-| `settings`                | Settings      | Yes               |
+| Tab             | Title         | Visible | Production Ready  |
+| --------------- | ------------- | ------- | ----------------- |
+| `index`         | Home          | Yes     | No (test content) |
+| `notifications` | Notifications | Yes     | Partial           |
+| `settings`      | Settings      | Yes     | Yes               |
+| `landline`      | —             | No      | Partial           |
+| `debug-tools`   | —             | No      | No (debug page)   |
 
 ### Route Table
 
@@ -226,15 +226,15 @@ Five tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS press fe
 | `(tabs)/settings`       | Settings & data      | Complete                       |
 | `/notification-detail`  | Notification details | Complete                       |
 
-### Test Pages (Should Not Be in Production)
+### Hidden / Debug Pages
 
-| Route                            | Purpose                    | Exposure           |
-| -------------------------------- | -------------------------- | ------------------ |
-| `(tabs)/landline-mode-test`      | Landline mode testing      | Production tab     |
-| `(tabs)/background-service-demo` | Background service testing | Production tab     |
-| `/auto-reply-test`               | Auto-reply testing         | Linked from home   |
-| `/dnd-test`                      | DND testing                | Linked from home   |
-| `/modal`                         | Template modal             | Unused placeholder |
+| Route                | Purpose               | Exposure           |
+| -------------------- | --------------------- | ------------------ |
+| `(tabs)/landline`    | Landline mode control | Settings → Tools   |
+| `(tabs)/debug-tools` | System diagnostics    | Settings → Tools   |
+| `/auto-reply-test`   | Auto-reply testing    | Linked from home   |
+| `/dnd-test`          | DND testing           | Linked from home   |
+| `/modal`             | Template modal        | Unused placeholder |
 
 ---
 
@@ -366,7 +366,7 @@ From project documentation (README.md) but no implementation in the codebase:
 ## Known Issues & Technical Debt
 
 1. **Auth not wired up:** Login/signup pages do not call `AuthContext.signIn()`/`signUp()` — auth state is not persisted through the actual login flow
-2. **Test pages in production tabs:** `landline-mode-test` and `background-service-demo` are visible as production tabs
+2. **Debug pages linked from Settings:** `landline` and `debug-tools` are hidden from the tab bar but accessible via Settings → Tools
 3. **Home page is a test page:** Contains debug buttons, no production dashboard
 4. **Notification log classic view:** Toggle exists but the view returns `null`
 5. **Password validation mismatch:** `validators.ts` requires 8+ chars with complexity rules; auth pages only check 6+ chars inline

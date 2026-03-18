@@ -2,7 +2,7 @@
 
 ## Issue
 
-When tapping "Send Test Message", notifications don't appear in the notification shade.
+When tapping "Send Test Message" in **Settings → Tools → Debug Tools**, notifications don't appear in the notification shade.
 
 ## Root Causes & Solutions
 
@@ -110,7 +110,7 @@ adb logcat -s "ReactNativeJS:*" "TestNotification*:*" "NotificationManager:*" | 
 
 ## What Should Happen
 
-When you tap "Send Test Message":
+When you tap "Send Test Message" (in Settings → Tools → Debug Tools):
 
 1. **Module Called:**
 

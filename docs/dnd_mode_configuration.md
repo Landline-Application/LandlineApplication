@@ -502,7 +502,7 @@ interface DNDModeState {
 | Conversation Priority      | 30+ (Android 11)  | Use contact-based filtering    |
 
 **Minimum SDK:** 23 (Android 6.0)  
-**Target SDK:** 34 (Android 14)
+**Target SDK:** 35 (Android 15)
 
 ### Permissions Required
 

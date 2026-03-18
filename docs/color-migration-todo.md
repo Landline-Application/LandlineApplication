@@ -26,7 +26,7 @@ COLORS.shadow; // '#000000'
 
 ## Files needing color pass
 
-### app/(tabs)/background-service-demo.tsx
+### app/(tabs)/debug-tools.tsx
 
 - `<View>` (was `<ThemedView>`) — needs `backgroundColor`
 - `<Text>` (was `<ThemedText>`) — needs text `color`
@@ -36,7 +36,7 @@ COLORS.shadow; // '#000000'
 - `<View>` (was `<ThemedView>`) — needs `backgroundColor`
 - `<Text>` (was `<ThemedText>`) — needs text `color`
 
-### app/(tabs)/landline-mode-test.tsx
+### app/(tabs)/landline.tsx
 
 - `<View>` (was `<ThemedView>`) — needs `backgroundColor`
 - `<Text>` (was `<ThemedText>`) — needs text `color`
@@ -46,31 +46,10 @@ COLORS.shadow; // '#000000'
 - `<View>` (was `<ThemedView>`) — needs `backgroundColor`
 - `<Text>` (was `<ThemedText>`) — needs text `color`
 
-### app/(tabs)/explore.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-- `headerBackgroundColor` prop on `ParallaxScrollView` — still has hardcoded `light`/`dark` values, replace with `COLORS` token
-
 ### app/onboarding.tsx
 
 - `<View>` (was `<ThemedView>`, `style={styles.container}`) — had `backgroundColor: '#000'` already in StyleSheet, likely fine
 - `<Text>` nodes inside gradient slides — most already have `color: '#fff'` in StyleSheet styles, review remaining unstyled ones
-
-### app/auto-reply-test.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/dnd-test.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/modal.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
 
 ### components/ui/collapsible.tsx
 

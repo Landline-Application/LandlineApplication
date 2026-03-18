@@ -8,7 +8,7 @@ The auto-reply manager now tracks every reply sent, allowing you to see what mes
 
 ### In the App
 
-1. Navigate to **Auto-Reply Test Page**
+1. Navigate to **Settings → Tools → Debug Tools**
 2. Scroll to **"Reply History"** section
 3. Tap **"View Reply History"**
 

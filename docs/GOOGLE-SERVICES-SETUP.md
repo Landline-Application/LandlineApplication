@@ -10,8 +10,7 @@ The `google-services.json` file contains Firebase configuration for the Landline
 2. Open the **Landline** project (or `landline-application`)
 3. Click the gear icon → **Project settings**
 4. Under **Your apps**, select the **Android** app (`com.outersnail.Landline`)
-5. Click **Download google-services.json**
-6. Save the file to the **project root** of LandlineApplication (same folder as `app.json`)
+5. Click **Download google-services.json** 6. Save the file to the **project root** of LandlineApplication (same folder as `app.config.ts`)
 
 ---
 
@@ -21,11 +20,13 @@ Place the file here:
 
 ```
 LandlineApplication/
-├── app.json
+├── app.config.ts
 ├── google-services.json   ← here
 ├── package.json
 └── ...
 ```
+
+> **CI / EAS Build:** The app config reads `process.env.GOOGLE_SERVICES_JSON ?? './google-services.json'`. In CI or EAS Build environments, set the `GOOGLE_SERVICES_JSON` environment variable to the path of the file instead of placing it in the project root.
 
 ---
 
