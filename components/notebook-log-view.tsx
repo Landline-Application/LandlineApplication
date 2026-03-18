@@ -24,12 +24,17 @@ interface NotebookLogEntry {
 interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
+  isActive?: boolean;
 }
 
 const TAB_WIDTH = 40;
 const PAGE_MARGIN = 20;
 
-export default function NotebookLogView({ notifications, onRefresh }: NotebookLogViewProps) {
+export default function NotebookLogView({
+  notifications,
+  onRefresh,
+  isActive,
+}: NotebookLogViewProps) {
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -123,9 +128,23 @@ export default function NotebookLogView({ notifications, onRefresh }: NotebookLo
             {/* Notifications List */}
             {displayNotifications.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>📭</Text>
-                <Text style={styles.emptyText}>No notifications logged yet</Text>
-                <Text style={styles.emptySubtext}>Activate Landline Mode to start capturing</Text>
+                {isActive ? (
+                  <>
+                    <Text style={styles.emptyIcon}>👂</Text>
+                    <Text style={styles.emptyText}>Listening for notifications</Text>
+                    <Text style={styles.emptySubtext}>
+                      No notifications have been captured so far
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emptyIcon}>📭</Text>
+                    <Text style={styles.emptyText}>No notifications logged yet</Text>
+                    <Text style={styles.emptySubtext}>
+                      Activate Landline Mode to start capturing
+                    </Text>
+                  </>
+                )}
               </View>
             ) : (
               displayNotifications.map((notif, index) => (

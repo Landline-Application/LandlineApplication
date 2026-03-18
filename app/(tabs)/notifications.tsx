@@ -87,7 +87,11 @@ export default function NotificationsScreen() {
 
       {/* Notebook View */}
       {viewMode === 'notebook' ? (
-        <NotebookLogView notifications={notifications} onRefresh={loadNotifications} />
+        <NotebookLogView
+          notifications={notifications}
+          onRefresh={loadNotifications}
+          isActive={isActive}
+        />
       ) : (
         <View style={styles.modernPlaceholder}>
           <Text style={styles.placeholderText}>Classic view - To be implemented</Text>

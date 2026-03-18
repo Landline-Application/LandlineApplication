@@ -2,10 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Alert, Button, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { useRouter } from 'expo-router';
-
 import { COLORS } from '@/constants/colors';
-import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
@@ -24,9 +21,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DebugToolsScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { user, isAuthenticated, signOut } = useAuth();
-
   const {
     hasPermission: landlinePermission,
     isActive: landlineActive,
@@ -88,20 +82,6 @@ export default function DebugToolsScreen() {
     } catch {
       setNotifCount(0);
     }
-  };
-
-  const handleSignOut = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/onboarding');
-        },
-      },
-    ]);
   };
 
   return (
@@ -1179,88 +1159,6 @@ export default function DebugToolsScreen() {
             color={COLORS.dark.primary}
           />
         </View>
-      </View>
-
-      {/* Account */}
-      <View
-        style={{
-          backgroundColor: COLORS.dark.surface,
-          marginHorizontal: 16,
-          borderRadius: 12,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: COLORS.dark.border,
-          borderCurve: 'continuous',
-          gap: 12,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>👤 Account</Text>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingBottom: 8,
-            borderBottomWidth: 1,
-            borderBottomColor: COLORS.dark.divider,
-          }}
-        >
-          <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-            Logged In:
-          </Text>
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: '600',
-              color: isAuthenticated ? COLORS.dark.success : COLORS.dark.textMuted,
-            }}
-          >
-            {isAuthenticated ? 'Yes' : 'No'}
-          </Text>
-        </View>
-
-        {isAuthenticated && (
-          <>
-            <View
-              style={{
-                backgroundColor: COLORS.dark.card,
-                padding: 12,
-                borderRadius: 8,
-                borderLeftWidth: 3,
-                borderLeftColor: COLORS.dark.success,
-                borderCurve: 'continuous',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: COLORS.dark.textSecondary,
-                  fontWeight: '600',
-                  marginBottom: 4,
-                }}
-              >
-                Email:
-              </Text>
-              <Text selectable style={{ fontSize: 14, color: COLORS.dark.text }}>
-                Signed in as: {user?.email || user?.phoneNumber || 'Unknown'}
-              </Text>
-            </View>
-
-            <View style={{ gap: 8 }}>
-              <Button title="Sign Out" onPress={handleSignOut} color={COLORS.dark.error} />
-            </View>
-          </>
-        )}
-
-        {!isAuthenticated && (
-          <View style={{ gap: 8 }}>
-            <Button
-              title="Sign Up"
-              onPress={() => router.push('/create-account')}
-              color={COLORS.dark.primary}
-            />
-          </View>
-        )}
       </View>
     </ScrollView>
   );
