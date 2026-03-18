@@ -1,4 +1,4 @@
-import androidx.room.Dao
+import androidx.room.*
 
 @Dao
 interface NotificationDao (
