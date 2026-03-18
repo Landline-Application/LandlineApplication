@@ -519,6 +519,13 @@
     <script type="module">
       import { getAnalytics } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js';
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
+      import {
+        GoogleAuthProvider,
+        deleteUser,
+        getAuth,
+        signInWithEmailAndPassword,
+        signInWithPopup,
+      } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
 
       const firebaseConfig = {
         apiKey: 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk',
@@ -532,9 +539,8 @@
 
       const app = initializeApp(firebaseConfig);
       const analytics = getAnalytics(app);
-    </script>
+      const auth = getAuth(app);
 
-    <script>
       let currentUserEmail = '';
 
       function showStep(stepId) {
@@ -575,7 +581,7 @@
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       }
 
-      function handleEmailSignIn() {
+      window.handleEmailSignIn = function () {
         clearErrors();
 
         var email = document.getElementById('email').value.trim();
@@ -596,9 +602,7 @@
 
         setLoading('btn-signin', true);
 
-        firebase
-          .auth()
-          .signInWithEmailAndPassword(email, password)
+        signInWithEmailAndPassword(auth, email, password)
           .then(function (userCredential) {
             currentUserEmail = userCredential.user.email;
             document.getElementById('display-email').textContent = currentUserEmail;
@@ -608,15 +612,13 @@
             setLoading('btn-signin', false);
             showError('email', error.message);
           });
-      }
+      };
 
-      function handleGoogleSignIn() {
+      window.handleGoogleSignIn = function () {
         setLoading('btn-google', true);
 
-        var provider = new firebase.auth.GoogleAuthProvider();
-        firebase
-          .auth()
-          .signInWithPopup(provider)
+        var provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider)
           .then(function (result) {
             currentUserEmail = result.user.email;
             document.getElementById('display-email').textContent = currentUserEmail;
@@ -626,19 +628,18 @@
             setLoading('btn-google', false);
             alert('Google sign-in failed: ' + error.message);
           });
-      }
+      };
 
-      function checkConfirmation() {
+      window.checkConfirmation = function () {
         var input = document.getElementById('confirm-text').value.trim();
         document.getElementById('btn-delete').disabled = input !== 'DELETE';
-      }
+      };
 
-      function handleDelete() {
+      window.handleDelete = function () {
         setLoading('btn-delete', true);
 
-        var user = firebase.auth().currentUser;
-        user
-          .delete()
+        var user = auth.currentUser;
+        deleteUser(user)
           .then(function () {
             showStep('step-success');
           })
@@ -646,9 +647,9 @@
             setLoading('btn-delete', false);
             alert('Failed to delete account: ' + error.message);
           });
-      }
+      };
 
-      function goBack() {
+      window.goBack = function () {
         currentUserEmail = '';
         document.getElementById('confirm-text').value = '';
         document.getElementById('btn-delete').disabled = true;
@@ -656,17 +657,17 @@
         document.getElementById('password').value = '';
         clearErrors();
         showStep('step-signin');
-      }
+      };
 
       document.getElementById('email').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('password').focus();
       });
       document.getElementById('password').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') handleEmailSignIn();
+        if (e.key === 'Enter') window.handleEmailSignIn();
       });
       document.getElementById('confirm-text').addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !document.getElementById('btn-delete').disabled) {
-          handleDelete();
+          window.handleDelete();
         }
       });
     </script>
