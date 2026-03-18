@@ -1,15 +1,33 @@
 import { useEffect, useState } from 'react';
 
+import { Text } from 'react-native';
+
+import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { hasAcceptedTerms } from '@/utils/acceptance-storage';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+SplashScreen.preventAutoHideAsync();
+
+// Set Inter as the default font for all Text components app-wide.
+// Individual styles can still override with a specific fontFamily.
+(Text as any).defaultProps = (Text as any).defaultProps ?? {};
+(Text as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -21,14 +39,28 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
 
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    ...MaterialIcons.font,
+  });
+
   useEffect(() => {
-    // Simple ready check to ensure app is initialized
-    setIsReady(true);
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    if (!fontsLoaded && !fontError) return;
 
     // Initialize Landline Mode store from native state
     const { checkStatus } = useLandlineStore.getState();
     checkStatus();
-  }, []);
+    setIsReady(true);
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -52,7 +84,7 @@ export default function RootLayout() {
   }, [isReady, segments, router]);
 
   if (!isReady) {
-    // Return null while checking acceptance status
+    // Return null while fonts are loading
     return null;
   }
 
