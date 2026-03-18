@@ -197,15 +197,11 @@ export default function LoginEmailPage() {
         </View>
 
         {/* Social Login Buttons */}
-        <ContinueWithSocials
-          buttons={['google', 'phone']}
-          onGooglePress={handleGoogleSignIn}
-          onPhonePress={() => router.push('/login')}
-        />
+        <ContinueWithSocials buttons={['google']} onGooglePress={handleGoogleSignIn} />
 
         {/* Sign Up Link */}
         <View style={styles.signUpContainer}>
-          <Button onPress={() => router.push('/create-account-email')} variant="text">
+          <Button onPress={() => router.push('/create-account')} variant="text">
             Don&apos;t have an account?
           </Button>
         </View>
