@@ -1,3 +1,5 @@
+import androidx.room.*
+
 @Database ([entities = NoticationEntity::class], version = 1, exportSchema = true)
 
     abstract class NotificationDatabase : RoomDatabase() {
