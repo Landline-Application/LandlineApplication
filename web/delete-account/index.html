@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Account - Landline</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #2b2b2b;
+      color: #5d4e37;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    /* Rolodex Card */
+    .card-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .card-tab {
+      display: flex;
+      justify-content: center;
+      margin-bottom: -1px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card-tab span {
+      background-color: #c8b88a;
+      color: #5d4e37;
+      padding: 6px 24px;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      border: 1px solid #a89968;
+      border-bottom: none;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background-color: #f5f1e8;
+      border-radius: 12px;
+      border: 1px solid #d4c5a0;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .card-content {
+      padding: 24px;
+      padding-bottom: 70px;
+    }
+
+    .card-shadow {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      right: 0;
+      bottom: -10px;
+      background-color: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      z-index: 0;
+    }
+
+    .punch-holes {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      z-index: 10;
+    }
+
+    .punch-hole {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #2b2b2b;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Brand Header */
+    .brand-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-name {
+      font-size: 26px;
+      font-weight: 800;
+      color: #5d4e37;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: #7a6a4a;
+      margin-top: 4px;
+    }
+
+    /* Steps / Views */
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #5d4e37;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .form-input {
+      width: 100%;
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 16px;
+      color: #333;
+      border: 1.5px solid #d4c5a0;
+      font-family: "Courier New", Courier, monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #5d4e37;
+    }
+
+    .form-input.error {
+      border-color: #c44536;
+    }
+
+    .error-text {
+      color: #c44536;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      height: 50px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: #5d4e37;
+      color: #f5f1e8;
+    }
+
+    .btn-danger {
+      background-color: #c44536;
+      color: #fff;
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid #5d4e37;
+      color: #5d4e37;
+    }
+
+    .btn-text {
+      background-color: transparent;
+      color: #7a6a4a;
+      height: auto;
+      padding: 10px;
+      font-weight: 500;
+      letter-spacing: 0;
+      font-size: 15px;
+    }
+
+    .btn-google {
+      background-color: #fff;
+      border: 1.5px solid #d4c5a0;
+      color: #5d4e37;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .btn-google svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background-color: #d4c5a0;
+      opacity: 0.6;
+    }
+
+    .divider-text {
+      margin: 0 16px;
+      color: #7a6a4a;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    /* Disclaimer */
+    .disclaimer-box {
+      background-color: #fff;
+      border: 1.5px solid #d4c5a0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .disclaimer-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5d4e37;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .disclaimer-text {
+      font-size: 14px;
+      color: #7a6a4a;
+      line-height: 1.6;
+    }
+
+    /* Warning Box */
+    .warning-box {
+      background-color: #fdf2f0;
+      border: 1.5px solid #e8ada7;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .warning-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #c44536;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .warning-text {
+      font-size: 14px;
+      color: #8b3a30;
+      line-height: 1.6;
+    }
+
+    /* Success Box */
+    .success-box {
+      background-color: #f0faf0;
+      border: 1.5px solid #a0d4a0;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .success-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d6a2d;
+      margin-bottom: 8px;
+    }
+
+    .success-text {
+      font-size: 14px;
+      color: #4a7a4a;
+      line-height: 1.6;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top-color: #f5f1e8;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* User info display */
+    .user-info {
+      background-color: #fff;
+      border: 1.5px solid #d4c5a0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .user-email {
+      font-size: 15px;
+      font-weight: 600;
+      color: #5d4e37;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    .user-label {
+      font-size: 11px;
+      color: #7a6a4a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card-wrapper">
+      <div class="card-tab">
+        <span>Landline</span>
+      </div>
+      <div class="card">
+        <div class="card-content">
+          <div class="brand-header">
+            <div class="brand-name">Landline</div>
+            <div class="brand-subtitle">Delete Your Account</div>
+          </div>
+
+          <!-- Step 1: Sign In -->
+          <div id="step-signin" class="step active">
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input
+                class="form-input"
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+              />
+              <div class="error-text" id="email-error" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="password">Password</label>
+              <input
+                class="form-input"
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+              />
+              <div class="error-text" id="password-error" style="display: none;"></div>
+            </div>
+
+            <button class="btn btn-primary" id="btn-signin" onclick="handleEmailSignIn()">
+              CONTINUE
+            </button>
+
+            <div class="divider">
+              <div class="divider-line"></div>
+              <span class="divider-text">OR</span>
+              <div class="divider-line"></div>
+            </div>
+
+            <button class="btn btn-google" id="btn-google" onclick="handleGoogleSignIn()">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+          </div>
+
+          <!-- Step 2: Disclaimer + Confirm Delete -->
+          <div id="step-confirm" class="step">
+            <div class="user-info">
+              <div class="user-label">Signed in as</div>
+              <div class="user-email" id="display-email"></div>
+            </div>
+
+            <div class="disclaimer-box">
+              <div class="disclaimer-title">Data Disclaimer</div>
+              <div class="disclaimer-text">
+                Landline does not store your personal data on external servers.
+                All notification logs, preferences, and settings are stored
+                locally on your device. Deleting your account will remove your
+                authentication credentials, and any locally stored data should
+                be cleared directly from the app's settings.
+              </div>
+            </div>
+
+            <div class="warning-box">
+              <div class="warning-title">This action is permanent</div>
+              <div class="warning-text">
+                Your account will be deleted instantly and cannot be recovered.
+                You will need to create a new account if you wish to use
+                Landline again in the future.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confirm-text">
+                Type DELETE to confirm
+              </label>
+              <input
+                class="form-input"
+                id="confirm-text"
+                type="text"
+                placeholder="DELETE"
+                oninput="checkConfirmation()"
+              />
+            </div>
+
+            <button
+              class="btn btn-danger"
+              id="btn-delete"
+              onclick="handleDelete()"
+              disabled
+            >
+              DELETE MY ACCOUNT
+            </button>
+
+            <button class="btn btn-text" onclick="goBack()">
+              Cancel
+            </button>
+          </div>
+
+          <!-- Step 3: Success -->
+          <div id="step-success" class="step">
+            <div class="success-box">
+              <div class="success-icon">&#10003;</div>
+              <div class="success-title">Account Deleted</div>
+              <div class="success-text">
+                Your account has been successfully deleted. All authentication
+                data has been removed. You may uninstall the Landline app from
+                your device to remove any locally stored data.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="punch-holes">
+          <div class="punch-hole"></div>
+          <div class="punch-hole"></div>
+        </div>
+      </div>
+      <div class="card-shadow"></div>
+    </div>
+  </div>
+
+  <!--
+    TODO: Add Firebase SDK when Firebase is configured.
+    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-auth-compat.js"></script>
+    <script>
+      firebase.initializeApp({
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+      });
+    </script>
+  -->
+
+  <script>
+    let currentUserEmail = "";
+
+    function showStep(stepId) {
+      document.querySelectorAll(".step").forEach(function (el) {
+        el.classList.remove("active");
+      });
+      document.getElementById(stepId).classList.add("active");
+    }
+
+    function setLoading(buttonId, loading) {
+      var btn = document.getElementById(buttonId);
+      if (loading) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent;
+        btn.innerHTML = '<div class="spinner"></div>';
+      } else {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || "CONTINUE";
+      }
+    }
+
+    function clearErrors() {
+      document.getElementById("email-error").style.display = "none";
+      document.getElementById("password-error").style.display = "none";
+      document.getElementById("email").classList.remove("error");
+      document.getElementById("password").classList.remove("error");
+    }
+
+    function showError(fieldId, message) {
+      var errorEl = document.getElementById(fieldId + "-error");
+      var inputEl = document.getElementById(fieldId);
+      errorEl.textContent = message;
+      errorEl.style.display = "block";
+      inputEl.classList.add("error");
+    }
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function handleEmailSignIn() {
+      clearErrors();
+
+      var email = document.getElementById("email").value.trim();
+      var password = document.getElementById("password").value;
+      var isValid = true;
+
+      if (!email || !validateEmail(email)) {
+        showError("email", "Please enter a valid email address");
+        isValid = false;
+      }
+
+      if (!password || password.length < 6) {
+        showError("password", "Password must be at least 6 characters");
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      setLoading("btn-signin", true);
+
+      /*
+       * TODO: Replace with Firebase authentication.
+       *
+       * firebase.auth().signInWithEmailAndPassword(email, password)
+       *   .then(function(userCredential) {
+       *     currentUserEmail = userCredential.user.email;
+       *     document.getElementById("display-email").textContent = currentUserEmail;
+       *     showStep("step-confirm");
+       *   })
+       *   .catch(function(error) {
+       *     setLoading("btn-signin", false);
+       *     showError("email", error.message);
+       *   });
+       */
+      setTimeout(function () {
+        setLoading("btn-signin", false);
+        currentUserEmail = email;
+        document.getElementById("display-email").textContent = currentUserEmail;
+        showStep("step-confirm");
+      }, 1500);
+    }
+
+    function handleGoogleSignIn() {
+      setLoading("btn-google", true);
+
+      /*
+       * TODO: Replace with Firebase Google authentication.
+       *
+       * var provider = new firebase.auth.GoogleAuthProvider();
+       * firebase.auth().signInWithPopup(provider)
+       *   .then(function(result) {
+       *     currentUserEmail = result.user.email;
+       *     document.getElementById("display-email").textContent = currentUserEmail;
+       *     showStep("step-confirm");
+       *   })
+       *   .catch(function(error) {
+       *     setLoading("btn-google", false);
+       *     alert("Google sign-in failed: " + error.message);
+       *   });
+       */
+      setTimeout(function () {
+        setLoading("btn-google", false);
+        currentUserEmail = "user@gmail.com";
+        document.getElementById("display-email").textContent = currentUserEmail;
+        showStep("step-confirm");
+      }, 1500);
+    }
+
+    function checkConfirmation() {
+      var input = document.getElementById("confirm-text").value.trim();
+      document.getElementById("btn-delete").disabled = input !== "DELETE";
+    }
+
+    function handleDelete() {
+      setLoading("btn-delete", true);
+
+      /*
+       * TODO: Replace with Firebase account deletion.
+       *
+       * var user = firebase.auth().currentUser;
+       * user.delete()
+       *   .then(function() {
+       *     showStep("step-success");
+       *   })
+       *   .catch(function(error) {
+       *     setLoading("btn-delete", false);
+       *     alert("Failed to delete account: " + error.message);
+       *   });
+       */
+      setTimeout(function () {
+        showStep("step-success");
+      }, 2000);
+    }
+
+    function goBack() {
+      currentUserEmail = "";
+      document.getElementById("confirm-text").value = "";
+      document.getElementById("btn-delete").disabled = true;
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      clearErrors();
+      showStep("step-signin");
+    }
+
+    document.getElementById("email").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") document.getElementById("password").focus();
+    });
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") handleEmailSignIn();
+    });
+    document.getElementById("confirm-text").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !document.getElementById("btn-delete").disabled) {
+        handleDelete();
+      }
+    });
+  </script>
+</body>
+</html>
