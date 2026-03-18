@@ -1,3 +1,5 @@
+import androidx.room.Dao
+
 @Dao
 interface NotificationDao (
     @Insert(onConflict = OnConflictStrategy.REPLACE)
