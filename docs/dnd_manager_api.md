@@ -135,4 +135,4 @@ await DndManager.openAppNotificationSettings('com.example.app');
 
 ## Test Page
 
-Navigate to `/dnd-test` route to access comprehensive API testing interface.
+Navigate to **Settings → Tools → Debug Tools** to access the testing interface.

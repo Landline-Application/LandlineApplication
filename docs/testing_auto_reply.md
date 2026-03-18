@@ -11,7 +11,7 @@ The app now includes a test notification generator that simulates real messaging
 **On Device/Emulator:**
 
 1. Open the app
-2. Navigate to "Auto-Reply Test Page"
+2. Navigate to **Settings → Tools → Debug Tools**
 3. Tap "Request Listener Permission"
 4. In Settings → Notification Access:
    - Find "Landline Application"
