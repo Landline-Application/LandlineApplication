@@ -73,3 +73,6 @@ GoogleService-Info.plist
 # Certificates and keys
 *.cert
 *.crt
+
+# AAB build artifacts
+*.aab

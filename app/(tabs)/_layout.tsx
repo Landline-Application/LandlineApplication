@@ -29,13 +29,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="landline"
-        options={{
-          title: 'Landline',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',
@@ -43,10 +36,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="landline"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="debug-tools"
         options={{
-          title: 'Debug',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="code" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen

@@ -189,6 +189,27 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Tools Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Tools</Text>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/(tabs)/landline' as any)}
+        >
+          <Text style={styles.actionButtonText}>📞 Landline Mode</Text>
+          <Text style={styles.actionButtonSubtext}>Manage your Landline mode settings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/(tabs)/debug-tools' as any)}
+        >
+          <Text style={styles.actionButtonText}>🛠 Debug Tools</Text>
+          <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Data Management Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Data Management</Text>
