@@ -565,6 +565,11 @@
         signInWithEmailAndPassword,
         signInWithPopup,
       } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
+      import {
+        deleteDoc,
+        doc,
+        getFirestore,
+      } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js';
 
       const firebaseConfig = {
         apiKey: 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk',
@@ -579,6 +584,7 @@
       const app = initializeApp(firebaseConfig);
       const analytics = getAnalytics(app);
       const auth = getAuth(app);
+      const db = getFirestore(app);
 
       let currentUserEmail = '';
 
@@ -678,8 +684,19 @@
         setLoading('btn-delete', true);
 
         var user = auth.currentUser;
+        if (!user) {
+          setLoading('btn-delete', false);
+          alert('No user is signed in. Please sign in again.');
+          window.goBack();
+          return;
+        }
 
-        deleteUser(user)
+        var userDocRef = doc(db, 'users', user.uid);
+
+        deleteDoc(userDocRef)
+          .then(function () {
+            return deleteUser(user);
+          })
           .then(function () {
             showStep('step-success');
           })
@@ -687,7 +704,6 @@
             setLoading('btn-delete', false);
 
             if (error.code === 'auth/requires-recent-login') {
-              // Session went stale — send the user back to sign in again.
               currentUserEmail = '';
               document.getElementById('confirm-text').value = '';
               document.getElementById('btn-delete').disabled = true;
@@ -697,7 +713,6 @@
               setLoading('btn-google', false);
               setLoading('btn-signin', false);
               showStep('step-signin');
-              // Show a clear explanation above the form.
               var msg = document.getElementById('reauth-message');
               if (msg) msg.style.display = 'block';
             } else {
