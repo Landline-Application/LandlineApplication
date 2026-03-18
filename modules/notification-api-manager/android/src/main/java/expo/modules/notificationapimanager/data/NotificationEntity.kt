@@ -1,4 +1,6 @@
- @Entity(tableName = "notification_db")
+import androidx.room.Entity
+
+@Entity(tableName = "notification_db")
 data class NotificationEntity (
      @PrimaryKey(autoGenerate = true)
      val id: Int = 0,
