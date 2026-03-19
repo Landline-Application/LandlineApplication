@@ -20,6 +20,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -89,25 +90,27 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="app-selection" options={{ headerShown: false }} />
-            <Stack.Screen name="create-account" options={{ headerShown: false }} />
-            <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="login-email" options={{ headerShown: false }} />
-            <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-            <Stack.Screen name="permissions" options={{ headerShown: false }} />
-            <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
-            <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="app-selection" options={{ headerShown: false }} />
+              <Stack.Screen name="create-account" options={{ headerShown: false }} />
+              <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
+              <Stack.Screen name="login" options={{ headerShown: false }} />
+              <Stack.Screen name="login-email" options={{ headerShown: false }} />
+              <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+              <Stack.Screen name="permissions" options={{ headerShown: false }} />
+              <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
+              <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

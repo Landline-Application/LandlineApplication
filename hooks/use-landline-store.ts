@@ -23,6 +23,8 @@ interface LandlineModeState {
   deactivateLandlineMode: () => Promise<void>;
   checkStatus: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  removeNotification: (timestamp: number) => Promise<void>;
+  removeNotifications: (timestamps: number[]) => Promise<void>;
   requestPermission: () => Promise<void>;
   clearError: () => void;
   clearRefreshError: () => void;
@@ -189,6 +191,28 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Don't throw, just track the error
       set({ refreshError: errorMessage });
       console.warn('Failed to refresh notifications:', err);
+    }
+  },
+
+  // Action: Remove a single notification by timestamp
+  removeNotification: async (timestamp: number) => {
+    try {
+      NotificationApiManager.removeLoggedNotification(timestamp);
+      await get().refreshNotifications();
+    } catch (err) {
+      console.warn('Failed to remove notification:', err);
+    }
+  },
+
+  // Action: Remove multiple notifications by timestamps
+  removeNotifications: async (timestamps: number[]) => {
+    try {
+      if (timestamps.length > 0) {
+        NotificationApiManager.removeLoggedNotifications(timestamps);
+        await get().refreshNotifications();
+      }
+    } catch (err) {
+      console.warn('Failed to remove notifications:', err);
     }
   },
 

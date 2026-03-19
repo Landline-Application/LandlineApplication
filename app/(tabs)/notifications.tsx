@@ -11,8 +11,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
+  const {
+    notifications,
+    isLoading,
+    refreshNotifications,
+    removeNotification,
+    removeNotifications,
+    isActive,
+  } = useLandlineStore();
   const [viewMode, setViewMode] = useState<'notebook' | 'classic'>('notebook');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedTimestamps, setSelectedTimestamps] = useState<Set<number>>(new Set());
 
   // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
@@ -57,6 +66,43 @@ export default function NotificationsScreen() {
     );
   }, [refreshNotifications]);
 
+  const handleToggleSelect = useCallback((timestamp: number) => {
+    setSelectedTimestamps((prev) => {
+      const next = new Set(prev);
+      if (next.has(timestamp)) {
+        next.delete(timestamp);
+      } else {
+        next.add(timestamp);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleDeleteSelected = useCallback(async () => {
+    const timestamps = Array.from(selectedTimestamps);
+    if (timestamps.length === 0) return;
+    try {
+      await removeNotifications(timestamps);
+      setSelectedTimestamps(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      console.error('Failed to delete notifications:', error);
+      Alert.alert('Error', 'Failed to delete selected notifications');
+    }
+  }, [selectedTimestamps, removeNotifications]);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedTimestamps(new Set());
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allTimestamps = notifications
+      .map((n) => n.timestamp ?? n.postTime)
+      .filter((t): t is number => t != null);
+    setSelectedTimestamps(new Set(allTimestamps));
+  }, [notifications]);
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -71,30 +117,69 @@ export default function NotificationsScreen() {
       {/* Header with Controls */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Text style={styles.headerTitle}>Landline Log</Text>
-        <View style={styles.headerControls}>
-          <TouchableOpacity
-            style={styles.viewToggle}
-            onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
-          >
-            <MaterialIcons
-              name={viewMode === 'notebook' ? 'menu-book' : 'view-agenda'}
-              size={16}
-              color="#F4E4C1"
-              style={styles.viewToggleIcon}
-            />
-            <Text style={styles.viewToggleText}>
-              {viewMode === 'notebook' ? 'Notebook' : 'Modern'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-            <MaterialIcons
-              name="delete-outline"
-              size={16}
-              color="#fff"
-              style={styles.clearButtonIcon}
-            />
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
+        <View style={styles.headerControlsRow}>
+          {selectionMode ? (
+            <>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={handleExitSelectionMode}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.selectAllButton}
+                onPress={handleSelectAll}
+              >
+                <Text style={styles.selectAllButtonText}>Select all</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.deleteSelectedButton,
+                  selectedTimestamps.size === 0 && styles.deleteSelectedButtonDisabled,
+                ]}
+                onPress={handleDeleteSelected}
+                disabled={selectedTimestamps.size === 0}
+              >
+                <MaterialIcons name="delete-outline" size={16} color="#fff" />
+                <Text style={styles.deleteSelectedButtonText}>
+                  Delete ({selectedTimestamps.size})
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.viewToggle}
+                onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
+              >
+                <MaterialIcons
+                  name={viewMode === 'notebook' ? 'menu-book' : 'view-agenda'}
+                  size={16}
+                  color="#F4E4C1"
+                  style={styles.viewToggleIcon}
+                />
+                <Text style={styles.viewToggleText}>
+                  {viewMode === 'notebook' ? 'Notebook' : 'Modern'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.selectButton}
+                onPress={() => setSelectionMode(true)}
+              >
+                <MaterialIcons name="checklist" size={16} color="#F4E4C1" />
+                <Text style={styles.selectButtonText}>Select</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
+                <MaterialIcons
+                  name="delete-outline"
+                  size={16}
+                  color="#fff"
+                  style={styles.clearButtonIcon}
+                />
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
@@ -104,6 +189,11 @@ export default function NotificationsScreen() {
           notifications={notifications}
           onRefresh={loadNotifications}
           isActive={isActive}
+          onDeleteNotification={removeNotification}
+          selectionMode={selectionMode}
+          selectedTimestamps={selectedTimestamps}
+          onToggleSelect={handleToggleSelect}
+          onDeleteNotifications={removeNotifications}
         />
       ) : (
         <View style={styles.modernPlaceholder}>
@@ -152,12 +242,12 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     backgroundColor: '#6B5A44',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   viewToggleIcon: {},
   viewToggleText: {
@@ -176,6 +266,59 @@ const styles = StyleSheet.create({
   },
   clearButtonIcon: {},
   clearButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  selectButton: {
+    backgroundColor: '#6B5A44',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  selectButtonText: {
+    color: '#F4E4C1',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  doneButton: {
+    backgroundColor: '#6B5A44',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  doneButtonText: {
+    color: '#F4E4C1',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteSelectedButton: {
+    backgroundColor: '#c0392b',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteSelectedButtonDisabled: {
+    opacity: 0.5,
+  },
+  selectAllButton: {
+    backgroundColor: '#6B5A44',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  selectAllButtonText: {
+    color: '#F4E4C1',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteSelectedButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
