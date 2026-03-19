@@ -8,7 +8,7 @@ import { FormLayout } from '@/components/ui/form-layout';
 import { Button } from '@/components/ui/form/button';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
-import { getPhoneConfirmation, setPhoneConfirmation } from '@/utils/firebase';
+import { getPhoneConfirmation, setPhoneConfirmation } from '@/utils/firebase/auth';
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 30;

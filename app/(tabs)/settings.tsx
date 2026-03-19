@@ -15,12 +15,12 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { WebBrowserPresentationStyle, openBrowserAsync } from 'expo-web-browser';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/contexts/auth-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
-import { auth, onAuthStateChanged } from '@/utils/firebase';
+import { deleteAccountWithEmail } from '@/utils/firebase/auth';
+import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
 import { StorageManager } from '@/utils/storage/storage-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,8 +28,10 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const [storageInfo, setStorageInfo] = useState<{
     totalKeys: number;
     landlineKeys: number;
@@ -136,43 +138,76 @@ export default function SettingsScreen() {
     ]);
   }
 
-  async function handleDeleteAccount() {
-    let alreadyHandled = false;
+  function openDeleteAccountModal() {
+    Alert.alert(
+      'Delete Account',
+      'This is permanent. Your account cannot be recovered once deleted. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, delete it',
+          style: 'destructive',
+          onPress: () => {
+            setDeleteAccountModalVisible(true);
+            setConfirmationText('');
+            setDeletePassword('');
+          },
+        },
+      ],
+    );
+  }
 
-    async function handleLogout() {
-      if (alreadyHandled) return;
-      alreadyHandled = true;
-      unsubscribe();
-      await signOut().catch(() => {});
-      router.replace('/onboarding');
+  function closeDeleteAccountModal() {
+    setDeleteAccountModalVisible(false);
+    setConfirmationText('');
+    setDeletePassword('');
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+
+    const providers = user.providerData?.map((p) => p.providerId) ?? [];
+    const isEmailUser = providers.includes('password');
+    const isGoogleUser = providers.includes('google.com');
+
+    if (isEmailUser) {
+      if (confirmationText !== 'DELETE') {
+        Alert.alert('Incorrect Confirmation', 'Please type "DELETE" to confirm.');
+        return;
+      }
+      if (!deletePassword) {
+        Alert.alert('Password Required', 'Please enter your password to confirm deletion.');
+        return;
+      }
     }
 
-    // Primary signal: Firebase pushes auth state to null when the account is deleted.
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser === null && !alreadyHandled) {
-        handleLogout();
+    setIsDeleting(true);
+    try {
+      if (isEmailUser) {
+        await deleteAccountWithEmail(user, deletePassword);
+      } else if (isGoogleUser) {
+        await deleteAccountWithGoogle(user);
+      } else {
+        Alert.alert('Unsupported', 'Cannot delete this account type from the app.');
+        setIsDeleting(false);
+        return;
       }
-    });
 
-    await openBrowserAsync(
-      'https://landline-application.github.io/LandlineApplication/delete-account/',
-      { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC },
-    );
-
-    // Browser closed — if Firebase hasn't fired yet, force a token refresh to
-    // check whether the account still exists on the server.
-    if (!alreadyHandled) {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          await currentUser.getIdToken(true);
-        }
-        // Token refreshed fine — user did not delete their account, cancel.
-        unsubscribe();
-      } catch {
-        // Token refresh failed — account was deleted. Sign out.
-        await handleLogout();
+      // Account deleted — sign out locally and navigate away.
+      await signOut().catch(() => {});
+      closeDeleteAccountModal();
+      router.replace('/onboarding');
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        Alert.alert('Wrong Password', 'The password you entered is incorrect.');
+      } else if (code === 'auth/too-many-requests') {
+        Alert.alert('Too Many Attempts', 'Too many failed attempts. Please try again later.');
+      } else {
+        Alert.alert('Delete Failed', error?.message || 'An unexpected error occurred.');
       }
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -220,13 +255,22 @@ export default function SettingsScreen() {
               </View>
             </View>
 
+            {user?.email && !user.emailVerified && (
+              <View style={styles.verifyBanner}>
+                <MaterialIcons name="info-outline" size={14} color="#996600" />
+                <Text style={styles.verifyBannerText}>
+                  Please verify your email. Check your inbox for a verification link.
+                </Text>
+              </View>
+            )}
+
             <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
               <Text style={styles.outlineButtonText}>Sign Out</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.actionButton, styles.dangerButton]}
-              onPress={handleDeleteAccount}
+              onPress={openDeleteAccountModal}
             >
               <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Delete Account</Text>
               <Text style={styles.actionButtonSubtext}>Permanently remove your account</Text>
@@ -389,7 +433,81 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Account Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteAccountModalVisible}
+        onRequestClose={closeDeleteAccountModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+
+            <Text style={styles.modalText}>
+              This will permanently delete your account. This action cannot be undone.
+            </Text>
+
+            {user?.providerData?.map((p) => p.providerId).includes('password') ? (
+              <>
+                <Text style={styles.modalLabel}>
+                  Type <Text style={styles.modalHighlight}>DELETE</Text> to confirm:
+                </Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={confirmationText}
+                  onChangeText={setConfirmationText}
+                  placeholder="Type DELETE here"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  editable={!isDeleting}
+                />
+                <Text style={styles.modalLabel}>Enter your password:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  placeholder="Password"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isDeleting}
+                />
+              </>
+            ) : (
+              <Text style={[styles.modalText, { marginTop: 8 }]}>
+                You will be asked to sign in with Google to confirm.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={closeDeleteAccountModal}
+                disabled={isDeleting}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonDelete,
+                  isDeleting && styles.modalButtonDisabled,
+                ]}
+                onPress={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonDeleteText]}>
+                  {isDeleting ? 'Deleting...' : 'Delete Account'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Data Confirmation Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -568,6 +686,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#111',
+  },
+  verifyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#f5d87e',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  verifyBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#996600',
+    lineHeight: 17,
   },
   outlineButton: {
     borderWidth: 1.5,
