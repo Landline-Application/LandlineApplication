@@ -127,8 +127,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             // Get app name
             val appName = getAppName(packageName)
 
+            val isEmergencyContactNotification =
+                landlineModeActive && isFromEmergencyContact(title, text)
+
             // Check if this notification is from the emergency contact
-            if (landlineModeActive && isFromEmergencyContact(title, text)) {
+            if (isEmergencyContactNotification) {
                 val notificationKey = sbn.key
                 if (emergencyAlertedNotifications.contains(notificationKey)) {
                     Log.d(TAG, "Already posted emergency alert for notification key: $notificationKey, skipping")
@@ -152,8 +155,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 Log.d(TAG, "Logged notification from $appName: $title")
             }
             
-            // Handle auto-reply only when both auto-reply is enabled AND Landline Mode is active
-            if (autoReplyEnabled && landlineModeActive) {
+            // Handle auto-reply only for non-emergency notifications.
+            if (autoReplyEnabled && landlineModeActive && !isEmergencyContactNotification) {
                 handleAutoReplyIfNeeded(sbn, notification, packageName)
             }
 
