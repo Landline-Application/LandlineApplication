@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 
 import { Alert, Button, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 
+import * as Contacts from 'expo-contacts';
+
 import { COLORS } from '@/constants/colors';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
@@ -52,6 +54,7 @@ export default function DebugToolsScreen() {
   const [notifCount, setNotifCount] = useState(0);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState<Contacts.Contact | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -82,6 +85,30 @@ export default function DebugToolsScreen() {
     } catch {
       setNotifCount(0);
     }
+  };
+
+  const selectEmergencyContact = async () => {
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Contacts permission is required.');
+      return;
+    }
+    const { data } = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+    });
+    const withPhone = data.filter((c) => c.phoneNumbers && c.phoneNumbers.length > 0);
+    if (withPhone.length === 0) {
+      Alert.alert('No Contacts', 'No contacts with phone numbers found.');
+      return;
+    }
+    Alert.alert(
+      'Select Emergency Contact',
+      'Choose a contact',
+      withPhone.slice(0, 10).map((c) => ({
+        text: c.name ?? 'Unknown',
+        onPress: () => setEmergencyContact(c),
+      })),
+    );
   };
 
   return (
@@ -1090,6 +1117,93 @@ export default function DebugToolsScreen() {
             }}
             color={COLORS.dark.primary}
           />
+        </View>
+      </View>
+
+      {/* Emergency Contact */}
+      <View
+        style={{
+          backgroundColor: COLORS.dark.surface,
+          marginHorizontal: 16,
+          borderRadius: 12,
+          padding: 16,
+          borderWidth: 1,
+          borderColor: COLORS.dark.border,
+          borderCurve: 'continuous',
+          gap: 12,
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          🆘 Emergency Contact
+        </Text>
+
+        <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary }}>
+          Select a contact to notify in emergencies
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingBottom: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.dark.divider,
+          }}
+        >
+          <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            Selected Contact:
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '600',
+              color: emergencyContact ? COLORS.dark.success : COLORS.dark.textMuted,
+            }}
+          >
+            {emergencyContact?.name ?? 'None'}
+          </Text>
+        </View>
+
+        {emergencyContact?.phoneNumbers && emergencyContact.phoneNumbers.length > 0 && (
+          <View
+            style={{
+              backgroundColor: COLORS.dark.card,
+              padding: 12,
+              borderRadius: 8,
+              borderLeftWidth: 3,
+              borderLeftColor: COLORS.dark.success,
+              borderCurve: 'continuous',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                color: COLORS.dark.textSecondary,
+                fontWeight: '600',
+                marginBottom: 4,
+              }}
+            >
+              Phone:
+            </Text>
+            <Text selectable style={{ fontSize: 14, color: COLORS.dark.text }}>
+              {emergencyContact.phoneNumbers[0].number}
+            </Text>
+          </View>
+        )}
+
+        <View style={{ gap: 8 }}>
+          <Button
+            title="Select Emergency Contact"
+            onPress={selectEmergencyContact}
+            color={COLORS.dark.primary}
+          />
+          {emergencyContact && (
+            <Button
+              title="Clear Contact"
+              onPress={() => setEmergencyContact(null)}
+              color={COLORS.dark.error}
+            />
+          )}
         </View>
       </View>
 
