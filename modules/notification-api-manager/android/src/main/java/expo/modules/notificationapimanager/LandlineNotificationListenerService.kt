@@ -92,9 +92,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         
         Log.d(TAG, "Landline mode: $landlineModeActive, Auto-reply: $autoReplyEnabled")
         
-        // If neither feature is enabled, skip processing
-        if (!landlineModeActive && !autoReplyEnabled) {
-            Log.d(TAG, "Neither Landline mode nor auto-reply is active, skipping")
+        // If Landline Mode is off, skip all processing (both logging and auto-reply require it)
+        if (!landlineModeActive) {
+            Log.d(TAG, "Landline mode is off, skipping")
             return
         }
 
@@ -135,8 +135,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 Log.d(TAG, "Logged notification from $appName: $title")
             }
             
-            // Handle auto-reply if enabled
-            if (autoReplyEnabled) {
+            // Handle auto-reply only when both auto-reply is enabled AND Landline Mode is active
+            if (autoReplyEnabled && landlineModeActive) {
                 handleAutoReplyIfNeeded(sbn, notification, packageName)
             }
 
