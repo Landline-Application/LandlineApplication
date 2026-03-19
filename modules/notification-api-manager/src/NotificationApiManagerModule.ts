@@ -47,6 +47,10 @@ type NotificationApiNativeModule = {
   clearReplyHistory(): boolean;
   isServiceRunning(): boolean;
   getActiveNotifications(): Promise<any[]>;
+  // Emergency Contact
+  setEmergencyContact(name: string, phone: string): boolean;
+  getEmergencyContact(): { name: string | null; phone: string | null };
+  clearEmergencyContact(): boolean;
   // Data Management
   clearAllData(): Promise<boolean>;
 };
@@ -146,6 +150,22 @@ export function getActiveNotifications() {
 }
 
 // ============================================================
+// EMERGENCY CONTACT
+// ============================================================
+
+export function setEmergencyContact(name: string, phone: string) {
+  return Native.setEmergencyContact(name, phone);
+}
+
+export function getEmergencyContact() {
+  return Native.getEmergencyContact();
+}
+
+export function clearEmergencyContact() {
+  return Native.clearEmergencyContact();
+}
+
+// ============================================================
 // DATA MANAGEMENT
 // ============================================================
 
@@ -174,5 +194,8 @@ export default {
   clearReplyHistory,
   isServiceRunning,
   getActiveNotifications,
+  setEmergencyContact,
+  getEmergencyContact,
+  clearEmergencyContact,
   clearAllData,
 };
