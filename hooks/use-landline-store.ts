@@ -1,9 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { create } from 'zustand';
+
+const SESSION_START_KEY = 'landline_session_start_time';
 
 interface LandlineModeState {
   // State
@@ -54,11 +57,20 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       const active = NotificationApiManager.isLandlineModeActive();
       const logs = await NotificationApiManager.getLoggedNotifications();
 
+      let sessionStart: Date | null = null;
+      if (active) {
+        const stored = await AsyncStorage.getItem(SESSION_START_KEY);
+        sessionStart = stored ? new Date(parseInt(stored, 10)) : new Date();
+        if (!stored) {
+          await AsyncStorage.setItem(SESSION_START_KEY, Date.now().toString());
+        }
+      }
+
       set({
         hasPermission: perm,
         isActive: active,
         notifications: Array.isArray(logs) ? logs : [],
-        sessionStartTime: active ? new Date() : null,
+        sessionStartTime: sessionStart,
         error: null,
       });
 
@@ -106,9 +118,14 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Verify it actually activated
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
+      const now = new Date();
+      if (actualActive) {
+        await AsyncStorage.setItem(SESSION_START_KEY, now.getTime().toString());
+      }
+
       set({
         isActive: actualActive,
-        sessionStartTime: actualActive ? new Date() : null,
+        sessionStartTime: actualActive ? now : null,
       });
 
       // Start auto-refresh if successful
@@ -158,6 +175,8 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
 
       // Verify it actually deactivated
       const actualActive = NotificationApiManager.isLandlineModeActive();
+
+      await AsyncStorage.removeItem(SESSION_START_KEY);
 
       set({
         isActive: actualActive,
