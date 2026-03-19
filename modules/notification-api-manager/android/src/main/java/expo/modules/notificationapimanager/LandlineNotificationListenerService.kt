@@ -1,15 +1,19 @@
 package expo.modules.notificationapimanager
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.core.app.NotificationCompat
 
 /**
  * Unified NotificationListenerService for Landline app.
@@ -54,6 +58,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     }
     
     private val repliedNotifications = mutableSetOf<String>()
+    private val emergencyAlertedNotifications = mutableSetOf<String>()
 
     override fun onCreate() {
         super.onCreate()
@@ -122,6 +127,18 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             // Get app name
             val appName = getAppName(packageName)
 
+            // Check if this notification is from the emergency contact
+            if (landlineModeActive && isFromEmergencyContact(title, text)) {
+                val notificationKey = sbn.key
+                if (emergencyAlertedNotifications.contains(notificationKey)) {
+                    Log.d(TAG, "Already posted emergency alert for notification key: $notificationKey, skipping")
+                } else {
+                    emergencyAlertedNotifications.add(notificationKey)
+                    Log.d(TAG, "Notification from emergency contact, alerting user")
+                    postEmergencyAlert(appName, title, text)
+                }
+            }
+
             // Handle notification logging if Landline mode is active
             if (landlineModeActive) {
                 logNotification(
@@ -151,6 +168,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         
         // Remove from replied set when notification is dismissed
         repliedNotifications.remove(sbn.key)
+        emergencyAlertedNotifications.remove(sbn.key)
     }
 
     /**
@@ -165,10 +183,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
      * Determine if notification should be skipped (filtered out)
      */
     private fun shouldSkipNotification(packageName: String, title: String, text: String): Boolean {
-        // TEMPORARILY DISABLED FOR TESTING: Skip our own app's notifications to avoid recursion
-        // if (packageName == this.packageName) {
-        //     return true
-        // }
+        // Prevent the emergency alert we post from being processed/logged again.
+        if (title.startsWith("Emergency Contact:")) {
+            return true
+        }
+
+        if (packageName == this.packageName) {
+            return true
+        }
 
         // Skip empty notifications
         if (title.isEmpty() && text.isEmpty()) {
@@ -406,6 +428,89 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get active notifications", e)
             emptyArray()
+        }
+    }
+
+    // ========== Emergency Contact ==========
+
+    private fun getEmergencyContactPhone(): String? {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        return prefs.getString("emergency_contact_phone", null)
+    }
+
+    private fun getEmergencyContactName(): String? {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        return prefs.getString("emergency_contact_name", null)
+    }
+
+    private fun normalizePhone(phone: String): String {
+        return phone.replace(Regex("[^0-9+]"), "")
+    }
+
+    private fun isFromEmergencyContact(title: String, text: String): Boolean {
+        val emergencyPhone = getEmergencyContactPhone() ?: return false
+        val normalized = normalizePhone(emergencyPhone)
+        if (normalized.length < 7) return false
+
+        val titleDigits = normalizePhone(title)
+        val lastDigits = if (normalized.length >= 10) normalized.takeLast(10) else normalized
+
+        // Prefer matching by the sender field shown in the notification title (phone digits).
+        if (titleDigits.isNotEmpty()) {
+            val titleLastDigits = if (titleDigits.length >= 10) titleDigits.takeLast(10) else titleDigits
+            if (titleLastDigits.length < 7) return false
+            return lastDigits.endsWith(titleLastDigits) || titleLastDigits.endsWith(lastDigits)
+        }
+
+        // If title does not contain digits, match by saved contact name.
+        val emergencyName = getEmergencyContactName()
+        if (!emergencyName.isNullOrEmpty() && title.equals(emergencyName, ignoreCase = true)) return true
+
+        return false
+    }
+
+    private fun postEmergencyAlert(appName: String, title: String, text: String) {
+        try {
+            val channelId = "emergency_contact_alert"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (nm.getNotificationChannel(channelId) == null) {
+                    val channel = NotificationChannel(
+                        channelId,
+                        "Emergency Contact Alerts",
+                        NotificationManager.IMPORTANCE_HIGH
+                    ).apply {
+                        description = "Alerts when your emergency contact reaches you during Landline Mode"
+                        enableVibration(true)
+                        setSound(
+                            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                            android.media.AudioAttributes.Builder()
+                                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build()
+                        )
+                        setBypassDnd(true)
+                    }
+                    nm.createNotificationChannel(channel)
+                }
+            }
+
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("Emergency Contact: $title")
+                .setContentText(text)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setAutoCancel(true)
+                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                .setVibrate(longArrayOf(0, 500, 200, 500))
+                .build()
+
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(99999, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post emergency alert", e)
         }
     }
 }

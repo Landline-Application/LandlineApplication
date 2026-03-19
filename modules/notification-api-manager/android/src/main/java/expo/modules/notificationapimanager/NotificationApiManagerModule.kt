@@ -325,6 +325,39 @@ class NotificationApiManagerModule : Module() {
             true
         }
 
+        // ============================================================
+        // EMERGENCY CONTACT
+        // ============================================================
+
+        Function("setEmergencyContact") { name: String, phone: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("emergency_contact_name", name)
+                .putString("emergency_contact_phone", phone)
+                .apply()
+            true
+        }
+
+        Function("getEmergencyContact") {
+            val ctx = appContext.reactContext ?: return@Function mapOf<String, String?>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            mapOf(
+                "name" to prefs.getString("emergency_contact_name", null),
+                "phone" to prefs.getString("emergency_contact_phone", null)
+            )
+        }
+
+        Function("clearEmergencyContact") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
+                .apply()
+            true
+        }
+
         /**
          * Check if the unified service is running
          */

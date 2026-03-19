@@ -73,9 +73,25 @@ export default function DebugToolsScreen() {
   useEffect(() => {
     if (Platform.OS === 'android') {
       refreshStatus();
+      loadEmergencyContact();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadEmergencyContact = () => {
+    try {
+      const saved = NotificationApiManager.getEmergencyContact();
+      if (saved?.name && saved?.phone) {
+        setEmergencyContact({
+          id: 'saved',
+          name: saved.name,
+          phoneNumbers: [{ number: saved.phone }],
+        } as Contacts.Contact);
+      }
+    } catch (e) {
+      console.warn('Failed to load emergency contact:', e);
+    }
+  };
 
   const refreshStatus = async () => {
     if (Platform.OS !== 'android') return;
@@ -1219,7 +1235,10 @@ export default function DebugToolsScreen() {
             {emergencyContact && (
               <Button
                 title="Clear Contact"
-                onPress={() => setEmergencyContact(null)}
+                onPress={() => {
+                  setEmergencyContact(null);
+                  NotificationApiManager.clearEmergencyContact();
+                }}
                 color={COLORS.dark.error}
               />
             )}
@@ -1369,6 +1388,10 @@ export default function DebugToolsScreen() {
                   onPress={() => {
                     setEmergencyContact(item);
                     setContactPickerVisible(false);
+                    const phone = item.phoneNumbers?.[0]?.number;
+                    if (item.name && phone) {
+                      NotificationApiManager.setEmergencyContact(item.name, phone);
+                    }
                   }}
                   activeOpacity={0.7}
                   style={{
