@@ -62,6 +62,11 @@ class AutoReplyListenerService : NotificationListenerService() {
         
         Log.d(TAG, "Notification posted from: ${sbn.packageName}")
         
+        if (!isLandlineModeActive()) {
+            Log.d(TAG, "Landline Mode is off, skipping auto-reply")
+            return
+        }
+
         if (!isAutoReplyEnabled()) {
             Log.d(TAG, "Auto-reply is disabled, ignoring notification")
             return
@@ -99,6 +104,11 @@ class AutoReplyListenerService : NotificationListenerService() {
     }
 
 
+
+    private fun isLandlineModeActive(): Boolean {
+        val prefs = getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("is_landline_mode_active", false)
+    }
 
     private fun isAutoReplyEnabled(): Boolean {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
