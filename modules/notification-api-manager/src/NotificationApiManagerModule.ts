@@ -11,6 +11,9 @@ import { requireNativeModule } from 'expo-modules-core';
  * - setLandlineMode(isActive: boolean): boolean
  * - isLandlineModeActive(): boolean
  * - getLoggedNotifications(): Array
+ * - removeLoggedNotification(timestamp: number): boolean
+ * - removeLoggedNotifications(timestamps: number[]): boolean
+ * - addTestNotifications(count: number): boolean
  * - clearLoggedNotifications(): boolean
  * - isAutoReplyEnabled(): boolean
  * - setAutoReplyEnabled(enabled: boolean): boolean
@@ -35,6 +38,9 @@ type NotificationApiNativeModule = {
   setLandlineMode(isActive: boolean): boolean;
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
+  removeLoggedNotification(timestamp: number): boolean;
+  removeLoggedNotifications(timestamps: number[]): boolean;
+  addTestNotifications(count: number): boolean;
   clearLoggedNotifications(): boolean;
   // Auto-Reply
   isAutoReplyEnabled(): boolean;
@@ -95,6 +101,18 @@ export function isLandlineModeActive() {
 
 export function getLoggedNotifications() {
   return Native.getLoggedNotifications();
+}
+
+export function removeLoggedNotification(timestamp: number) {
+  return Native.removeLoggedNotification(timestamp);
+}
+
+export function removeLoggedNotifications(timestamps: number[]) {
+  return Native.removeLoggedNotifications(timestamps);
+}
+
+export function addTestNotifications(count: number) {
+  return Native.addTestNotifications(count);
 }
 
 export function clearLoggedNotifications() {
@@ -163,6 +181,9 @@ export default {
   setLandlineMode,
   isLandlineModeActive,
   getLoggedNotifications,
+  removeLoggedNotification,
+  removeLoggedNotifications,
+  addTestNotifications,
   clearLoggedNotifications,
   isAutoReplyEnabled,
   setAutoReplyEnabled,

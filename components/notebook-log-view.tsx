@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
+import { Swipeable } from 'react-native-gesture-handler';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 
 interface NotebookLogEntry {
   id: number;
+  timestamp?: number;
   appName: string;
   title: string;
   text: string;
@@ -27,6 +29,11 @@ interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
   isActive?: boolean;
+  onDeleteNotification?: (timestamp: number) => void;
+  selectionMode?: boolean;
+  selectedTimestamps?: Set<number>;
+  onToggleSelect?: (timestamp: number) => void;
+  onDeleteNotifications?: (timestamps: number[]) => void;
 }
 
 const TAB_WIDTH = 40;
@@ -36,6 +43,11 @@ export default function NotebookLogView({
   notifications,
   onRefresh,
   isActive,
+  onDeleteNotification,
+  selectionMode = false,
+  selectedTimestamps = new Set(),
+  onToggleSelect,
+  onDeleteNotifications,
 }: NotebookLogViewProps) {
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -159,49 +171,150 @@ export default function NotebookLogView({
                 )}
               </View>
             ) : (
-              displayNotifications.map((notif, index) => (
-                <View key={`${notif.id}-${index}`} style={styles.logEntry}>
-                  {/* Horizontal Rule (lined paper effect) */}
-                  <View style={styles.linedPaperRule} />
+              displayNotifications.map((notif, index) => {
+                const timestamp = notif.timestamp ?? notif.postTime;
+                const isSelected = selectionMode && selectedTimestamps.has(timestamp);
+                const renderRightActions = () => (
+                  <TouchableOpacity
+                    style={styles.deleteAction}
+                    onPress={() => {
+                      if (onDeleteNotification && timestamp) {
+                        onDeleteNotification(timestamp);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.deleteActionText}>Delete</Text>
+                  </TouchableOpacity>
+                );
 
-                  {/* Log Entry Content */}
-                  <View style={styles.entryContent}>
-                    {/* Header Row */}
-                    <View style={styles.entryHeader}>
-                      <View style={styles.entryAppRow}>
-                        <MaterialIcons name="apps" size={12} color="#4A6FA5" />
-                        <Text style={styles.entryApp} numberOfLines={1}>
-                          {notif.appName}
+                const rowContent = selectionMode ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.logEntry,
+                      styles.logEntryWithCheckbox,
+                      isSelected && styles.logEntrySelected,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => onToggleSelect?.(timestamp)}
+                  >
+                    <View style={styles.checkbox}>
+                      <MaterialIcons
+                        name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+                        size={24}
+                        color={isSelected ? '#4A6FA5' : '#9b9186'}
+                      />
+                    </View>
+                    <View style={styles.entryContentWrapper}>
+                      <View style={styles.linedPaperRule} />
+                      <View style={styles.entryContent}>
+                        {/* Header Row */}
+                        <View style={styles.entryHeader}>
+                          <View style={styles.entryAppRow}>
+                            <MaterialIcons name="apps" size={12} color="#4A6FA5" />
+                            <Text style={styles.entryApp} numberOfLines={1}>
+                              {notif.appName}
+                            </Text>
+                          </View>
+                          <Text style={styles.entryTime}>{formatTime(notif.postTime)}</Text>
+                        </View>
+
+                        {/* Title */}
+                        <Text style={styles.entryTitle} numberOfLines={2}>
+                          {notif.title}
+                        </Text>
+
+                        {/* Body Text */}
+                        {notif.text && (
+                          <Text style={styles.entryText} numberOfLines={3}>
+                            {notif.text}
+                          </Text>
+                        )}
+
+                        {/* Timestamp */}
+                        <Text style={styles.entryTimestamp}>
+                          {new Date(notif.postTime).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
                         </Text>
                       </View>
-                      <Text style={styles.entryTime}>{formatTime(notif.postTime)}</Text>
                     </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.logEntry}>
+                    {/* Horizontal Rule (lined paper effect) */}
+                    <View style={styles.linedPaperRule} />
 
-                    {/* Title */}
-                    <Text style={styles.entryTitle} numberOfLines={2}>
-                      {notif.title}
-                    </Text>
+                    {/* Log Entry Content */}
+                    <View style={styles.entryContent}>
+                      {/* Header Row */}
+                      <View style={styles.entryHeader}>
+                        <View style={styles.entryAppRow}>
+                          <MaterialIcons name="apps" size={12} color="#4A6FA5" />
+                          <Text style={styles.entryApp} numberOfLines={1}>
+                            {notif.appName}
+                          </Text>
+                        </View>
+                        <Text style={styles.entryTime}>{formatTime(notif.postTime)}</Text>
+                      </View>
 
-                    {/* Body Text */}
-                    {notif.text && (
-                      <Text style={styles.entryText} numberOfLines={3}>
-                        {notif.text}
+                      {/* Title */}
+                      <Text style={styles.entryTitle} numberOfLines={2}>
+                        {notif.title}
                       </Text>
-                    )}
 
-                    {/* Timestamp */}
-                    <Text style={styles.entryTimestamp}>
-                      {new Date(notif.postTime).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                      })}
-                    </Text>
+                      {/* Body Text */}
+                      {notif.text && (
+                        <Text style={styles.entryText} numberOfLines={3}>
+                          {notif.text}
+                        </Text>
+                      )}
+
+                      {/* Timestamp */}
+                      <Text style={styles.entryTimestamp}>
+                        {new Date(notif.postTime).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))
+                );
+
+                if (selectionMode) {
+                  return (
+                    <View key={`${notif.id}-${index}-${timestamp}`}>
+                      {rowContent}
+                    </View>
+                  );
+                }
+
+                return (
+                  <Swipeable
+                    key={`${notif.id}-${index}-${timestamp}`}
+                    renderRightActions={onDeleteNotification ? renderRightActions : undefined}
+                    friction={2}
+                    onSwipeableOpen={
+                      onDeleteNotification && timestamp
+                        ? (direction) => {
+                            if (direction === 'right') {
+                              onDeleteNotification(timestamp);
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    {rowContent}
+                  </Swipeable>
+                );
+              })
             )}
 
             {/* Page Footer */}
@@ -399,6 +512,35 @@ const styles = StyleSheet.create({
   logEntry: {
     marginBottom: 20,
     position: 'relative',
+    backgroundColor: '#F9F7F3',
+  },
+  logEntryWithCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  logEntrySelected: {
+    backgroundColor: '#E8F4FD',
+  },
+  checkbox: {
+    marginRight: 12,
+    marginTop: 12,
+    padding: 2,
+  },
+  entryContentWrapper: {
+    flex: 1,
+  },
+  deleteAction: {
+    backgroundColor: '#c0392b',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginBottom: 20,
+    borderRadius: 4,
+  },
+  deleteActionText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   linedPaperRule: {
     position: 'absolute',
