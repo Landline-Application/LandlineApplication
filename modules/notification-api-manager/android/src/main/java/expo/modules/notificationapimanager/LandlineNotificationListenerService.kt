@@ -434,42 +434,61 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    // ========== Emergency Contact ==========
+    // ========== Emergency Contacts (multiple) ==========
 
-    private fun getEmergencyContactPhone(): String? {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return prefs.getString("emergency_contact_phone", null)
-    }
+    private data class EmergencyContactEntry(val name: String, val phone: String)
 
-    private fun getEmergencyContactName(): String? {
+    private fun loadEmergencyContacts(): List<EmergencyContactEntry> {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return prefs.getString("emergency_contact_name", null)
+        val json = prefs.getString("emergency_contacts_json", null)
+        if (!json.isNullOrBlank()) {
+            try {
+                val arr = org.json.JSONArray(json)
+                val out = mutableListOf<EmergencyContactEntry>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    val n = if (o.has("name")) o.getString("name") else ""
+                    val p = if (o.has("phone")) o.getString("phone") else ""
+                    if (p.isNotEmpty()) out.add(EmergencyContactEntry(n, p))
+                }
+                if (out.isNotEmpty()) return out
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse emergency_contacts_json", e)
+            }
+        }
+        val legacyName = prefs.getString("emergency_contact_name", null) ?: ""
+        val legacyPhone = prefs.getString("emergency_contact_phone", null)
+        return if (!legacyPhone.isNullOrEmpty()) {
+            listOf(EmergencyContactEntry(legacyName, legacyPhone))
+        } else {
+            emptyList()
+        }
     }
 
     private fun normalizePhone(phone: String): String {
         return phone.replace(Regex("[^0-9+]"), "")
     }
 
-    private fun isFromEmergencyContact(title: String, text: String): Boolean {
-        val emergencyPhone = getEmergencyContactPhone() ?: return false
-        val normalized = normalizePhone(emergencyPhone)
+    private fun matchesEmergencyContact(title: String, ec: EmergencyContactEntry): Boolean {
+        val normalized = normalizePhone(ec.phone)
         if (normalized.length < 7) return false
 
         val titleDigits = normalizePhone(title)
         val lastDigits = if (normalized.length >= 10) normalized.takeLast(10) else normalized
 
-        // Prefer matching by the sender field shown in the notification title (phone digits).
         if (titleDigits.isNotEmpty()) {
             val titleLastDigits = if (titleDigits.length >= 10) titleDigits.takeLast(10) else titleDigits
             if (titleLastDigits.length < 7) return false
-            return lastDigits.endsWith(titleLastDigits) || titleLastDigits.endsWith(lastDigits)
+            if (lastDigits.endsWith(titleLastDigits) || titleLastDigits.endsWith(lastDigits)) return true
         }
 
-        // If title does not contain digits, match by saved contact name.
-        val emergencyName = getEmergencyContactName()
-        if (!emergencyName.isNullOrEmpty() && title.equals(emergencyName, ignoreCase = true)) return true
+        if (ec.name.isNotEmpty() && title.equals(ec.name, ignoreCase = true)) return true
 
         return false
+    }
+
+    private fun isFromEmergencyContact(title: String, text: String): Boolean {
+        return loadEmergencyContacts().any { matchesEmergencyContact(title, it) }
     }
 
     private fun postEmergencyAlert(appName: String, title: String, text: String) {

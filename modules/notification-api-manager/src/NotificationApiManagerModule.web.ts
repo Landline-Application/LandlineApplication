@@ -79,6 +79,23 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return [];
   }
 
+  // Emergency contacts (web stubs)
+  setEmergencyContactsJson() {
+    return false;
+  }
+  getEmergencyContactsJson() {
+    return '[]';
+  }
+  setEmergencyContact() {
+    return false;
+  }
+  getEmergencyContact() {
+    return { name: null, phone: null };
+  }
+  clearEmergencyContact() {
+    return false;
+  }
+
   // Data Management
   async clearAllData() {
     return false;
