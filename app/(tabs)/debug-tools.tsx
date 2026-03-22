@@ -18,6 +18,7 @@ import {
 } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { shareNotificationLogsCSVAndroid } from '@/utils/notification-logs-csv';
 
 export default function DebugToolsScreen() {
   const insets = useSafeAreaInsets();
@@ -50,6 +51,7 @@ export default function DebugToolsScreen() {
   const [isDozeMode, setIsDozeMode] = useState(false);
   const [androidVersion, setAndroidVersion] = useState<any>(null);
   const [notifCount, setNotifCount] = useState(0);
+  const [csvExporting, setCsvExporting] = useState(false);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
 
@@ -475,6 +477,32 @@ export default function DebugToolsScreen() {
             }}
             color={COLORS.dark.primary}
           />
+
+          {/* Export logs to CSV */}
+          {Platform.OS === 'android' && (
+            <Button
+            title={csvExporting ? 'Exporting CSV…' : 'Export logs to CSV (dev)'}
+            disabled={csvExporting}
+            onPress={async () => {
+              setCsvExporting(true);
+              try {
+                const result = await shareNotificationLogsCSVAndroid();
+                if (!result.ok) {
+                  Alert.alert(
+                    result.rowCount === 0 ? 'Nothing to export' : 'Export failed',
+                    result.error ?? 'Unknown error',
+                  );
+                } else {
+                  await refreshStatus();
+                  Alert.alert('Export', `Shared ${result.rowCount} row(s). Pick an app to save or send.`);
+                }
+              } finally {
+                setCsvExporting(false);
+              }
+            }}
+            color={COLORS.dark.primary}
+            />
+          )}
           <Button
             title="Clear All Logs"
             onPress={() => {
