@@ -47,8 +47,12 @@ type NotificationApiNativeModule = {
   clearReplyHistory(): boolean;
   isServiceRunning(): boolean;
   getActiveNotifications(): Promise<any[]>;
-  // Emergency Contact
+  // Emergency contacts (JSON array of { name, phone })
+  setEmergencyContactsJson(json: string): boolean;
+  getEmergencyContactsJson(): string;
+  /** Legacy: replaces list with a single contact */
   setEmergencyContact(name: string, phone: string): boolean;
+  /** Legacy: first contact if any */
   getEmergencyContact(): { name: string | null; phone: string | null };
   clearEmergencyContact(): boolean;
   // Data Management
@@ -150,8 +154,38 @@ export function getActiveNotifications() {
 }
 
 // ============================================================
-// EMERGENCY CONTACT
+// EMERGENCY CONTACTS
 // ============================================================
+
+export type EmergencyContactEntry = { name: string; phone: string };
+
+export function setEmergencyContactsJson(json: string) {
+  return Native.setEmergencyContactsJson(json);
+}
+
+export function getEmergencyContactsJson() {
+  return Native.getEmergencyContactsJson();
+}
+
+/** Parse native JSON; ignores invalid entries. */
+export function parseEmergencyContactsJson(json: string): EmergencyContactEntry[] {
+  try {
+    const arr = JSON.parse(json) as unknown;
+    if (!Array.isArray(arr)) return [];
+    const out: EmergencyContactEntry[] = [];
+    for (const item of arr) {
+      if (!item || typeof item !== 'object') continue;
+      const o = item as Record<string, unknown>;
+      const phone = typeof o.phone === 'string' ? o.phone.trim() : '';
+      if (!phone) continue;
+      const name = typeof o.name === 'string' ? o.name.trim() : '';
+      out.push({ name, phone });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
 
 export function setEmergencyContact(name: string, phone: string) {
   return Native.setEmergencyContact(name, phone);
@@ -194,6 +228,9 @@ export default {
   clearReplyHistory,
   isServiceRunning,
   getActiveNotifications,
+  setEmergencyContactsJson,
+  getEmergencyContactsJson,
+  parseEmergencyContactsJson,
   setEmergencyContact,
   getEmergencyContact,
   clearEmergencyContact,

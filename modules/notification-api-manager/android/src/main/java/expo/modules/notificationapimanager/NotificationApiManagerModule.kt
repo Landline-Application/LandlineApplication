@@ -326,22 +326,72 @@ class NotificationApiManagerModule : Module() {
         }
 
         // ============================================================
-        // EMERGENCY CONTACT
+        // EMERGENCY CONTACTS (JSON array; supports multiple)
         // ============================================================
 
-        Function("setEmergencyContact") { name: String, phone: String ->
+        Function("setEmergencyContactsJson") { json: String ->
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.edit()
-                .putString("emergency_contact_name", name)
-                .putString("emergency_contact_phone", phone)
+                .putString("emergency_contacts_json", json)
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
                 .apply()
             true
         }
 
+        Function("getEmergencyContactsJson") {
+            val ctx = appContext.reactContext ?: return@Function "[]"
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("emergency_contacts_json", null)
+            if (!json.isNullOrBlank()) return@Function json
+            val name = prefs.getString("emergency_contact_name", null) ?: ""
+            val phone = prefs.getString("emergency_contact_phone", null)
+            if (!phone.isNullOrEmpty()) {
+                val arr = org.json.JSONArray()
+                val o = org.json.JSONObject()
+                o.put("name", name)
+                o.put("phone", phone)
+                arr.put(o)
+                return@Function arr.toString()
+            }
+            "[]"
+        }
+
+        /** Legacy: replaces list with a single contact */
+        Function("setEmergencyContact") { name: String, phone: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val arr = org.json.JSONArray()
+            val o = org.json.JSONObject()
+            o.put("name", name)
+            o.put("phone", phone)
+            arr.put(o)
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("emergency_contacts_json", arr.toString())
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
+                .apply()
+            true
+        }
+
+        /** Legacy: first contact if any */
         Function("getEmergencyContact") {
             val ctx = appContext.reactContext ?: return@Function mapOf<String, String?>()
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("emergency_contacts_json", null)
+            if (!json.isNullOrBlank()) {
+                try {
+                    val arr = org.json.JSONArray(json)
+                    if (arr.length() > 0) {
+                        val o = arr.getJSONObject(0)
+                        return@Function mapOf(
+                            "name" to if (o.has("name")) o.getString("name") else null,
+                            "phone" to if (o.has("phone")) o.getString("phone") else null
+                        )
+                    }
+                } catch (_: Exception) { }
+            }
             mapOf(
                 "name" to prefs.getString("emergency_contact_name", null),
                 "phone" to prefs.getString("emergency_contact_phone", null)
@@ -352,6 +402,7 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.edit()
+                .putString("emergency_contacts_json", "[]")
                 .remove("emergency_contact_name")
                 .remove("emergency_contact_phone")
                 .apply()
