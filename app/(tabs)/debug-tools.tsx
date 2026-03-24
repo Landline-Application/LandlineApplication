@@ -481,7 +481,7 @@ export default function DebugToolsScreen() {
           {/* Export logs to CSV */}
           {Platform.OS === 'android' && (
             <Button
-            title={csvExporting ? 'Exporting CSV…' : 'Export logs to CSV (dev)'}
+            title={csvExporting ? 'Saving CSV…' : 'Save logs CSV to device (dev)'}
             disabled={csvExporting}
             onPress={async () => {
               setCsvExporting(true);
@@ -494,7 +494,10 @@ export default function DebugToolsScreen() {
                   );
                 } else {
                   await refreshStatus();
-                  Alert.alert('Export', `Shared ${result.rowCount} row(s). Pick an app to save or send.`);
+                  Alert.alert(
+                    'Saved',
+                    `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
+                  );
                 }
               } finally {
                 setCsvExporting(false);

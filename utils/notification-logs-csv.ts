@@ -1,11 +1,12 @@
 /**
  * Build a CSV export from native notification logs (Android).
  * Used for dev/debug export; production flows may add consent.
+ * Saves the CSV to a user-selected on-device folder (no immediate app sharing).
  */
 
-import { Share } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 
-import notificationApiManager  from '@/modules/notification-api-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 
 // Shape returned by NotificationApiManager.getLoggedNotifications()
 export type LoggedNotificationRow = {
@@ -62,11 +63,12 @@ export function notificationLogsToCSV(rows: LoggedNotificationRow[]): string {
 export async function shareNotificationLogsCSVAndroid(): Promise<{
   ok: boolean;
   rowCount: number;
+  fileUri?: string;
   error?: string;
 }> {
   let rows: LoggedNotificationRow[];
   try {
-    rows = (await notificationApiManager.getLoggedNotifications()) as LoggedNotificationRow[];
+    rows = (await NotificationApiManager.getLoggedNotifications()) as LoggedNotificationRow[];
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, rowCount: 0, error: message };
@@ -80,13 +82,38 @@ export async function shareNotificationLogsCSVAndroid(): Promise<{
   const filename = `landline-notification-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
 
   try {
-    await Share.share({
-      title: filename,
-      message: csv,
+    const initialDirectory = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+    const permission =
+      await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialDirectory);
+    if (!permission.granted) {
+      return {
+        ok: false,
+        rowCount: rows.length,
+        error: 'Storage permission was not granted.',
+      };
+    }
+
+    // SAF createFileAsync expects the filename without extension.
+    const fileNameWithoutExt = filename.replace(/\.csv$/i, '');
+    const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+      permission.directoryUri,
+      fileNameWithoutExt,
+      'text/csv',
+    );
+    await FileSystem.StorageAccessFramework.writeAsStringAsync(fileUri, csv, {
+      encoding: 'utf8',
     });
-    return { ok: true, rowCount: rows.length };
+
+    return { ok: true, rowCount: rows.length, fileUri };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, rowCount: 0, error: message };
+    return { ok: false, rowCount: rows.length, error: message };
   }
 }
+
+
+
+
+
+
+
