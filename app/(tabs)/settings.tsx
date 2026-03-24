@@ -21,14 +21,17 @@ import { useAuth } from '@/contexts/auth-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
 import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
+import { updateUserDisplayName } from '@/utils/firebase/user-service';
 import { StorageManager } from '@/utils/storage/storage-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, refreshUser } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -121,6 +124,21 @@ export default function SettingsScreen() {
       console.error('Delete error:', error);
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleSaveDisplayName() {
+    if (!user) return;
+    setSavingDisplayName(true);
+    try {
+      await updateUserDisplayName(user, displayNameInput);
+      await refreshUser();
+      Alert.alert('Saved', 'Your display name was updated.');
+    } catch (error) {
+      console.error('Save display name:', error);
+      Alert.alert('Error', 'Could not save your display name. Check your connection and try again.');
+    } finally {
+      setSavingDisplayName(false);
     }
   }
 
@@ -244,11 +262,21 @@ export default function SettingsScreen() {
             <View style={styles.accountCard}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarInitial}>
-                  {(user?.email || user?.phoneNumber || '?')[0].toUpperCase()}
+                  {(
+                    user?.displayName?.trim()?.[0] ||
+                    user?.email ||
+                    user?.phoneNumber ||
+                    '?'
+                  )[0].toUpperCase()}
                 </Text>
               </View>
               <View style={styles.accountInfo}>
                 <Text style={styles.accountLabel}>Signed in as</Text>
+                {user?.displayName ? (
+                  <Text style={styles.accountDisplayName} numberOfLines={1}>
+                    {user.displayName}
+                  </Text>
+                ) : null}
                 <Text style={styles.accountEmail} numberOfLines={1}>
                   {user?.email || user?.phoneNumber || 'Unknown'}
                 </Text>
@@ -263,6 +291,37 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             )}
+
+            <View style={styles.profilePrefsCard}>
+              <Text style={styles.profilePrefsTitle}>Profile</Text>
+              <Text style={styles.profilePrefsHint}>
+                Add a display name. It is saved to your account and synced to Firestore.
+              </Text>
+              <Text style={styles.profileInputLabel}>Display name</Text>
+              <TextInput
+                style={styles.profileTextInput}
+                value={displayNameInput}
+                onChangeText={setDisplayNameInput}
+                placeholder="Your name"
+                placeholderTextColor="#999"
+                editable={!savingDisplayName}
+                maxLength={80}
+                autoCapitalize="words"
+                autoCorrect
+              />
+              <TouchableOpacity
+                style={[
+                  styles.profileSaveButton,
+                  (savingDisplayName || !displayNameInput.trim()) && styles.profileSaveButtonDisabled,
+                ]}
+                onPress={handleSaveDisplayName}
+                disabled={savingDisplayName || !displayNameInput.trim()}
+              >
+                <Text style={styles.profileSaveButtonText}>
+                  {savingDisplayName ? 'Saving…' : 'Save display name'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
               <Text style={styles.outlineButtonText}>Sign Out</Text>
@@ -704,6 +763,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#996600',
     lineHeight: 17,
+  },
+  accountDisplayName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111',
+    marginBottom: 4,
+  },
+  profilePrefsCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  profilePrefsTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111',
+    marginBottom: 6,
+  },
+  profilePrefsHint: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 14,
+    lineHeight: 18,
+  },
+  profileInputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 6,
+  },
+  profileTextInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    marginBottom: 12,
+  },
+  profileSaveButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  profileSaveButtonDisabled: {
+    opacity: 0.55,
+  },
+  profileSaveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   outlineButton: {
     borderWidth: 1.5,
