@@ -17,6 +17,7 @@ import {
 import { router } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
@@ -259,27 +260,72 @@ export default function SettingsScreen() {
 
         {isAuthenticated ? (
           <>
-            <View style={styles.accountCard}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>
-                  {(
-                    user?.displayName?.trim()?.[0] ||
-                    user?.email ||
-                    user?.phoneNumber ||
-                    '?'
-                  )[0].toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.accountInfo}>
-                <Text style={styles.accountLabel}>Signed in as</Text>
-                {user?.displayName ? (
-                  <Text style={styles.accountDisplayName} numberOfLines={1}>
-                    {user.displayName}
+            <View style={styles.accountProfileCard}>
+              <View style={styles.accountHeaderRow}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>
+                    {(
+                      user?.displayName?.trim()?.[0] ||
+                      user?.email ||
+                      user?.phoneNumber ||
+                      '?'
+                    )[0].toUpperCase()}
                   </Text>
-                ) : null}
-                <Text style={styles.accountEmail} numberOfLines={1}>
-                  {user?.email || user?.phoneNumber || 'Unknown'}
+                </View>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountLabel}>Signed in as</Text>
+                  {user?.displayName ? (
+                    <Text style={styles.accountDisplayName} numberOfLines={1}>
+                      {user.displayName}
+                    </Text>
+                  ) : (
+                    <Text style={styles.accountDisplayNameMuted} numberOfLines={1}>
+                      Add a display name below
+                    </Text>
+                  )}
+                  <Text style={styles.accountEmail} numberOfLines={1}>
+                    {user?.email || user?.phoneNumber || 'Unknown'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.profileDivider} />
+
+              <View style={styles.profileEditBlock}>
+                <View style={styles.profileEditTitleRow}>
+                  <MaterialIcons name="edit" size={20} color={COLORS.textPrimary} />
+                  <Text style={styles.profileEditTitle}>Display name</Text>
+                </View>
+                <Text style={styles.profilePrefsHint}>
+                  This is how you appear in Landline. It stays with your account when you sign in on
+                  another device.
                 </Text>
+                <TextInput
+                  style={styles.profileTextInput}
+                  value={displayNameInput}
+                  onChangeText={setDisplayNameInput}
+                  placeholder="e.g. Alex M."
+                  placeholderTextColor={COLORS.placeholder}
+                  editable={!savingDisplayName}
+                  maxLength={80}
+                  autoCapitalize="words"
+                  autoCorrect
+                />
+                <Text style={styles.profileCharCount}>{displayNameInput.length} / 80</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.profileSaveButton,
+                    (savingDisplayName || !displayNameInput.trim()) && styles.profileSaveButtonDisabled,
+                  ]}
+                  onPress={handleSaveDisplayName}
+                  disabled={savingDisplayName || !displayNameInput.trim()}
+                  activeOpacity={0.85}
+                >
+                  <MaterialIcons name="check" size={20} color="#fff" style={styles.profileSaveIcon} />
+                  <Text style={styles.profileSaveButtonText}>
+                    {savingDisplayName ? 'Saving…' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -291,37 +337,6 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             )}
-
-            <View style={styles.profilePrefsCard}>
-              <Text style={styles.profilePrefsTitle}>Profile</Text>
-              <Text style={styles.profilePrefsHint}>
-                Add a display name. It is saved to your account and synced to Firestore.
-              </Text>
-              <Text style={styles.profileInputLabel}>Display name</Text>
-              <TextInput
-                style={styles.profileTextInput}
-                value={displayNameInput}
-                onChangeText={setDisplayNameInput}
-                placeholder="Your name"
-                placeholderTextColor="#999"
-                editable={!savingDisplayName}
-                maxLength={80}
-                autoCapitalize="words"
-                autoCorrect
-              />
-              <TouchableOpacity
-                style={[
-                  styles.profileSaveButton,
-                  (savingDisplayName || !displayNameInput.trim()) && styles.profileSaveButtonDisabled,
-                ]}
-                onPress={handleSaveDisplayName}
-                disabled={savingDisplayName || !displayNameInput.trim()}
-              >
-                <Text style={styles.profileSaveButtonText}>
-                  {savingDisplayName ? 'Saving…' : 'Save display name'}
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
               <Text style={styles.outlineButtonText}>Sign Out</Text>
@@ -710,41 +725,60 @@ const styles = StyleSheet.create({
   secondaryButtonSubtext: {
     color: '#555',
   },
-  // Account card (authenticated)
-  accountCard: {
+  // Unified account + profile (authenticated)
+  accountProfileCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  accountHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
   },
   avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#007AFF',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.activeBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    borderWidth: 2,
+    borderColor: COLORS.cardBorder,
   },
   avatarInitial: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#F4E4C1',
+    fontSize: 22,
     fontWeight: '700',
   },
   accountInfo: {
     flex: 1,
+    minWidth: 0,
   },
   accountLabel: {
     fontSize: 12,
-    color: '#888',
-    marginBottom: 2,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   accountEmail: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   verifyBanner: {
     flexDirection: 'row',
@@ -765,71 +799,90 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   accountDisplayName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  accountDisplayNameMuted: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: COLORS.textSecondary,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: COLORS.cardBorder,
+    marginVertical: 18,
+    marginHorizontal: 2,
+  },
+  profileEditBlock: {
+    paddingTop: 2,
+  },
+  profileEditTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  profileEditTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
-    marginBottom: 4,
-  },
-  profilePrefsCard: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  profilePrefsTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 6,
+    color: COLORS.textPrimary,
   },
   profilePrefsHint: {
     fontSize: 13,
-    color: '#666',
-    marginBottom: 14,
-    lineHeight: 18,
-  },
-  profileInputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 6,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    lineHeight: 19,
   },
   profileTextInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.inputBg,
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  profileCharCount: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    alignSelf: 'flex-end',
     marginBottom: 12,
   },
   profileSaveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.activeBorder,
     paddingVertical: 14,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   profileSaveButtonDisabled: {
     opacity: 0.55,
   },
+  profileSaveIcon: {
+    marginTop: 1,
+  },
   profileSaveButtonText: {
-    color: '#fff',
+    color: '#F4E4C1',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   outlineButton: {
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: COLORS.activeBorder,
     borderRadius: 12,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: COLORS.inputBg,
   },
   outlineButtonText: {
-    color: '#007AFF',
+    color: COLORS.textPrimary,
     fontSize: 15,
     fontWeight: '600',
   },
