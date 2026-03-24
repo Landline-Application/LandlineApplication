@@ -36,6 +36,30 @@ export async function upsertUserDocument(user: FirebaseAuthTypes.User): Promise<
   await setDoc(ref, { ...data, createdAt: serverTimestamp() }, { merge: true });
 }
 
+const DISPLAY_NAME_MAX = 80;
+
+/**
+ * Updates Firebase Auth profile displayName and merges it into Firestore `users/{uid}`.
+ */
+export async function updateUserDisplayName(
+  user: FirebaseAuthTypes.User,
+  displayName: string,
+): Promise<void> {
+  const trimmed = displayName.trim().slice(0, DISPLAY_NAME_MAX);
+  await user.updateProfile({ displayName: trimmed || null });
+
+  const ref = doc(usersCollection, user.uid);
+  await setDoc(
+    ref,
+    {
+      displayName: trimmed || null,
+      profileUpdatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
 /**
  * Permanently removes the /users/{uid} document.
  * Must be called *before* deleting the Firebase Auth account so that
