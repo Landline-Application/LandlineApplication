@@ -78,3 +78,5 @@ GoogleService-Info.plist
 *.aab
 
 .specstory/
+.cursorindexingignore
+.vscode/settings.json

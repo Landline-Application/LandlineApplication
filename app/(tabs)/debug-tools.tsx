@@ -18,7 +18,7 @@ import {
 } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { shareNotificationLogsCSVAndroid } from '@/utils/notification-logs-csv';
+import { saveNotificationLogsCSVAndroid, type NotificationLogDateRangePreset } from '@/utils/notification-logs-csv';
 
 export default function DebugToolsScreen() {
   const insets = useSafeAreaInsets();
@@ -478,33 +478,109 @@ export default function DebugToolsScreen() {
             color={COLORS.dark.primary}
           />
 
-          {/* Export logs to CSV */}
+          {/* Export logs to CSV (date range presets) */}
           {Platform.OS === 'android' && (
-            <Button
-            title={csvExporting ? 'Saving CSV…' : 'Save logs CSV to device (dev)'}
-            disabled={csvExporting}
-            onPress={async () => {
-              setCsvExporting(true);
-              try {
-                const result = await shareNotificationLogsCSVAndroid();
-                if (!result.ok) {
-                  Alert.alert(
-                    result.rowCount === 0 ? 'Nothing to export' : 'Export failed',
-                    result.error ?? 'Unknown error',
-                  );
-                } else {
-                  await refreshStatus();
-                  Alert.alert(
-                    'Saved',
-                    `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
-                  );
-                }
-              } finally {
-                setCsvExporting(false);
-              }
-            }}
-            color={COLORS.dark.primary}
-            />
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 14, color: COLORS.dark.textSecondary }}>
+                Export logs (date range)
+              </Text>
+
+              <Button
+                title={csvExporting ? 'Saving CSV…' : 'Last 24 hours'}
+                disabled={csvExporting}
+                onPress={async () => {
+                  const preset: NotificationLogDateRangePreset = '24h';
+                  setCsvExporting(true);
+                  try {
+                    const result = await saveNotificationLogsCSVAndroid(preset);
+                    if (!result.ok) {
+                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
+                    } else {
+                      await refreshStatus();
+                      Alert.alert(
+                        'Saved',
+                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
+                      );
+                    }
+                  } finally {
+                    setCsvExporting(false);
+                  }
+                }}
+                color={COLORS.dark.primary}
+              />
+
+              <Button
+                title={csvExporting ? 'Saving CSV…' : 'Last 7 days'}
+                disabled={csvExporting}
+                onPress={async () => {
+                  const preset: NotificationLogDateRangePreset = '7d';
+                  setCsvExporting(true);
+                  try {
+                    const result = await saveNotificationLogsCSVAndroid(preset);
+                    if (!result.ok) {
+                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
+                    } else {
+                      await refreshStatus();
+                      Alert.alert(
+                        'Saved',
+                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
+                      );
+                    }
+                  } finally {
+                    setCsvExporting(false);
+                  }
+                }}
+                color={COLORS.dark.primary}
+              />
+
+              <Button
+                title={csvExporting ? 'Saving CSV…' : 'Last 30 days'}
+                disabled={csvExporting}
+                onPress={async () => {
+                  const preset: NotificationLogDateRangePreset = '30d';
+                  setCsvExporting(true);
+                  try {
+                    const result = await saveNotificationLogsCSVAndroid(preset);
+                    if (!result.ok) {
+                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
+                    } else {
+                      await refreshStatus();
+                      Alert.alert(
+                        'Saved',
+                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
+                      );
+                    }
+                  } finally {
+                    setCsvExporting(false);
+                  }
+                }}
+                color={COLORS.dark.primary}
+              />
+
+              <Button
+                title={csvExporting ? 'Saving CSV…' : 'All time'}
+                disabled={csvExporting}
+                onPress={async () => {
+                  const preset: NotificationLogDateRangePreset = 'all';
+                  setCsvExporting(true);
+                  try {
+                    const result = await saveNotificationLogsCSVAndroid(preset);
+                    if (!result.ok) {
+                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
+                    } else {
+                      await refreshStatus();
+                      Alert.alert(
+                        'Saved',
+                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
+                      );
+                    }
+                  } finally {
+                    setCsvExporting(false);
+                  }
+                }}
+                color={COLORS.dark.primary}
+              />
+            </View>
           )}
           <Button
             title="Clear All Logs"
