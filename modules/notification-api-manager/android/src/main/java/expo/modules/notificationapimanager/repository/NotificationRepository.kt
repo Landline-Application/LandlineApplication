@@ -1,10 +1,11 @@
 import expo.modules.notificationapimanager.data.*
+import androidx.lifecycle.LiveData
 
 class NotificationRepository(private val NotificationDao: dao) {
 
   val readAll_notifications: LiveData<List<NotificationEntitity>> = dao.loadAll_notifications()
   
-  fun add_notification(NotificationEntitity) : Boolean {
+  suspend fun add_notification(NotificationEntitity notification) : Boolean {
         try
         {
             dao.insertNotifications(notification)
