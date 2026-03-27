@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
@@ -60,14 +61,25 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     private val repliedNotifications = mutableSetOf<String>()
     private val emergencyAlertedNotifications = mutableSetOf<String>()
 
+    @Volatile private var cachedEmergencyContacts: List<EmergencyContactEntry>? = null
+    private val emergencyContactsPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "emergency_contacts_json") {
+            cachedEmergencyContacts = null
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         serviceInstance = this
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .registerOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
         Log.d(TAG, "LandlineNotificationListenerService created")
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .unregisterOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
         serviceInstance = null
         Log.d(TAG, "LandlineNotificationListenerService destroyed")
     }
@@ -439,30 +451,39 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     private data class EmergencyContactEntry(val name: String, val phone: String)
 
     private fun loadEmergencyContacts(): List<EmergencyContactEntry> {
+        cachedEmergencyContacts?.let { return it }
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val json = prefs.getString("emergency_contacts_json", null)
+        val result: List<EmergencyContactEntry>
         if (!json.isNullOrBlank()) {
+            val parsed = mutableListOf<EmergencyContactEntry>()
             try {
                 val arr = org.json.JSONArray(json)
-                val out = mutableListOf<EmergencyContactEntry>()
                 for (i in 0 until arr.length()) {
                     val o = arr.getJSONObject(i)
                     val n = if (o.has("name")) o.getString("name") else ""
                     val p = if (o.has("phone")) o.getString("phone") else ""
-                    if (p.isNotEmpty()) out.add(EmergencyContactEntry(n, p))
+                    if (p.isNotEmpty()) parsed.add(EmergencyContactEntry(n, p))
                 }
-                if (out.isNotEmpty()) return out
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse emergency_contacts_json", e)
             }
-        }
-        val legacyName = prefs.getString("emergency_contact_name", null) ?: ""
-        val legacyPhone = prefs.getString("emergency_contact_phone", null)
-        return if (!legacyPhone.isNullOrEmpty()) {
-            listOf(EmergencyContactEntry(legacyName, legacyPhone))
+            result = if (parsed.isNotEmpty()) parsed else {
+                val legacyName = prefs.getString("emergency_contact_name", null) ?: ""
+                val legacyPhone = prefs.getString("emergency_contact_phone", null)
+                if (!legacyPhone.isNullOrEmpty()) listOf(EmergencyContactEntry(legacyName, legacyPhone)) else emptyList()
+            }
         } else {
-            emptyList()
+            val legacyName = prefs.getString("emergency_contact_name", null) ?: ""
+            val legacyPhone = prefs.getString("emergency_contact_phone", null)
+            result = if (!legacyPhone.isNullOrEmpty()) {
+                listOf(EmergencyContactEntry(legacyName, legacyPhone))
+            } else {
+                emptyList()
+            }
         }
+        cachedEmergencyContacts = result
+        return result
     }
 
     private fun normalizePhone(phone: String): String {
@@ -481,8 +502,6 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             if (titleLastDigits.length < 7) return false
             if (lastDigits.endsWith(titleLastDigits) || titleLastDigits.endsWith(lastDigits)) return true
         }
-
-        if (ec.name.isNotEmpty() && title.equals(ec.name, ignoreCase = true)) return true
 
         return false
     }
@@ -530,7 +549,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 .build()
 
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.notify(99999, notification)
+            val alertId = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+            nm.notify(alertId, notification)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to post emergency alert", e)
         }
