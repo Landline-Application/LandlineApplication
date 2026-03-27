@@ -20,8 +20,7 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState('');
   const [wrongPasswordSection, setWrongPasswordSection] = useState(false);
   const [genericLoginError, setGenericLoginError] = useState('');
-  const { signIn, signInWithGoogle, resetPassword } = useAuth();
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -76,39 +75,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setEmailError('Enter your email above, then tap Forgot Password again.');
-      return;
-    }
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
-    setEmailError('');
-    setPasswordError('');
-    setGenericLoginError('');
-    setWrongPasswordSection(false);
-    setIsResettingPassword(true);
-    try {
-      await resetPassword(email);
-      Alert.alert(
-        'Check your email',
-        "If an account exists for this email, we've sent a password reset link. Please check your inbox and spam folder.",
-        [{ text: 'OK' }],
-      );
-    } catch (error: any) {
-      const code = error?.code;
-      if (code === 'auth/user-not-found') {
-        setEmailError('No account found with this email.');
-      } else if (code === 'auth/too-many-requests') {
-        Alert.alert('Too many attempts', 'Please try again later.');
-      } else {
-        Alert.alert('Could not send reset email', error?.message || 'Please try again later.');
-      }
-    } finally {
-      setIsResettingPassword(false);
-    }
+  const handleForgotPassword = () => {
+    router.push('/forgot-password');
   };
 
   const handleGoogleSignIn = async () => {
@@ -152,18 +120,10 @@ export default function LoginPage() {
         <View style={styles.forgotPasswordRow}>
           <TouchableOpacity
             onPress={handleForgotPassword}
-            disabled={isResettingPassword}
             accessibilityRole="button"
             accessibilityLabel="Forgot password"
           >
-            <Text
-              style={[
-                styles.forgotPasswordText,
-                isResettingPassword && styles.forgotPasswordDisabled,
-              ]}
-            >
-              Forgot Password?
-            </Text>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
 
@@ -267,10 +227,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  forgotPasswordDisabled: {
-    opacity: 0.6,
-  },
-
   errorSection: {
     backgroundColor: 'rgba(196, 69, 54, 0.12)',
     borderRadius: 8,
