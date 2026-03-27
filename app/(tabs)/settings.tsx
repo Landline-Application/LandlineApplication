@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut, refreshUser } = useAuth();
+  const { user, isAuthenticated, signOut, refreshUser, resetPassword } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
@@ -143,6 +143,27 @@ export default function SettingsScreen() {
       );
     } finally {
       setSavingDisplayName(false);
+    }
+  }
+
+  const isEmailUser = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
+
+  async function handleChangePassword() {
+    if (!user?.email) return;
+    try {
+      await resetPassword(user.email);
+      Alert.alert(
+        'Reset email sent',
+        `We've sent a password reset link to ${user.email}. Check your inbox.`,
+        [{ text: 'OK' }],
+      );
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/too-many-requests') {
+        Alert.alert('Too many attempts', 'Please try again later.');
+      } else {
+        Alert.alert('Error', error?.message || 'Could not send reset email. Please try again.');
+      }
     }
   }
 
@@ -343,6 +364,12 @@ export default function SettingsScreen() {
                   Please verify your email. Check your inbox for a verification link.
                 </Text>
               </View>
+            )}
+
+            {isEmailUser && (
+              <TouchableOpacity style={styles.outlineButton} onPress={handleChangePassword}>
+                <Text style={styles.outlineButtonText}>Change Password</Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
