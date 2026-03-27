@@ -1,9 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 const SESSION_START_KEY = 'landline_session_start_time';

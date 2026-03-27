@@ -137,7 +137,10 @@ export default function SettingsScreen() {
       Alert.alert('Saved', 'Your display name was updated.');
     } catch (error) {
       console.error('Save display name:', error);
-      Alert.alert('Error', 'Could not save your display name. Check your connection and try again.');
+      Alert.alert(
+        'Error',
+        'Could not save your display name. Check your connection and try again.',
+      );
     } finally {
       setSavingDisplayName(false);
     }
@@ -264,12 +267,10 @@ export default function SettingsScreen() {
               <View style={styles.accountHeaderRow}>
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>
-                    {(
-                      user?.displayName?.trim()?.[0] ||
+                    {(user?.displayName?.trim()?.[0] ||
                       user?.email ||
                       user?.phoneNumber ||
-                      '?'
-                    )[0].toUpperCase()}
+                      '?')[0].toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.accountInfo}>
@@ -315,13 +316,19 @@ export default function SettingsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.profileSaveButton,
-                    (savingDisplayName || !displayNameInput.trim()) && styles.profileSaveButtonDisabled,
+                    (savingDisplayName || !displayNameInput.trim()) &&
+                      styles.profileSaveButtonDisabled,
                   ]}
                   onPress={handleSaveDisplayName}
                   disabled={savingDisplayName || !displayNameInput.trim()}
                   activeOpacity={0.85}
                 >
-                  <MaterialIcons name="check" size={20} color="#fff" style={styles.profileSaveIcon} />
+                  <MaterialIcons
+                    name="check"
+                    size={20}
+                    color="#fff"
+                    style={styles.profileSaveIcon}
+                  />
                   <Text style={styles.profileSaveButtonText}>
                     {savingDisplayName ? 'Saving…' : 'Save'}
                   </Text>
