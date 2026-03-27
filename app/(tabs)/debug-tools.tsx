@@ -29,7 +29,9 @@ import {
   setDNDEnabled,
   setInterruptionFilter,
 } from '@/modules/dnd-manager';
-import NotificationApiManager, { parseEmergencyContactsJson } from '@/modules/notification-api-manager';
+import NotificationApiManager, {
+  parseEmergencyContactsJson,
+} from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type EmergencyContactRow = { id: string; name: string; phone: string };
@@ -1215,7 +1217,10 @@ export default function DebugToolsScreen() {
                     <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text }}>
                       {row.name || 'Unknown'}
                     </Text>
-                    <Text selectable style={{ fontSize: 13, color: COLORS.dark.textSecondary, marginTop: 4 }}>
+                    <Text
+                      selectable
+                      style={{ fontSize: 13, color: COLORS.dark.textSecondary, marginTop: 4 }}
+                    >
                       {row.phone}
                     </Text>
                   </View>
@@ -1409,9 +1414,7 @@ export default function DebugToolsScreen() {
                       return;
                     }
                     const norm = normalizePhoneDigits(phone);
-                    if (
-                      emergencyContacts.some((c) => normalizePhoneDigits(c.phone) === norm)
-                    ) {
+                    if (emergencyContacts.some((c) => normalizePhoneDigits(c.phone) === norm)) {
                       setContactPickerVisible(false);
                       Alert.alert('Already added', 'That number is already an emergency contact.');
                       return;
