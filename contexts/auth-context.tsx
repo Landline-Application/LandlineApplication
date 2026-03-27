@@ -25,6 +25,8 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  /** Reload current user from Firebase (e.g. after profile update) */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,29 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [reloadUser]);
 
   useEffect(() => {
-    // isFirstEvent distinguishes a persisted session being restored on startup
-    // (first event) from subsequent auth state changes caused by explicit
-    // sign-in / sign-out actions (where no refresh is needed).
-    let isFirstEvent = true;
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser && isFirstEvent) {
-        // On startup: force a server round-trip to confirm the account still
-        // exists. Catches accounts deleted from the Firebase console while the
-        // app was closed (the local token would otherwise still look valid).
-        isFirstEvent = false;
-        try {
-          await getIdToken(firebaseUser, true);
-          setUser(firebaseUser);
-        } catch {
-          // Token refresh failed — account no longer exists on Firebase.
-          // Firebase has already cleared the local session; just reflect that in state.
-          setUser(null);
-        }
-      } else {
-        isFirstEvent = false;
-        setUser(firebaseUser);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setIsLoading(false);
     });
 
@@ -91,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
     try {
       await sendEmailVerification(credential.user);
     } catch (verificationError: any) {
@@ -108,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const signOut = async () => {
@@ -117,11 +98,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const credential = await firebaseSignInWithGoogle();
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
+  };
+
+  const refreshUser = async () => {
+    const current = auth.currentUser;
+    if (!current) return;
+    await reload(current);
+    setUser(auth.currentUser);
   };
 
   return (
@@ -135,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signOut,
         resetPassword,
+        refreshUser,
       }}
     >
       {children}
