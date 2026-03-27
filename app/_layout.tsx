@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 
 import { LogBox, Text } from 'react-native';
 
-LogBox.ignoreLogs(['Unable to activate keep awake']);
-
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -23,6 +21,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 SplashScreen.preventAutoHideAsync();
 

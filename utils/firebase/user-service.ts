@@ -1,5 +1,5 @@
 import { usersCollection } from '@/utils/firebase/app';
-import { type FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { type FirebaseAuthTypes, updateProfile } from '@react-native-firebase/auth';
 import {
   type FirebaseFirestoreTypes,
   deleteDoc,
@@ -15,6 +15,8 @@ export interface UserDocument {
   /** Set once on creation; never overwritten by subsequent upserts. */
   createdAt: FirebaseFirestoreTypes.FieldValue;
   updatedAt: FirebaseFirestoreTypes.FieldValue;
+  /** Updated on every sign-in. Never touched by profile edits. */
+  lastLogin: FirebaseFirestoreTypes.FieldValue;
 }
 
 /**
@@ -28,12 +30,37 @@ export async function upsertUserDocument(user: FirebaseAuthTypes.User): Promise<
     uid: user.uid,
     displayName: user.displayName ?? null,
     email: user.email ?? null,
+    lastLogin: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
 
   // createdAt is included in the payload but merge mode leaves it untouched
   // if the document already exists.
   await setDoc(ref, { ...data, createdAt: serverTimestamp() }, { merge: true });
+}
+
+const DISPLAY_NAME_MAX = 80;
+
+/**
+ * Updates Firebase Auth profile displayName and merges it into Firestore `users/{uid}`.
+ */
+export async function updateUserDisplayName(
+  user: FirebaseAuthTypes.User,
+  displayName: string,
+): Promise<void> {
+  const trimmed = displayName.trim().slice(0, DISPLAY_NAME_MAX);
+  await updateProfile(user, { displayName: trimmed || null });
+
+  const ref = doc(usersCollection, user.uid);
+  await setDoc(
+    ref,
+    {
+      displayName: trimmed || null,
+      profileUpdatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
 
 /**
