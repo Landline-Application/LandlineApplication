@@ -59,10 +59,16 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
 
       let sessionStart: Date | null = null;
       if (active) {
-        const stored = await AsyncStorage.getItem(SESSION_START_KEY);
-        sessionStart = stored ? new Date(parseInt(stored, 10)) : new Date();
-        if (!stored) {
-          await AsyncStorage.setItem(SESSION_START_KEY, Date.now().toString());
+        try {
+          const stored = await AsyncStorage.getItem(SESSION_START_KEY);
+          const fallbackTs = Date.now();
+          sessionStart = stored ? new Date(parseInt(stored, 10)) : new Date(fallbackTs);
+          if (!stored) {
+            await AsyncStorage.setItem(SESSION_START_KEY, fallbackTs.toString());
+          }
+        } catch (storageErr) {
+          console.warn('Failed to read session start time:', storageErr);
+          sessionStart = new Date();
         }
       }
 
@@ -120,7 +126,11 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
 
       const now = new Date();
       if (actualActive) {
-        await AsyncStorage.setItem(SESSION_START_KEY, now.getTime().toString());
+        try {
+          await AsyncStorage.setItem(SESSION_START_KEY, now.getTime().toString());
+        } catch (storageErr) {
+          console.warn('Failed to persist session start time:', storageErr);
+        }
       }
 
       set({
@@ -176,11 +186,17 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Verify it actually deactivated
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
-      await AsyncStorage.removeItem(SESSION_START_KEY);
+      if (!actualActive) {
+        try {
+          await AsyncStorage.removeItem(SESSION_START_KEY);
+        } catch (storageErr) {
+          console.warn('Failed to clear session start time:', storageErr);
+        }
+      }
 
       set({
         isActive: actualActive,
-        sessionStartTime: null,
+        sessionStartTime: actualActive ? get().sessionStartTime : null,
       });
 
       // Final refresh to get latest notifications
