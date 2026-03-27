@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
     try {
       await sendEmailVerification(credential.user);
     } catch (verificationError: any) {
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const signOut = async () => {
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const credential = await firebaseSignInWithGoogle();
-    await upsertUserDocument(credential.user);
+    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const resetPassword = async (email: string) => {
