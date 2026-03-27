@@ -15,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.net.URL
 
 class NotificationApiManagerModule : Module() {
     override fun definition() = ModuleDefinition {
@@ -24,6 +25,17 @@ class NotificationApiManagerModule : Module() {
         // Quick smoke test
         Function("hello") {
             "Hello from NotificationApiManager!"
+        }
+
+        // Same module name as iOS — registers the native view for requireNativeView('NotificationApiManager').
+        View(NotificationApiManagerView::class) {
+            Events("onLoad")
+
+            Prop("url") { view: NotificationApiManagerView, url: URL? ->
+                if (url != null) {
+                    view.webView.loadUrl(url.toString())
+                }
+            }
         }
 
         // Android 13+ runtime notification permission (older versions don't require it)
@@ -141,6 +153,61 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.getBoolean("is_landline_mode_active", false)
+        }
+
+        // --- Notification whitelist (Landline Mode): allowed apps + emergency phone digits ---
+
+        Function("isNotificationFilterEnabled") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.getBoolean("notification_filter_enabled", false)
+        }
+
+        Function("setNotificationFilterEnabled") { enabled: Boolean ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("notification_filter_enabled", enabled).apply()
+            true
+        }
+
+        Function("getAllowedNotificationPackages") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
+            set.toList().sorted()
+        }
+
+        Function("setAllowedNotificationPackages") { packageNames: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("allowed_notification_packages", packageNames.toSet()).apply()
+            true
+        }
+
+        Function("getEmergencyPhoneNumbers") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
+            set.toList().sorted()
+        }
+
+        Function("setEmergencyPhoneNumbers") { phoneNumbers: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val normalized = phoneNumbers
+                .map { digits -> digits.filter { it.isDigit() } }
+                .filter { it.length >= 7 }
+                .toSet()
+            prefs.edit().putStringSet("emergency_phone_digits", normalized).apply()
+            true
+        }
+
+        Function("isNotificationFilterConfigured") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val packages = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
+            val emergency = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
+            packages.isNotEmpty() || emergency.isNotEmpty()
         }
 
         /**

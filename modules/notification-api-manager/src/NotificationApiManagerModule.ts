@@ -36,6 +36,14 @@ type NotificationApiNativeModule = {
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
   clearLoggedNotifications(): boolean;
+  // Notification permissions: allowed apps + emergency numbers during Landline Mode
+  isNotificationFilterEnabled(): boolean;
+  setNotificationFilterEnabled(enabled: boolean): boolean;
+  getAllowedNotificationPackages(): string[];
+  setAllowedNotificationPackages(packageNames: string[]): boolean;
+  getEmergencyPhoneNumbers(): string[];
+  setEmergencyPhoneNumbers(phoneNumbers: string[]): boolean;
+  isNotificationFilterConfigured(): boolean;
   // Auto-Reply
   isAutoReplyEnabled(): boolean;
   setAutoReplyEnabled(enabled: boolean): boolean;
@@ -54,7 +62,10 @@ type NotificationApiNativeModule = {
   clearAllData(): Promise<boolean>;
 };
 
-const Native: NotificationApiNativeModule = requireNativeModule('NotificationApiManager');
+// Stale dev clients may omit newer native methods; avoid crashing until `expo run:android` picks up Kotlin.
+const Native = requireNativeModule('NotificationApiManager') as NotificationApiNativeModule & {
+  [key: string]: unknown;
+};
 
 // ============================================================
 // NOTIFICATION PERMISSION
@@ -102,6 +113,46 @@ export function getLoggedNotifications() {
 
 export function clearLoggedNotifications() {
   return Native.clearLoggedNotifications();
+}
+
+export function isNotificationFilterEnabled() {
+  const fn = Native.isNotificationFilterEnabled;
+  return typeof fn === 'function' ? fn.call(Native) : false;
+}
+
+export function setNotificationFilterEnabled(enabled: boolean) {
+  const fn = Native.setNotificationFilterEnabled;
+  return typeof fn === 'function' ? fn.call(Native, enabled) : false;
+}
+
+export function getAllowedNotificationPackages() {
+  const fn = Native.getAllowedNotificationPackages;
+  return typeof fn === 'function' ? fn.call(Native) : [];
+}
+
+export function setAllowedNotificationPackages(packageNames: string[]) {
+  const fn = Native.setAllowedNotificationPackages;
+  return typeof fn === 'function' ? fn.call(Native, packageNames) : false;
+}
+
+export function getEmergencyPhoneNumbers() {
+  const fn = Native.getEmergencyPhoneNumbers;
+  return typeof fn === 'function' ? fn.call(Native) : [];
+}
+
+export function setEmergencyPhoneNumbers(phoneNumbers: string[]) {
+  const fn = Native.setEmergencyPhoneNumbers;
+  return typeof fn === 'function' ? fn.call(Native, phoneNumbers) : false;
+}
+
+export function isNotificationFilterConfigured() {
+  const fn = Native.isNotificationFilterConfigured;
+  return typeof fn === 'function' ? fn.call(Native) : false;
+}
+
+/** True when notification permissions are on and at least one bypass app or emergency number is set. */
+export function isNotificationFilterEffective() {
+  return isNotificationFilterEnabled() && isNotificationFilterConfigured();
 }
 
 // ============================================================
@@ -201,6 +252,14 @@ export default {
   isLandlineModeActive,
   getLoggedNotifications,
   clearLoggedNotifications,
+  isNotificationFilterEnabled,
+  setNotificationFilterEnabled,
+  getAllowedNotificationPackages,
+  setAllowedNotificationPackages,
+  getEmergencyPhoneNumbers,
+  setEmergencyPhoneNumbers,
+  isNotificationFilterConfigured,
+  isNotificationFilterEffective,
   isAutoReplyEnabled,
   setAutoReplyEnabled,
   setReplyMessage,

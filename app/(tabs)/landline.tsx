@@ -12,8 +12,46 @@ import {
 } from 'react-native';
 
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type LoggedNotification = {
+  timestamp?: number;
+  packageName?: string;
+};
+
+type AppAttentionRow = AppUsageSummary & { notificationCount: number };
+
+function getWindowMs(window: UsageWindow): number {
+  switch (window) {
+    case '24h':
+      return 24 * 60 * 60 * 1000;
+    case '7d':
+      return 7 * 24 * 60 * 60 * 1000;
+    case '30d':
+      return 30 * 24 * 60 * 60 * 1000;
+    default:
+      return 24 * 60 * 60 * 1000;
+  }
+}
+
+function countLoggedNotificationsByPackage(
+  logs: LoggedNotification[],
+  windowMs: number,
+): Map<string, number> {
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const counts = new Map<string, number>();
+  for (const n of logs) {
+    const ts = typeof n.timestamp === 'number' ? n.timestamp : 0;
+    if (ts < cutoff || ts > now) continue;
+    const pkg = n.packageName;
+    if (!pkg) continue;
+    counts.set(pkg, (counts.get(pkg) ?? 0) + 1);
+  }
+  return counts;
+}
 
 export default function LandlineScreen() {
   const insets = useSafeAreaInsets();
@@ -31,7 +69,7 @@ export default function LandlineScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasUsagePermission, setHasUsagePermission] = useState(false);
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
-  const [topApps, setTopApps] = useState<AppUsageSummary[]>([]);
+  const [topApps, setTopApps] = useState<AppAttentionRow[]>([]);
   const [usageLoading, setUsageLoading] = useState(false);
 
   const loadUsageData = useCallback(async (window: UsageWindow) => {
@@ -48,7 +86,19 @@ export default function LandlineScreen() {
     try {
       setUsageLoading(true);
       const usage = await UsageStatsManager.getTopUsageApps(window, 5);
-      setTopApps(usage);
+      const windowMs = getWindowMs(window);
+      let logs: LoggedNotification[] = [];
+      try {
+        logs = (await NotificationApiManager.getLoggedNotifications()) as LoggedNotification[];
+      } catch {
+        logs = [];
+      }
+      const notifCounts = countLoggedNotificationsByPackage(logs, windowMs);
+      const merged: AppAttentionRow[] = usage.map((app) => ({
+        ...app,
+        notificationCount: notifCounts.get(app.packageName) ?? 0,
+      }));
+      setTopApps(merged);
     } catch (error) {
       console.error('Failed to load app usage data', error);
       Alert.alert('Error', 'Failed to load app attention data.');
@@ -258,8 +308,9 @@ export default function LandlineScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionLabel}>App Attention</Text>
         <Text style={styles.cardBody}>
-          See which apps took the most of your attention based on Android usage stats (top 5, last
-          24 hours or 7 days).
+          Top 5 apps by screen time (Android usage stats) for the selected period. Notification
+          counts use Landline&apos;s log for the same period — only notifications captured while
+          Landline Mode was on are included.
         </Text>
 
         <View style={styles.statusRow}>
@@ -311,6 +362,12 @@ export default function LandlineScreen() {
               >
                 <Text style={[styles.toggleButtonText, usageWindow === '7d' && styles.toggleButtonTextActive]}>7d</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, usageWindow === '30d' && styles.toggleButtonActive]}
+                onPress={() => handleChangeUsageWindow('30d')}
+              >
+                <Text style={[styles.toggleButtonText, usageWindow === '30d' && styles.toggleButtonTextActive]}>30d</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.refreshDataButton} onPress={handleRefreshUsageData}>
                 <Text style={styles.refreshDataButtonText}>Refresh</Text>
               </TouchableOpacity>
@@ -331,7 +388,13 @@ export default function LandlineScreen() {
                       <Text style={styles.usageAppName}>{app.appName}</Text>
                       <Text style={styles.usagePackageName}>{app.packageName}</Text>
                     </View>
-                    <Text style={styles.usageDuration}>{formatDuration(app.totalTimeMs)}</Text>
+                    <View style={styles.usageMetaRight}>
+                      <Text style={styles.usageDuration}>{formatDuration(app.totalTimeMs)}</Text>
+                      <Text style={styles.usageNotifCount}>
+                        {app.notificationCount}{' '}
+                        {app.notificationCount === 1 ? 'notif' : 'notifs'} (logged)
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -479,6 +542,7 @@ const styles = StyleSheet.create({
   toggleRow: {
     marginTop: 12,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
@@ -547,6 +611,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#F4E4C1',
+  },
+  usageMetaRight: {
+    alignItems: 'flex-end',
+    maxWidth: '42%',
+  },
+  usageNotifCount: {
+    fontSize: 11,
+    color: '#D4AF7A',
+    marginTop: 2,
+    textAlign: 'right',
   },
   usageHelpBox: {
     marginTop: 10,

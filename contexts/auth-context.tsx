@@ -31,6 +31,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const TOKEN_REFRESH_MS = 15_000;
+
+function getIdTokenWithTimeout(
+  user: FirebaseAuthTypes.User,
+): Promise<string> {
+  return Promise.race([
+    getIdToken(user, true),
+    new Promise<string>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('token-refresh-timeout')),
+        TOKEN_REFRESH_MS,
+      ),
+    ),
+  ]);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,9 +78,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [reloadUser]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setIsLoading(false);
+    // isFirstEvent distinguishes a persisted session being restored on startup
+    // (first event) from subsequent auth state changes caused by explicit
+    // sign-in / sign-out actions (where no refresh is needed).
+    let isFirstEvent = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (firebaseUser && isFirstEvent) {
+          // On startup: force a server round-trip to confirm the account still
+          // exists. Catches accounts deleted from the Firebase console while the
+          // app was closed (the local token would otherwise still look valid).
+          isFirstEvent = false;
+          try {
+            await getIdTokenWithTimeout(firebaseUser);
+            setUser(firebaseUser);
+          } catch {
+            // Token refresh failed or timed out — treat as signed out.
+            setUser(null);
+          }
+        } else {
+          isFirstEvent = false;
+          setUser(firebaseUser);
+        }
+      } finally {
+        // Always unblock the UI even if getIdToken hangs (poor network, etc.).
+        setIsLoading(false);
+      }
     });
 
     return unsubscribe;

@@ -2,7 +2,9 @@ import { Platform } from 'react-native';
 
 import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager from '@/modules/notification-api-manager';
+import NotificationApiManager, {
+  isNotificationFilterEffective,
+} from '@/modules/notification-api-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
@@ -100,10 +102,16 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Call native API to set landline mode
       NotificationApiManager.setLandlineMode(true);
 
-      // Try to enable DND (optional)
+      // Try to enable DND (optional). When notification permissions (bypass list) are active, use normal
+      // interruption mode so allowed alerts can appear; others are cancelled in the listener.
       try {
         if (DndManager.hasPermission()) {
-          await DndManager.setDNDEnabled(true);
+          if (isNotificationFilterEffective()) {
+            const constants = DndManager.getInterruptionFilterConstants();
+            await DndManager.setInterruptionFilter(constants.ALL);
+          } else {
+            await DndManager.setDNDEnabled(true);
+          }
         }
       } catch (dndErr) {
         console.warn('DND not available:', dndErr);

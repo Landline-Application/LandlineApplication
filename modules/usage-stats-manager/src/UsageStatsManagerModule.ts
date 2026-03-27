@@ -1,6 +1,6 @@
 import { requireNativeModule } from 'expo-modules-core';
 
-export type UsageWindow = '24h' | '7d';
+export type UsageWindow = '24h' | '7d' | '30d';
 
 export type AppUsageSummary = {
   packageName: string;
@@ -44,7 +44,8 @@ export function openUsageStatsSettings(): Promise<boolean> {
 export function getTopUsageApps(window: UsageWindow, limit = 5): Promise<AppUsageSummary[]> {
   const native = getNative();
   if (!native) return Promise.resolve([]);
-  const days = window === '7d' ? 7 : 1;
+  const days =
+    window === '7d' ? 7 : window === '30d' ? 30 : 1;
   return native.getTopUsageApps(days, limit);
 }
 
