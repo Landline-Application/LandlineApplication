@@ -47,6 +47,9 @@ type NotificationApiNativeModule = {
   clearReplyHistory(): boolean;
   isServiceRunning(): boolean;
   getActiveNotifications(): Promise<any[]>;
+  // Emergency contacts (JSON array of { name, phone })
+  setEmergencyContactsJson(json: string): boolean;
+  getEmergencyContactsJson(): string;
   // Data Management
   clearAllData(): Promise<boolean>;
 };
@@ -146,6 +149,40 @@ export function getActiveNotifications() {
 }
 
 // ============================================================
+// EMERGENCY CONTACTS
+// ============================================================
+
+export type EmergencyContactEntry = { name: string; phone: string };
+
+export function setEmergencyContactsJson(json: string) {
+  return Native.setEmergencyContactsJson(json);
+}
+
+export function getEmergencyContactsJson() {
+  return Native.getEmergencyContactsJson();
+}
+
+/** Parse native JSON; ignores invalid entries. */
+export function parseEmergencyContactsJson(json: string): EmergencyContactEntry[] {
+  try {
+    const arr = JSON.parse(json) as unknown;
+    if (!Array.isArray(arr)) return [];
+    const out: EmergencyContactEntry[] = [];
+    for (const item of arr) {
+      if (!item || typeof item !== 'object') continue;
+      const o = item as Record<string, unknown>;
+      const phone = typeof o.phone === 'string' ? o.phone.trim() : '';
+      if (!phone) continue;
+      const name = typeof o.name === 'string' ? o.name.trim() : '';
+      out.push({ name, phone });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// ============================================================
 // DATA MANAGEMENT
 // ============================================================
 
@@ -174,5 +211,8 @@ export default {
   clearReplyHistory,
   isServiceRunning,
   getActiveNotifications,
+  setEmergencyContactsJson,
+  getEmergencyContactsJson,
+  parseEmergencyContactsJson,
   clearAllData,
 };
