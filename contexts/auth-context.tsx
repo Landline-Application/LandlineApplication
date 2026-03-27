@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     const current = auth.currentUser;
     if (!current) return;
-    await current.reload();
+    await reload(current);
     setUser(auth.currentUser);
   };
 
