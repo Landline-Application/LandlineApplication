@@ -86,7 +86,7 @@ export default function DebugToolsScreen() {
 
   const loadEmergencyContactsFromNative = () => {
     try {
-      const json = NotificationApiManager.getEmergencyContactsJson();
+      const json = NotificationApiManager.getEmergencyContactsJson() ?? '[]';
       const parsed = parseEmergencyContactsJson(json);
       setEmergencyContacts(
         parsed.map((c, i) => ({
@@ -1253,7 +1253,7 @@ export default function DebugToolsScreen() {
                 title="Clear all contacts"
                 onPress={() => {
                   setEmergencyContacts([]);
-                  NotificationApiManager.clearEmergencyContact();
+                  persistEmergencyContacts([]);
                 }}
                 color={COLORS.dark.error}
               />
