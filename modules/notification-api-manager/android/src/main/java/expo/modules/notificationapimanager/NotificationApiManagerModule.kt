@@ -183,6 +183,103 @@ class NotificationApiManagerModule : Module() {
         }
 
         /**
+         * Remove a single logged notification by its timestamp (unique log capture time)
+         * Returns true if the notification was found and removed
+         */
+        Function("removeLoggedNotification") { timestamp: Double ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            val logsString = prefs.getString("notification_logs", "") ?: ""
+            if (logsString.isEmpty()) return@Function false
+
+            val targetTs = timestamp.toLong().toString()
+            val lines = logsString.split("\n").filter { line ->
+                if (line.isEmpty()) true
+                else {
+                    val parts = line.split("|")
+                    parts.isNotEmpty() && parts[0] != targetTs
+                }
+            }
+            val updatedLogs = lines.filter { it.isNotEmpty() }.joinToString("\n")
+            prefs.edit().putString("notification_logs", updatedLogs).apply()
+            true
+        }
+
+        /**
+         * Remove multiple logged notifications by their timestamps
+         * Returns true if at least one was found and removed
+         */
+        Function("removeLoggedNotifications") { timestamps: List<Double> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            val logsString = prefs.getString("notification_logs", "") ?: ""
+            if (logsString.isEmpty()) return@Function false
+
+            val targetSet = timestamps.map { it.toLong().toString() }.toSet()
+            val lines = logsString.split("\n").filter { line ->
+                if (line.isEmpty()) true
+                else {
+                    val parts = line.split("|")
+                    parts.isEmpty() || parts[0] !in targetSet
+                }
+            }
+            val updatedLogs = lines.filter { it.isNotEmpty() }.joinToString("\n")
+            prefs.edit().putString("notification_logs", updatedLogs).apply()
+            true
+        }
+
+        /**
+         * Add random test notifications for development/testing
+         * Appends to existing log without overwriting
+         */
+        Function("addTestNotifications") { count: Int ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            val existingLogs = prefs.getString("notification_logs", "") ?: ""
+
+            val apps = listOf(
+                "Messages" to "com.android.messaging",
+                "Gmail" to "com.google.android.gm",
+                "Slack" to "com.Slack",
+                "WhatsApp" to "com.whatsapp",
+                "Instagram" to "com.instagram.android",
+                "Twitter" to "com.twitter.android",
+                "Calendar" to "com.google.android.calendar",
+                "Chrome" to "com.android.chrome",
+                "Phone" to "com.android.dialer",
+                "Landline" to "com.landline.app",
+            )
+            val titles = listOf(
+                "New message", "Meeting reminder", "You have a new follower",
+                "Package delivered", "Low battery", "Weather alert",
+                "Backup complete", "Update available", "Missed call",
+                "Voicemail", "Test notification", "Landline Mode Active",
+            )
+            val texts = listOf(
+                "Check this out!", "Don't forget your meeting at 3pm",
+                "Your package has been delivered", "Battery is below 15%",
+                "Rain expected tomorrow", "Your data has been backed up",
+                "A new version is available", "You have a new voicemail",
+                "Your notifications are being captured", "Debug notification",
+            )
+
+            val entries = mutableListOf<String>()
+            val now = System.currentTimeMillis()
+            for (i in 0 until count.coerceIn(1, 50)) {
+                val (appName, pkg) = apps.random()
+                val title = titles.random()
+                val text = texts.random()
+                val postTime = now - (i * 60000L)
+                val ts = now + (i * 1000L)
+                entries.add("$ts|$pkg|$appName|$title|$text|$postTime|$i")
+            }
+            val newLogs = if (existingLogs.isEmpty()) entries.joinToString("\n")
+            else "$existingLogs\n${entries.joinToString("\n")}"
+            prefs.edit().putString("notification_logs", newLogs).apply()
+            true
+        }
+
+        /**
          * Clear all logged notifications
          */
         Function("clearLoggedNotifications") {
