@@ -50,11 +50,6 @@ type NotificationApiNativeModule = {
   // Emergency contacts (JSON array of { name, phone })
   setEmergencyContactsJson(json: string): boolean;
   getEmergencyContactsJson(): string;
-  /** Legacy: replaces list with a single contact */
-  setEmergencyContact(name: string, phone: string): boolean;
-  /** Legacy: first contact if any */
-  getEmergencyContact(): { name: string | null; phone: string | null };
-  clearEmergencyContact(): boolean;
   // Data Management
   clearAllData(): Promise<boolean>;
 };
@@ -187,18 +182,6 @@ export function parseEmergencyContactsJson(json: string): EmergencyContactEntry[
   }
 }
 
-export function setEmergencyContact(name: string, phone: string) {
-  return Native.setEmergencyContact(name, phone);
-}
-
-export function getEmergencyContact() {
-  return Native.getEmergencyContact();
-}
-
-export function clearEmergencyContact() {
-  return Native.clearEmergencyContact();
-}
-
 // ============================================================
 // DATA MANAGEMENT
 // ============================================================
@@ -231,8 +214,5 @@ export default {
   setEmergencyContactsJson,
   getEmergencyContactsJson,
   parseEmergencyContactsJson,
-  setEmergencyContact,
-  getEmergencyContact,
-  clearEmergencyContact,
   clearAllData,
 };
