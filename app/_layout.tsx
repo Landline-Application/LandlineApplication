@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import { Text } from 'react-native';
+import { LogBox, Text } from 'react-native';
+
+LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
