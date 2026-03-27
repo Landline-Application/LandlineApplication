@@ -37,6 +37,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         private const val TAG = "LandlineNotifListener"
         private const val PREFS_NAME = "landline_mode_prefs"
         private const val KEY_LANDLINE_MODE = "is_landline_mode_active"
+
+        /** When enabled and at least one app or emergency number is set, non-matching notifications are cancelled. */
+        private const val KEY_NOTIFICATION_FILTER_ENABLED = "notification_filter_enabled"
+        private const val KEY_ALLOWED_NOTIFICATION_PACKAGES = "allowed_notification_packages"
+        private const val KEY_EMERGENCY_PHONE_DIGITS = "emergency_phone_digits"
         
         // Auto-reply preferences
         private const val AUTO_REPLY_PREFS_NAME = "auto_reply_prefs"
@@ -136,6 +141,16 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 return
             }
 
+            // Whitelist: only allowed apps + emergency numbers may show notifications (others dismissed)
+            if (shouldSuppressByNotificationFilter(packageName, title, text)) {
+                try {
+                    cancelNotification(sbn.key)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not cancel filtered notification", e)
+                }
+                return
+            }
+
             // Get app name
             val appName = getAppName(packageName)
 
@@ -197,6 +212,56 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     /**
      * Determine if notification should be skipped (filtered out)
      */
+    /**
+     * When the notification filter is enabled and configured, returns true if this notification
+     * should be suppressed (cancelled) because it does not match the whitelist.
+     */
+    private fun shouldSuppressByNotificationFilter(packageName: String, title: String, text: String): Boolean {
+        if (packageName == applicationContext.packageName) {
+            return false
+        }
+
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (!prefs.getBoolean(KEY_NOTIFICATION_FILTER_ENABLED, false)) {
+            return false
+        }
+
+        val allowedPackages = prefs.getStringSet(KEY_ALLOWED_NOTIFICATION_PACKAGES, emptySet()) ?: emptySet()
+        val emergencyDigits = prefs.getStringSet(KEY_EMERGENCY_PHONE_DIGITS, emptySet()) ?: emptySet()
+
+        if (allowedPackages.isEmpty() && emergencyDigits.isEmpty()) {
+            return false
+        }
+
+        if (allowedPackages.contains(packageName)) {
+            return false
+        }
+
+        val blob = normalizeDigits(title + text)
+        for (digits in emergencyDigits) {
+            if (digits.length < 7) continue
+            if (blob.contains(digits)) {
+                return false
+            }
+            if (digits.length >= 10) {
+                val last10 = digits.takeLast(10)
+                if (blob.contains(last10)) {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
+
+    private fun normalizeDigits(s: String): String {
+        return buildString {
+            for (c in s) {
+                if (c.isDigit()) append(c)
+            }
+        }
+    }
+
     private fun shouldSkipNotification(packageName: String, title: String, text: String): Boolean {
         // Prevent the emergency alert we post from being processed/logged again.
         if (title.startsWith("Emergency Contact:")) {

@@ -454,10 +454,10 @@ export default function SettingsScreen() {
         >
           <View style={styles.actionButtonRow}>
             <MaterialIcons name="apps" size={18} color="#fff" style={styles.actionButtonIcon} />
-            <Text style={styles.actionButtonText}>App Selection</Text>
+            <Text style={styles.actionButtonText}>Notification permissions</Text>
           </View>
           <Text style={styles.actionButtonSubtext}>
-            Choose which apps to include in Landline Mode
+            Choose which apps bypass Landline Mode and add emergency contacts (Android)
           </Text>
         </TouchableOpacity>
       </View>

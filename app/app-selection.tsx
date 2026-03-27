@@ -1,8 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  ActivityIndicator,
   Alert,
-  ScrollView,
+  FlatList,
+  Modal,
+  Platform,
   StyleSheet,
   Switch,
   Text,
@@ -11,404 +14,514 @@ import {
   View,
 } from 'react-native';
 
+import * as Contacts from 'expo-contacts';
 import { router } from 'expo-router';
 
-import { MaterialIconName, MaterialIcons } from '@/components/ui/icon-symbol';
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { LandlineColors } from '@/constants/theme';
+import * as DndManager from '@/modules/dnd-manager';
+import type { AppInfo } from '@/modules/dnd-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface AppItem {
-  id: string;
-  name: string;
-  packageName: string;
-  category: 'social' | 'messaging' | 'entertainment' | 'productivity' | 'other';
-  isIncluded: boolean;
-  notificationCount?: number;
+function normalizeDigits(input: string): string {
+  return input.replace(/\D/g, '');
 }
 
-// TODO: Replace INITIAL_APPS with real app data from NotificationListenerService
-// Should fetch list of installed apps from the device
-// Mock data - in production, this would come from NotificationListenerService
-const INITIAL_APPS: AppItem[] = [
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    packageName: 'com.instagram.android',
-    category: 'social',
-    isIncluded: true,
-    notificationCount: 45,
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    packageName: 'com.facebook.katana',
-    category: 'social',
-    isIncluded: true,
-    notificationCount: 23,
-  },
-  {
-    id: 'twitter',
-    name: 'X (Twitter)',
-    packageName: 'com.twitter.android',
-    category: 'social',
-    isIncluded: true,
-    notificationCount: 67,
-  },
-  {
-    id: 'tiktok',
-    name: 'TikTok',
-    packageName: 'com.zhiliaoapp.musically',
-    category: 'social',
-    isIncluded: false,
-    notificationCount: 89,
-  },
-  {
-    id: 'snapchat',
-    name: 'Snapchat',
-    packageName: 'com.snapchat.android',
-    category: 'social',
-    isIncluded: true,
-    notificationCount: 34,
-  },
-  {
-    id: 'messages',
-    name: 'Messages',
-    packageName: 'com.google.android.apps.messaging',
-    category: 'messaging',
-    isIncluded: true,
-    notificationCount: 156,
-  },
-  {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    packageName: 'com.whatsapp',
-    category: 'messaging',
-    isIncluded: true,
-    notificationCount: 203,
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    packageName: 'org.telegram.messenger',
-    category: 'messaging',
-    isIncluded: false,
-    notificationCount: 78,
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    packageName: 'com.Slack',
-    category: 'productivity',
-    isIncluded: true,
-    notificationCount: 45,
-  },
-  {
-    id: 'gmail',
-    name: 'Gmail',
-    packageName: 'com.google.android.gm',
-    category: 'productivity',
-    isIncluded: true,
-    notificationCount: 89,
-  },
-  {
-    id: 'outlook',
-    name: 'Outlook',
-    packageName: 'com.microsoft.office.outlook',
-    category: 'productivity',
-    isIncluded: false,
-    notificationCount: 34,
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    packageName: 'com.google.android.youtube',
-    category: 'entertainment',
-    isIncluded: false,
-    notificationCount: 12,
-  },
-  {
-    id: 'netflix',
-    name: 'Netflix',
-    packageName: 'com.netflix.mediaclient',
-    category: 'entertainment',
-    isIncluded: false,
-    notificationCount: 5,
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify',
-    packageName: 'com.spotify.music',
-    category: 'entertainment',
-    isIncluded: false,
-    notificationCount: 8,
-  },
-];
+/** Common messaging apps — notifications from these can bypass Landline Mode when selected. */
+const BYPASS_PRESET_MESSAGING = [
+  'com.google.android.apps.messaging',
+  'com.whatsapp',
+  'com.facebook.orca',
+  'org.telegram.messenger',
+  'com.snapchat.android',
+] as const;
 
-const CATEGORY_LABELS: Record<AppItem['category'], string> = {
-  social: 'Social Media',
-  messaging: 'Messaging',
-  entertainment: 'Entertainment',
-  productivity: 'Productivity',
-  other: 'Other Apps',
-};
-
-const CATEGORY_ICONS: Record<AppItem['category'], MaterialIconName> = {
-  social: 'group',
-  messaging: 'chat',
-  entertainment: 'movie',
-  productivity: 'work',
-  other: 'apps',
-};
+const BYPASS_PRESET_CALLS = [
+  'com.google.android.dialer',
+  'com.android.dialer',
+  'com.samsung.android.dialer',
+] as const;
 
 export default function AppSelectionScreen() {
-  // TODO: Load initial app selection from storage/state management on component mount
-  // TODO: Add loading state while fetching real app list from device
-  const [apps, setApps] = useState<AppItem[]>(INITIAL_APPS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [installedApps, setInstalledApps] = useState<AppInfo[]>([]);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [allowedPackages, setAllowedPackages] = useState<Set<string>>(new Set());
+  const [initialAllowed, setInitialAllowed] = useState<Set<string>>(new Set());
+  const [initialFilterEnabled, setInitialFilterEnabled] = useState(false);
+  const [emergencyNumbers, setEmergencyNumbers] = useState<string[]>([]);
+  const [initialEmergency, setInitialEmergency] = useState<string[]>([]);
+  const [newPhone, setNewPhone] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
+  const [contactPickerVisible, setContactPickerVisible] = useState(false);
+  const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
+  const [contactSearch, setContactSearch] = useState('');
 
-  // Filter apps based on search query
+  const load = useCallback(async () => {
+    if (Platform.OS !== 'android') {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const [apps, enabled, packages, emergency] = await Promise.all([
+        DndManager.getAllInstalledApps(false),
+        Promise.resolve(NotificationApiManager.isNotificationFilterEnabled()),
+        Promise.resolve(NotificationApiManager.getAllowedNotificationPackages()),
+        Promise.resolve(NotificationApiManager.getEmergencyPhoneNumbers()),
+      ]);
+      setInstalledApps(apps);
+      setFilterEnabled(enabled);
+      setInitialFilterEnabled(enabled);
+      const pkgSet = new Set(packages);
+      setAllowedPackages(pkgSet);
+      setInitialAllowed(new Set(packages));
+      setEmergencyNumbers(emergency);
+      setInitialEmergency([...emergency]);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not load notification settings.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const hasChanges = useMemo(() => {
+    if (filterEnabled !== initialFilterEnabled) return true;
+    if (emergencyNumbers.length !== initialEmergency.length) return true;
+    for (let i = 0; i < emergencyNumbers.length; i++) {
+      if (emergencyNumbers[i] !== initialEmergency[i]) return true;
+    }
+    if (allowedPackages.size !== initialAllowed.size) return true;
+    for (const p of allowedPackages) {
+      if (!initialAllowed.has(p)) return true;
+    }
+    for (const p of initialAllowed) {
+      if (!allowedPackages.has(p)) return true;
+    }
+    return false;
+  }, [
+    filterEnabled,
+    initialFilterEnabled,
+    allowedPackages,
+    initialAllowed,
+    emergencyNumbers,
+    initialEmergency,
+  ]);
+
   const filteredApps = useMemo(() => {
-    if (!searchQuery.trim()) return apps;
-    const query = searchQuery.toLowerCase();
-    return apps.filter(
-      (app) =>
-        app.name.toLowerCase().includes(query) || app.packageName.toLowerCase().includes(query),
+    if (!searchQuery.trim()) return installedApps;
+    const q = searchQuery.toLowerCase();
+    return installedApps.filter(
+      (a) =>
+        a.appName.toLowerCase().includes(q) || a.packageName.toLowerCase().includes(q),
     );
-  }, [apps, searchQuery]);
+  }, [installedApps, searchQuery]);
 
-  // Group apps by category
-  const groupedApps = useMemo(() => {
-    const groups: Record<AppItem['category'], AppItem[]> = {
-      messaging: [],
-      social: [],
-      productivity: [],
-      entertainment: [],
-      other: [],
-    };
-
-    filteredApps.forEach((app) => {
-      groups[app.category].push(app);
+  const togglePackage = useCallback((packageName: string) => {
+    setAllowedPackages((prev) => {
+      const next = new Set(prev);
+      if (next.has(packageName)) next.delete(packageName);
+      else next.add(packageName);
+      return next;
     });
-
-    // Remove empty categories
-    return Object.entries(groups).filter(([_, items]) => items.length > 0) as [
-      AppItem['category'],
-      AppItem[],
-    ][];
-  }, [filteredApps]);
-
-  // Stats
-  const includedCount = apps.filter((app) => app.isIncluded).length;
-  const totalCount = apps.length;
-
-  const handleToggleApp = useCallback((appId: string) => {
-    setApps((prev) =>
-      prev.map((app) => (app.id === appId ? { ...app, isIncluded: !app.isIncluded } : app)),
-    );
-    setHasChanges(true);
   }, []);
 
-  const handleSelectAll = useCallback(() => {
-    setApps((prev) => prev.map((app) => ({ ...app, isIncluded: true })));
-    setHasChanges(true);
+  const addEmergency = useCallback(() => {
+    const digits = normalizeDigits(newPhone);
+    if (digits.length < 7) {
+      Alert.alert('Invalid number', 'Enter at least 7 digits for an emergency contact.');
+      return;
+    }
+    if (emergencyNumbers.includes(digits)) {
+      setNewPhone('');
+      return;
+    }
+    setEmergencyNumbers((prev) => [...prev, digits].sort());
+    setNewPhone('');
+  }, [newPhone, emergencyNumbers]);
+
+  const removeEmergency = useCallback((digits: string) => {
+    setEmergencyNumbers((prev) => prev.filter((d) => d !== digits));
   }, []);
 
-  const handleDeselectAll = useCallback(() => {
-    setApps((prev) => prev.map((app) => ({ ...app, isIncluded: false })));
-    setHasChanges(true);
+  const mergeEmergencyDigits = useCallback((newDigits: string[]) => {
+    setEmergencyNumbers((prev) => {
+      const next = new Set(prev);
+      for (const d of newDigits) {
+        if (d.length >= 7) next.add(d);
+      }
+      return [...next].sort();
+    });
   }, []);
 
-  const handleSelectCategory = useCallback((category: AppItem['category']) => {
-    setApps((prev) =>
-      prev.map((app) => (app.category === category ? { ...app, isIncluded: true } : app)),
-    );
-    setHasChanges(true);
+  const openContactPicker = useCallback(async () => {
+    if (Platform.OS !== 'android') return;
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow contacts access to add numbers from your address book.');
+      return;
+    }
+    const { data } = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+    });
+    const withPhone = data
+      .filter((c) => c.phoneNumbers && c.phoneNumbers.length > 0)
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+    if (withPhone.length === 0) {
+      Alert.alert('No contacts', 'No contacts with phone numbers were found.');
+      return;
+    }
+    setContactList(withPhone);
+    setContactSearch('');
+    setContactPickerVisible(true);
   }, []);
+
+  const onPickContact = useCallback(
+    (contact: Contacts.Contact) => {
+      const digitsList =
+        contact.phoneNumbers?.map((p) => normalizeDigits(p.number ?? '')).filter((d) => d.length >= 7) ??
+        [];
+      if (digitsList.length === 0) {
+        Alert.alert('No valid numbers', 'That contact has no phone numbers with at least 7 digits.');
+        return;
+      }
+      mergeEmergencyDigits(digitsList);
+      setContactPickerVisible(false);
+    },
+    [mergeEmergencyDigits],
+  );
+
+  const addBypassPreset = useCallback((packageNames: readonly string[]) => {
+    setAllowedPackages((prev) => {
+      const next = new Set(prev);
+      for (const p of packageNames) {
+        if (installedApps.some((a) => a.packageName === p)) {
+          next.add(p);
+        }
+      }
+      return next;
+    });
+  }, [installedApps]);
+
+  const filteredContacts = useMemo(
+    () =>
+      contactList.filter((c) =>
+        (c.name ?? '').toLowerCase().includes(contactSearch.toLowerCase()),
+      ),
+    [contactList, contactSearch],
+  );
+
+  const persist = useCallback(async () => {
+    if (Platform.OS !== 'android') return;
+    if (filterEnabled && allowedPackages.size === 0 && emergencyNumbers.length === 0) {
+      Alert.alert(
+        'Nothing configured',
+        'Add at least one app that bypasses Landline Mode, or an emergency number, or turn off notification permissions.',
+      );
+      return;
+    }
+    try {
+      setSaving(true);
+      NotificationApiManager.setNotificationFilterEnabled(filterEnabled);
+      NotificationApiManager.setAllowedNotificationPackages([...allowedPackages]);
+      NotificationApiManager.setEmergencyPhoneNumbers(emergencyNumbers);
+      setInitialFilterEnabled(filterEnabled);
+      setInitialAllowed(new Set(allowedPackages));
+      setInitialEmergency([...emergencyNumbers]);
+      Alert.alert(
+        'Saved',
+        filterEnabled
+          ? 'Only selected apps and matching emergency numbers can keep notifications during Landline Mode.'
+          : 'Notification permissions are off. Landline Mode can use full Do Not Disturb as before.',
+        [{ text: 'OK', onPress: () => router.back() }],
+      );
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not save settings.');
+    } finally {
+      setSaving(false);
+    }
+  }, [filterEnabled, allowedPackages, emergencyNumbers]);
 
   const handleBack = () => {
     if (hasChanges) {
-      Alert.alert(
-        'Unsaved Changes',
-        'You have unsaved changes. Do you want to save before leaving?',
-        [
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Save', onPress: handleSave },
-        ],
-      );
+      Alert.alert('Unsaved changes', 'Save before leaving?', [
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress: () => void persist() },
+      ]);
     } else {
       router.back();
     }
   };
 
-  const handleSave = () => {
-    // TODO: Persist selected apps to storage/state management
-    // Should save which apps are included in Landline Mode
-    // Format: { appId: boolean, appId: boolean, ... }
-    Alert.alert(
-      'Settings Saved',
-      `${includedCount} apps will have their notifications captured during Landline Mode.`,
-      [{ text: 'OK', onPress: () => router.back() }],
+  if (Platform.OS !== 'android') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <Text style={styles.unsupportedTitle}>Android only</Text>
+          <Text style={styles.unsupportedText}>
+            Notification permissions use Android notification access. They are not available on this
+            platform.
+          </Text>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backBtnText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
-  };
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={LandlineColors.dark.primary} />
+          <Text style={styles.loadingText}>Loading apps…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+        <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
+          <Text style={styles.headerBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>App Selection</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={[styles.saveButtonText, hasChanges && styles.saveButtonTextActive]}>
-            Save
+        <Text style={styles.headerTitle}>Notification permissions</Text>
+        <TouchableOpacity
+          onPress={() => void persist()}
+          style={styles.headerBtn}
+          disabled={saving || !hasChanges}
+        >
+          <Text
+            style={[
+              styles.headerBtnText,
+              (hasChanges && !saving) ? styles.headerBtnTextActive : styles.headerBtnTextMuted,
+            ]}
+          >
+            {saving ? '…' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Description */}
-        <View style={styles.descriptionSection}>
-          <Text style={styles.descriptionTitle}>Choose Apps for Landline Mode</Text>
-          <Text style={styles.descriptionText}>
-            Select which apps should have their notifications captured and logged when Landline Mode
-            is active. Excluded apps will still send notifications normally.
-          </Text>
-        </View>
+      <FlatList
+        data={filteredApps}
+        keyExtractor={(item) => item.packageName}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={
+          <>
+            <View style={styles.descriptionSection}>
+              <Text style={styles.descriptionTitle}>Landline Mode</Text>
+              <Text style={styles.descriptionText}>
+                When notification permissions are on and Landline Mode is active, only notifications
+                from apps you allow below (bypass), or from senders whose number appears in the
+                alert text (emergency contacts), stay in the shade. Other notifications are cleared
+                automatically.
+              </Text>
+            </View>
 
-        {/* Stats Bar */}
-        <View style={styles.statsBar}>
-          <View style={styles.statsLeft}>
-            <Text style={styles.statsNumber}>{includedCount}</Text>
-            <Text style={styles.statsLabel}>of {totalCount} apps included</Text>
-          </View>
-          <View style={styles.statsActions}>
-            <TouchableOpacity onPress={handleSelectAll} style={styles.statsButton}>
-              <Text style={styles.statsButtonText}>All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDeselectAll} style={styles.statsButton}>
-              <Text style={styles.statsButtonText}>None</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <MaterialIcons
-            name="search"
-            size={16}
-            color={LandlineColors.dark.textMuted}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search apps..."
-            placeholderTextColor={LandlineColors.dark.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* App List by Category */}
-        {groupedApps.map(([category, categoryApps]) => (
-          <View key={category} style={styles.categorySection}>
-            <View style={styles.categoryHeader}>
-              <View style={styles.categoryTitleRow}>
-                <MaterialIcons
-                  name={CATEGORY_ICONS[category]}
-                  size={18}
-                  color={LandlineColors.dark.textSecondary}
-                  style={styles.categoryIcon}
-                />
-                <Text style={styles.categoryTitle}>{CATEGORY_LABELS[category]}</Text>
-                <Text style={styles.categoryCount}>
-                  {categoryApps.filter((a) => a.isIncluded).length}/{categoryApps.length}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleLabelWrap}>
+                <Text style={styles.toggleTitle}>Use notification permissions</Text>
+                <Text style={styles.toggleSub}>
+                  Restrict alerts during Landline Mode (requires notification access)
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={() => handleSelectCategory(category)}
-                style={styles.selectCategoryButton}
-              >
-                <Text style={styles.selectCategoryText}>Select All</Text>
+              <Switch
+                value={filterEnabled}
+                onValueChange={setFilterEnabled}
+                trackColor={{
+                  false: LandlineColors.dark.border,
+                  true: LandlineColors.dark.primary,
+                }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <View style={styles.sectionHeaderRow}>
+              <MaterialIcons name="phone-in-talk" size={18} color={LandlineColors.dark.textSecondary} />
+              <Text style={styles.sectionHeader}>Emergency contacts</Text>
+            </View>
+            <Text style={styles.hint}>
+              Numbers are matched against digits in notification text (e.g. SMS). Add manually or
+              pick from contacts. Minimum 7 digits per entry.
+            </Text>
+
+            <TouchableOpacity style={styles.primaryOutlineButton} onPress={openContactPicker} activeOpacity={0.8}>
+              <MaterialIcons name="contact-phone" size={20} color={LandlineColors.dark.primary} />
+              <Text style={styles.primaryOutlineButtonText}>Add from contacts</Text>
+            </TouchableOpacity>
+
+            {emergencyNumbers.map((num) => (
+              <View key={num} style={styles.emergencyRow}>
+                <Text style={styles.emergencyDigits}>{num}</Text>
+                <TouchableOpacity onPress={() => removeEmergency(num)} hitSlop={12}>
+                  <MaterialIcons name="close" size={22} color={LandlineColors.dark.textMuted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <View style={styles.addRow}>
+              <TextInput
+                style={styles.addInput}
+                value={newPhone}
+                onChangeText={setNewPhone}
+                placeholder="Add number"
+                placeholderTextColor={LandlineColors.dark.textMuted}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+              />
+              <TouchableOpacity style={styles.addButton} onPress={addEmergency}>
+                <Text style={styles.addButtonText}>Add</Text>
               </TouchableOpacity>
             </View>
 
-            {categoryApps.map((app) => (
-              <View key={app.id} style={styles.appItem}>
-                <View style={styles.appIconContainer}>
-                  <Text style={styles.appIconText}>{app.name.charAt(0).toUpperCase()}</Text>
-                </View>
-                <View style={styles.appInfo}>
-                  <Text style={styles.appName}>{app.name}</Text>
-                  {app.notificationCount !== undefined && (
-                    <Text style={styles.appNotificationCount}>
-                      {app.notificationCount} notifications received
-                    </Text>
-                  )}
-                </View>
-                <Switch
-                  value={app.isIncluded}
-                  onValueChange={() => handleToggleApp(app.id)}
-                  trackColor={{
-                    false: LandlineColors.dark.border,
-                    true: LandlineColors.dark.primary,
-                  }}
-                  thumbColor={app.isIncluded ? '#fff' : LandlineColors.dark.textSecondary}
-                />
-              </View>
-            ))}
-          </View>
-        ))}
+            <View style={[styles.sectionHeaderRow, styles.appsHeader]}>
+              <MaterialIcons name="apps" size={18} color={LandlineColors.dark.textSecondary} />
+              <Text style={styles.sectionHeader}>Apps that bypass Landline Mode</Text>
+              <Text style={styles.appsCount}>{allowedPackages.size} selected</Text>
+            </View>
+            <Text style={styles.hint}>
+              Selected apps can still show notifications while Landline Mode is on. Use quick add for
+              common apps, then refine the list below.
+            </Text>
 
-        {/* Empty State */}
-        {filteredApps.length === 0 && (
-          <View style={styles.emptyState}>
-            <MaterialIcons
-              name="search-off"
-              size={48}
-              color={LandlineColors.dark.textMuted}
-              style={styles.emptyStateIcon}
+            <View style={styles.presetRow}>
+              <TouchableOpacity
+                style={styles.presetChip}
+                onPress={() => addBypassPreset(BYPASS_PRESET_MESSAGING)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.presetChipText}>+ Messaging</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.presetChip}
+                onPress={() => addBypassPreset(BYPASS_PRESET_CALLS)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.presetChipText}>+ Phone</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <MaterialIcons
+                name="search"
+                size={16}
+                color={LandlineColors.dark.textMuted}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search installed apps…"
+                placeholderTextColor={LandlineColors.dark.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          </>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.appItem}>
+            <View style={styles.appIconContainer}>
+              <Text style={styles.appIconText}>{item.appName.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.appInfo}>
+              <Text style={styles.appName} numberOfLines={1}>
+                {item.appName}
+              </Text>
+              <Text style={styles.appPackage} numberOfLines={1}>
+                {item.packageName}
+              </Text>
+            </View>
+            <Switch
+              value={allowedPackages.has(item.packageName)}
+              onValueChange={() => togglePackage(item.packageName)}
+              trackColor={{
+                false: LandlineColors.dark.border,
+                true: LandlineColors.dark.primary,
+              }}
+              thumbColor={allowedPackages.has(item.packageName) ? '#fff' : LandlineColors.dark.textSecondary}
             />
-            <Text style={styles.emptyStateTitle}>No apps found</Text>
-            <Text style={styles.emptyStateText}>Try a different search term</Text>
           </View>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No apps match your search.</Text>
+          </View>
+        }
+        contentContainerStyle={styles.listContent}
+      />
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>How it works</Text>
-          <Text style={styles.infoText}>
-            • <Text style={styles.infoBold}>Included apps</Text> will have their notifications
-            silently captured and logged when Landline Mode is ON{'\n'}•{' '}
-            <Text style={styles.infoBold}>Excluded apps</Text> will continue to show notifications
-            normally{'\n'}• You can review all captured notifications later in the Notifications tab
-            {'\n'}• Apps are detected automatically when they send notifications
-          </Text>
+      <Modal
+        visible={contactPickerVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setContactPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add emergency contact</Text>
+              <TouchableOpacity onPress={() => setContactPickerVisible(false)} activeOpacity={0.7}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalSearchWrap}>
+              <TextInput
+                style={styles.modalSearch}
+                placeholder="Search contacts…"
+                placeholderTextColor={LandlineColors.dark.textMuted}
+                value={contactSearch}
+                onChangeText={setContactSearch}
+                autoCorrect={false}
+              />
+            </View>
+            <FlatList
+              data={filteredContacts}
+              keyExtractor={(item, index) => `${item.name ?? 'c'}-${index}`}
+              keyboardShouldPersistTaps="handled"
+              style={styles.modalList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => onPickContact(item)}
+                  activeOpacity={0.7}
+                  style={styles.modalRow}
+                >
+                  <View style={styles.modalAvatar}>
+                    <Text style={styles.modalAvatarText}>
+                      {(item.name ?? '?')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.modalRowText}>
+                    <Text style={styles.modalName} numberOfLines={1}>
+                      {item.name ?? 'Unknown'}
+                    </Text>
+                    <Text style={styles.modalPhone} numberOfLines={1}>
+                      {item.phoneNumbers?.[0]?.number ?? ''}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.modalEmpty}>
+                  <Text style={styles.modalEmptyText}>No contacts found</Text>
+                </View>
+              }
+            />
+          </View>
         </View>
-
-        {/* Bottom Padding */}
-        <View style={{ height: 40 }} />
-      </ScrollView>
-
-      {/* Bottom Action */}
-      {hasChanges && (
-        <View style={styles.bottomAction}>
-          <TouchableOpacity style={styles.saveFullButton} onPress={handleSave}>
-            <Text style={styles.saveFullButtonText}>
-              Save Changes ({includedCount} apps included)
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -418,53 +531,79 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: LandlineColors.dark.background,
   },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: LandlineColors.dark.textSecondary,
+  },
+  unsupportedTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: LandlineColors.dark.text,
+    marginBottom: 8,
+  },
+  unsupportedText: {
+    fontSize: 14,
+    color: LandlineColors.dark.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  backBtn: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  backBtnText: {
+    color: LandlineColors.dark.primary,
+    fontWeight: '600',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: LandlineColors.dark.divider,
+  },
+  headerBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    minWidth: 72,
+  },
+  headerBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: LandlineColors.dark.primary,
+  },
+  headerBtnTextActive: {
+    color: LandlineColors.dark.primary,
+  },
+  headerBtnTextMuted: {
+    color: LandlineColors.dark.textMuted,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: LandlineColors.dark.text,
+  },
+  listContent: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  descriptionSection: {
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: LandlineColors.dark.divider,
   },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: LandlineColors.dark.primary,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: LandlineColors.dark.text,
-  },
-  saveButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    color: LandlineColors.dark.textMuted,
-    fontWeight: '600',
-  },
-  saveButtonTextActive: {
-    color: LandlineColors.dark.primary,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  descriptionSection: {
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: LandlineColors.dark.divider,
-  },
   descriptionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: LandlineColors.dark.text,
     marginBottom: 8,
   },
@@ -473,202 +612,287 @@ const styles = StyleSheet.create({
     color: LandlineColors.dark.textSecondary,
     lineHeight: 20,
   },
-  statsBar: {
+  toggleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: LandlineColors.dark.divider,
   },
-  statsLeft: {
+  toggleLabelWrap: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: LandlineColors.dark.text,
+  },
+  toggleSub: {
+    fontSize: 12,
+    color: LandlineColors.dark.textMuted,
+    marginTop: 4,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  statsNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: LandlineColors.dark.primary,
-    marginRight: 8,
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: LandlineColors.dark.textSecondary,
-  },
-  statsActions: {
-    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 8,
     gap: 8,
   },
-  statsButton: {
-    backgroundColor: LandlineColors.dark.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  appsHeader: {
+    marginTop: 24,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: LandlineColors.dark.text,
+    flex: 1,
+  },
+  appsCount: {
+    fontSize: 12,
+    color: LandlineColors.dark.textMuted,
+  },
+  hint: {
+    fontSize: 13,
+    color: LandlineColors.dark.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  emergencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: LandlineColors.dark.card,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: LandlineColors.dark.border,
   },
-  statsButtonText: {
-    fontSize: 14,
+  emergencyDigits: {
+    fontSize: 16,
     color: LandlineColors.dark.text,
-    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  addInput: {
+    flex: 1,
+    backgroundColor: LandlineColors.dark.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: LandlineColors.dark.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: LandlineColors.dark.text,
+  },
+  addButton: {
+    backgroundColor: LandlineColors.dark.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: LandlineColors.dark.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    marginVertical: 16,
+    paddingHorizontal: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: LandlineColors.dark.border,
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 16,
     color: LandlineColors.dark.text,
-  },
-  clearButton: {
-    padding: 8,
-  },
-  clearButtonText: {
-    fontSize: 16,
-    color: LandlineColors.dark.textMuted,
-  },
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  categoryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryIcon: {
-    marginRight: 8,
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: LandlineColors.dark.text,
-    marginRight: 8,
-  },
-  categoryCount: {
-    fontSize: 12,
-    color: LandlineColors.dark.textMuted,
-    backgroundColor: LandlineColors.dark.surface,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  selectCategoryButton: {
-    padding: 8,
-  },
-  selectCategoryText: {
-    fontSize: 12,
-    color: LandlineColors.dark.primary,
-    fontWeight: '500',
   },
   appItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: LandlineColors.dark.card,
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: LandlineColors.dark.border,
   },
   appIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     backgroundColor: LandlineColors.dark.primary + '30',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   appIconText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: LandlineColors.dark.primary,
   },
   appInfo: {
     flex: 1,
+    minWidth: 0,
   },
   appName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: LandlineColors.dark.text,
-    marginBottom: 2,
-  },
-  appNotificationCount: {
-    fontSize: 12,
-    color: LandlineColors.dark.textMuted,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateIcon: {
-    marginBottom: 16,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
     color: LandlineColors.dark.text,
-    marginBottom: 8,
+  },
+  appPackage: {
+    fontSize: 11,
+    color: LandlineColors.dark.textMuted,
+    marginTop: 2,
+  },
+  emptyState: {
+    paddingVertical: 24,
+    alignItems: 'center',
   },
   emptyStateText: {
-    fontSize: 14,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.textMuted,
   },
-  infoSection: {
-    backgroundColor: LandlineColors.dark.card,
+  primaryOutlineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: LandlineColors.dark.surface,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: LandlineColors.dark.primary,
+  },
+  primaryOutlineButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: LandlineColors.dark.primary,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 12,
+  },
+  presetChip: {
+    backgroundColor: LandlineColors.dark.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: LandlineColors.dark.border,
   },
-  infoTitle: {
+  presetChipText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: LandlineColors.dark.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: LandlineColors.dark.surface,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 16,
+    maxHeight: '75%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: LandlineColors.dark.text,
+  },
+  modalCancel: {
+    fontSize: 15,
+    color: LandlineColors.dark.primary,
+    fontWeight: '600',
+  },
+  modalSearchWrap: {
+    paddingHorizontal: 16,
     marginBottom: 8,
   },
-  infoText: {
-    fontSize: 13,
-    color: LandlineColors.dark.textSecondary,
-    lineHeight: 20,
+  modalSearch: {
+    backgroundColor: LandlineColors.dark.card,
+    borderWidth: 1,
+    borderColor: LandlineColors.dark.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: LandlineColors.dark.text,
+    fontSize: 14,
   },
-  infoBold: {
-    fontWeight: '600',
-    color: LandlineColors.dark.textSecondary,
+  modalList: {
+    maxHeight: 400,
   },
-  bottomAction: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: LandlineColors.dark.divider,
-    backgroundColor: LandlineColors.dark.background,
+  modalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: LandlineColors.dark.divider,
   },
-  saveFullButton: {
+  modalAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: LandlineColors.dark.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  modalAvatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  modalRowText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  modalName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: LandlineColors.dark.text,
+  },
+  modalPhone: {
+    fontSize: 12,
+    color: LandlineColors.dark.textSecondary,
+    marginTop: 2,
+  },
+  modalEmpty: {
+    padding: 24,
     alignItems: 'center',
   },
-  saveFullButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
+  modalEmptyText: {
+    color: LandlineColors.dark.textMuted,
+    fontSize: 14,
   },
 });
