@@ -79,7 +79,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
+    // React Compiler can leave Fast Refresh stuck on "Reloading..." in dev; re-enable when stable.
+    reactCompiler: false,
   },
 
   extra: {

@@ -37,7 +37,7 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
 
    ```bash
    pnpm prebuild
-   pnpm android # we prioritize android
+   pnpm android  # we prioritize android
    ```
 
 ## Android SDK & Emulator Setup
@@ -197,7 +197,7 @@ If you encounter Gradle errors related to missing dependencies or dependency res
 
 ```bash
 rm -r android
-expo prebuild --clean
+pnpm prebuild
 ```
 
 This regenerates the Android project with the correct dependency linking.

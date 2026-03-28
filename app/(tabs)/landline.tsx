@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,7 +12,46 @@ import {
 } from 'react-native';
 
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import NotificationApiManager from '@/modules/notification-api-manager';
+import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type LoggedNotification = {
+  timestamp?: number;
+  packageName?: string;
+};
+
+type AppAttentionRow = AppUsageSummary & { notificationCount: number };
+
+function getWindowMs(window: UsageWindow): number {
+  switch (window) {
+    case '24h':
+      return 24 * 60 * 60 * 1000;
+    case '7d':
+      return 7 * 24 * 60 * 60 * 1000;
+    case '30d':
+      return 30 * 24 * 60 * 60 * 1000;
+    default:
+      return 24 * 60 * 60 * 1000;
+  }
+}
+
+function countLoggedNotificationsByPackage(
+  logs: LoggedNotification[],
+  windowMs: number,
+): Map<string, number> {
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const counts = new Map<string, number>();
+  for (const n of logs) {
+    const ts = typeof n.timestamp === 'number' ? n.timestamp : 0;
+    if (ts < cutoff || ts > now) continue;
+    const pkg = n.packageName;
+    if (!pkg) continue;
+    counts.set(pkg, (counts.get(pkg) ?? 0) + 1);
+  }
+  return counts;
+}
 
 export default function LandlineScreen() {
   const insets = useSafeAreaInsets();
@@ -27,11 +67,56 @@ export default function LandlineScreen() {
   } = useLandlineStore();
 
   const [initialLoading, setInitialLoading] = useState(true);
+  const [hasUsagePermission, setHasUsagePermission] = useState(false);
+  const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
+  const [topApps, setTopApps] = useState<AppAttentionRow[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
+
+  const loadUsageData = useCallback(async (window: UsageWindow) => {
+    if (Platform.OS !== 'android') return;
+
+    const usageGranted = UsageStatsManager.hasUsageStatsPermission();
+    setHasUsagePermission(usageGranted);
+
+    if (!usageGranted) {
+      setTopApps([]);
+      return;
+    }
+
+    try {
+      setUsageLoading(true);
+      const usage = await UsageStatsManager.getTopUsageApps(window, 5);
+      const windowMs = getWindowMs(window);
+      let logs: LoggedNotification[] = [];
+      try {
+        logs = (await NotificationApiManager.getLoggedNotifications()) as LoggedNotification[];
+      } catch {
+        logs = [];
+      }
+      const notifCounts = countLoggedNotificationsByPackage(logs, windowMs);
+      const merged: AppAttentionRow[] = usage.map((app) => ({
+        ...app,
+        notificationCount: notifCounts.get(app.packageName) ?? 0,
+      }));
+      setTopApps(merged);
+    } catch (error) {
+      console.error('Failed to load app usage data', error);
+      Alert.alert('Error', 'Failed to load app attention data.');
+    } finally {
+      setUsageLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     checkStatus().finally(() => setInitialLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && !initialLoading) {
+      loadUsageData(usageWindow);
+    }
+  }, [initialLoading, loadUsageData, usageWindow]);
 
   const handleRequestPermission = useCallback(async () => {
     try {
@@ -77,6 +162,42 @@ export default function LandlineScreen() {
     }
   }, [hasPermission, isActive, activateLandlineMode, deactivateLandlineMode]);
 
+  const handleRequestUsagePermission = useCallback(async () => {
+    await UsageStatsManager.openUsageStatsSettings();
+    Alert.alert(
+      'Grant Usage Access',
+      `To enable App Attention data:\n\n1) Open "Usage access" or "Special app access"\n2) Select "Landline"\n3) Turn on "Permit usage access"\n\nCommon Android paths:\n• Settings -> Apps -> Special app access -> Usage access\n• Settings -> Security & privacy -> Privacy -> Usage access\n\nAfter enabling, return here and tap Refresh.`,
+    );
+  }, []);
+
+  const handleChangeUsageWindow = useCallback(
+    async (window: UsageWindow) => {
+      setUsageWindow(window);
+      await loadUsageData(window);
+    },
+    [loadUsageData],
+  );
+
+  const handleRefreshUsageData = useCallback(async () => {
+    await loadUsageData(usageWindow);
+  }, [loadUsageData, usageWindow]);
+
+  const formatDuration = useCallback((durationMs: number) => {
+    const totalMinutes = Math.max(1, Math.round(durationMs / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours === 0) {
+      return `${minutes}m`;
+    }
+
+    if (minutes === 0) {
+      return `${hours}h`;
+    }
+
+    return `${hours}h ${minutes}m`;
+  }, []);
+
   if (Platform.OS !== 'android') {
     return (
       <View style={styles.centerContainer}>
@@ -96,7 +217,11 @@ export default function LandlineScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 10 }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Landline Mode</Text>
@@ -180,6 +305,104 @@ export default function LandlineScreen() {
         </View>
       )}
 
+      <View style={styles.card}>
+        <Text style={styles.sectionLabel}>App Attention</Text>
+        <Text style={styles.cardBody}>
+          Top 5 apps by screen time (Android usage stats) for the selected period. Notification
+          counts use Landline&apos;s log for the same period — only notifications captured while
+          Landline Mode was on are included.
+        </Text>
+
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Usage Access</Text>
+          <View
+            style={[
+              styles.statusPill,
+              hasUsagePermission ? styles.statusPillActive : styles.statusPillInactive,
+            ]}
+          >
+            <Text style={styles.statusPillText}>
+              {hasUsagePermission ? 'Granted' : 'Not Granted'}
+            </Text>
+          </View>
+        </View>
+
+        {!hasUsagePermission && (
+          <>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleRequestUsagePermission}>
+              <Text style={styles.primaryButtonText}>Grant Usage Access</Text>
+            </TouchableOpacity>
+            <View style={styles.usageHelpBox}>
+              <Text style={styles.usageHelpTitle}>How to enable</Text>
+              <Text style={styles.usageHelpText}>
+                1) Open Usage access / Special app access{'\n'}
+                2) Tap Landline{'\n'}
+                3) Turn on Permit usage access
+              </Text>
+              <Text style={styles.usageHelpText}>
+                Common paths:{'\n'}- Settings {'->'} Apps {'->'} Special app access {'->'} Usage
+                access{'\n'}- Settings {'->'} Security & privacy {'->'} Privacy {'->'} Usage access
+              </Text>
+            </View>
+          </>
+        )}
+
+        {hasUsagePermission && (
+          <>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[styles.toggleButton, usageWindow === '24h' && styles.toggleButtonActive]}
+                onPress={() => handleChangeUsageWindow('24h')}
+              >
+                <Text style={[styles.toggleButtonText, usageWindow === '24h' && styles.toggleButtonTextActive]}>24h</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, usageWindow === '7d' && styles.toggleButtonActive]}
+                onPress={() => handleChangeUsageWindow('7d')}
+              >
+                <Text style={[styles.toggleButtonText, usageWindow === '7d' && styles.toggleButtonTextActive]}>7d</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, usageWindow === '30d' && styles.toggleButtonActive]}
+                onPress={() => handleChangeUsageWindow('30d')}
+              >
+                <Text style={[styles.toggleButtonText, usageWindow === '30d' && styles.toggleButtonTextActive]}>30d</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.refreshDataButton} onPress={handleRefreshUsageData}>
+                <Text style={styles.refreshDataButtonText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
+
+            {usageLoading ? (
+              <Text style={styles.cardBody}>Loading app attention data...</Text>
+            ) : topApps.length === 0 ? (
+              <Text style={styles.cardBody}>
+                No usage data found for this range yet. Keep using your apps and try Refresh again.
+              </Text>
+            ) : (
+              <View style={styles.usageList}>
+                {topApps.map((app, index) => (
+                  <View key={app.packageName} style={styles.usageRowItem}>
+                    <Text style={styles.usageRank}>{index + 1}.</Text>
+                    <View style={styles.usageAppInfo}>
+                      <Text style={styles.usageAppName}>{app.appName}</Text>
+                      <Text style={styles.usagePackageName}>{app.packageName}</Text>
+                    </View>
+                    <View style={styles.usageMetaRight}>
+                      <Text style={styles.usageDuration}>{formatDuration(app.totalTimeMs)}</Text>
+                      <Text style={styles.usageNotifCount}>
+                        {app.notificationCount}{' '}
+                        {app.notificationCount === 1 ? 'notif' : 'notifs'} (logged)
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
       {/* Hint to Notifications tab */}
       <View style={styles.footerNote}>
         <Text style={styles.footerNoteText}>
@@ -187,15 +410,18 @@ export default function LandlineScreen() {
           tab any time to review what you missed.
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
     backgroundColor: '#3d3325',
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   centerContainer: {
     flex: 1,
@@ -312,5 +538,110 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#F9F2DF',
     textAlign: 'center',
+  },
+  toggleRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(244,228,193,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(244,228,193,0.2)',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#D4AF7A',
+  },
+  toggleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F9F2DF',
+  },
+  toggleButtonTextActive: {
+    color: '#3d3325',
+  },
+  refreshDataButton: {
+    marginLeft: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D4AF7A',
+  },
+  refreshDataButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F4E4C1',
+  },
+  usageList: {
+    marginTop: 12,
+    gap: 8,
+  },
+  usageRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  usageRank: {
+    width: 20,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F4E4C1',
+  },
+  usageAppInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  usageAppName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F9F2DF',
+  },
+  usagePackageName: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#D4AF7A',
+  },
+  usageDuration: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F4E4C1',
+  },
+  usageMetaRight: {
+    alignItems: 'flex-end',
+    maxWidth: '42%',
+  },
+  usageNotifCount: {
+    fontSize: 11,
+    color: '#D4AF7A',
+    marginTop: 2,
+    textAlign: 'right',
+  },
+  usageHelpBox: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(244,228,193,0.2)',
+  },
+  usageHelpTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F4E4C1',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  usageHelpText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#F9F2DF',
+    marginBottom: 6,
   },
 });

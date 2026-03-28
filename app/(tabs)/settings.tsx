@@ -16,13 +16,15 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { WebBrowserPresentationStyle, openBrowserAsync } from 'expo-web-browser';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { clearAcceptance } from '@/utils/acceptance-storage';
-import { auth, onAuthStateChanged } from '@/utils/firebase';
+import { deleteAccountWithEmail } from '@/utils/firebase/auth';
+import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
+import { updateUserDisplayName } from '@/utils/firebase/user-service';
 import {
   type LoggedNotificationRow,
   type NotificationLogDateRangePreset,
@@ -36,10 +38,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, refreshUser, resetPassword } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const [storageInfo, setStorageInfo] = useState<{
     totalKeys: number;
     landlineKeys: number;
@@ -197,6 +203,45 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleSaveDisplayName() {
+    if (!user) return;
+    setSavingDisplayName(true);
+    try {
+      await updateUserDisplayName(user, displayNameInput);
+      await refreshUser();
+      Alert.alert('Saved', 'Your display name was updated.');
+    } catch (error) {
+      console.error('Save display name:', error);
+      Alert.alert(
+        'Error',
+        'Could not save your display name. Check your connection and try again.',
+      );
+    } finally {
+      setSavingDisplayName(false);
+    }
+  }
+
+  const isEmailUser = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
+
+  async function handleChangePassword() {
+    if (!user?.email) return;
+    try {
+      await resetPassword(user.email);
+      Alert.alert(
+        'Reset email sent',
+        `We've sent a password reset link to ${user.email}. Check your inbox.`,
+        [{ text: 'OK' }],
+      );
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/too-many-requests') {
+        Alert.alert('Too many attempts', 'Please try again later.');
+      } else {
+        Alert.alert('Error', error?.message || 'Could not send reset email. Please try again.');
+      }
+    }
+  }
+
   async function handleSignOut() {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -211,43 +256,76 @@ export default function SettingsScreen() {
     ]);
   }
 
-  async function handleDeleteAccount() {
-    let alreadyHandled = false;
+  function openDeleteAccountModal() {
+    Alert.alert(
+      'Delete Account',
+      'This is permanent. Your account cannot be recovered once deleted. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, delete it',
+          style: 'destructive',
+          onPress: () => {
+            setDeleteAccountModalVisible(true);
+            setConfirmationText('');
+            setDeletePassword('');
+          },
+        },
+      ],
+    );
+  }
 
-    async function handleLogout() {
-      if (alreadyHandled) return;
-      alreadyHandled = true;
-      unsubscribe();
-      await signOut().catch(() => {});
-      router.replace('/onboarding');
+  function closeDeleteAccountModal() {
+    setDeleteAccountModalVisible(false);
+    setConfirmationText('');
+    setDeletePassword('');
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+
+    const providers = user.providerData?.map((p) => p.providerId) ?? [];
+    const isEmailUser = providers.includes('password');
+    const isGoogleUser = providers.includes('google.com');
+
+    if (isEmailUser) {
+      if (confirmationText !== 'DELETE') {
+        Alert.alert('Incorrect Confirmation', 'Please type "DELETE" to confirm.');
+        return;
+      }
+      if (!deletePassword) {
+        Alert.alert('Password Required', 'Please enter your password to confirm deletion.');
+        return;
+      }
     }
 
-    // Primary signal: Firebase pushes auth state to null when the account is deleted.
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser === null && !alreadyHandled) {
-        handleLogout();
+    setIsDeleting(true);
+    try {
+      if (isEmailUser) {
+        await deleteAccountWithEmail(user, deletePassword);
+      } else if (isGoogleUser) {
+        await deleteAccountWithGoogle(user);
+      } else {
+        Alert.alert('Unsupported', 'Cannot delete this account type from the app.');
+        setIsDeleting(false);
+        return;
       }
-    });
 
-    await openBrowserAsync(
-      'https://landline-application.github.io/LandlineApplication/delete-account/',
-      { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC },
-    );
-
-    // Browser closed — if Firebase hasn't fired yet, force a token refresh to
-    // check whether the account still exists on the server.
-    if (!alreadyHandled) {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          await currentUser.getIdToken(true);
-        }
-        // Token refreshed fine — user did not delete their account, cancel.
-        unsubscribe();
-      } catch {
-        // Token refresh failed — account was deleted. Sign out.
-        await handleLogout();
+      // Account deleted — sign out locally and navigate away.
+      await signOut().catch(() => {});
+      closeDeleteAccountModal();
+      router.replace('/onboarding');
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        Alert.alert('Wrong Password', 'The password you entered is incorrect.');
+      } else if (code === 'auth/too-many-requests') {
+        Alert.alert('Too Many Attempts', 'Too many failed attempts. Please try again later.');
+      } else {
+        Alert.alert('Delete Failed', error?.message || 'An unexpected error occurred.');
       }
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -281,19 +359,93 @@ export default function SettingsScreen() {
 
         {isAuthenticated ? (
           <>
-            <View style={styles.accountCard}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>
-                  {(user?.email || user?.phoneNumber || '?')[0].toUpperCase()}
-                </Text>
+            <View style={styles.accountProfileCard}>
+              <View style={styles.accountHeaderRow}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>
+                    {(user?.displayName?.trim()?.[0] ||
+                      user?.email ||
+                      user?.phoneNumber ||
+                      '?')[0].toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountLabel}>Signed in as</Text>
+                  {user?.displayName ? (
+                    <Text style={styles.accountDisplayName} numberOfLines={1}>
+                      {user.displayName}
+                    </Text>
+                  ) : (
+                    <Text style={styles.accountDisplayNameMuted} numberOfLines={1}>
+                      Add a display name below
+                    </Text>
+                  )}
+                  <Text style={styles.accountEmail} numberOfLines={1}>
+                    {user?.email || user?.phoneNumber || 'Unknown'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.accountInfo}>
-                <Text style={styles.accountLabel}>Signed in as</Text>
-                <Text style={styles.accountEmail} numberOfLines={1}>
-                  {user?.email || user?.phoneNumber || 'Unknown'}
+
+              <View style={styles.profileDivider} />
+
+              <View style={styles.profileEditBlock}>
+                <View style={styles.profileEditTitleRow}>
+                  <MaterialIcons name="edit" size={20} color={COLORS.textPrimary} />
+                  <Text style={styles.profileEditTitle}>Display name</Text>
+                </View>
+                <Text style={styles.profilePrefsHint}>
+                  This is how you appear in Landline. It stays with your account when you sign in on
+                  another device.
                 </Text>
+                <TextInput
+                  style={styles.profileTextInput}
+                  value={displayNameInput}
+                  onChangeText={setDisplayNameInput}
+                  placeholder="e.g. Alex M."
+                  placeholderTextColor={COLORS.placeholder}
+                  editable={!savingDisplayName}
+                  maxLength={80}
+                  autoCapitalize="words"
+                  autoCorrect
+                />
+                <Text style={styles.profileCharCount}>{displayNameInput.length} / 80</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.profileSaveButton,
+                    (savingDisplayName || !displayNameInput.trim()) &&
+                      styles.profileSaveButtonDisabled,
+                  ]}
+                  onPress={handleSaveDisplayName}
+                  disabled={savingDisplayName || !displayNameInput.trim()}
+                  activeOpacity={0.85}
+                >
+                  <MaterialIcons
+                    name="check"
+                    size={20}
+                    color="#fff"
+                    style={styles.profileSaveIcon}
+                  />
+                  <Text style={styles.profileSaveButtonText}>
+                    {savingDisplayName ? 'Saving…' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
+
+            {user?.email && !user.emailVerified && (
+              <View style={styles.verifyBanner}>
+                <MaterialIcons name="info-outline" size={14} color="#996600" />
+                <Text style={styles.verifyBannerText}>
+                  Please verify your email. Check your inbox for a verification link.
+                </Text>
+              </View>
+            )}
+
+            {isEmailUser && (
+              <TouchableOpacity style={styles.outlineButton} onPress={handleChangePassword}>
+                <Text style={styles.outlineButtonText}>Change Password</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
               <Text style={styles.outlineButtonText}>Sign Out</Text>
@@ -301,7 +453,7 @@ export default function SettingsScreen() {
 
             <TouchableOpacity
               style={[styles.actionButton, styles.dangerButton]}
-              onPress={handleDeleteAccount}
+              onPress={openDeleteAccountModal}
             >
               <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Delete Account</Text>
               <Text style={styles.actionButtonSubtext}>Permanently remove your account</Text>
@@ -377,10 +529,10 @@ export default function SettingsScreen() {
         >
           <View style={styles.actionButtonRow}>
             <MaterialIcons name="apps" size={18} color="#fff" style={styles.actionButtonIcon} />
-            <Text style={styles.actionButtonText}>App Selection</Text>
+            <Text style={styles.actionButtonText}>Notification permissions</Text>
           </View>
           <Text style={styles.actionButtonSubtext}>
-            Choose which apps to include in Landline Mode
+            Choose which apps bypass Landline Mode and add emergency contacts (Android)
           </Text>
         </TouchableOpacity>
       </View>
@@ -632,7 +784,81 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Account Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteAccountModalVisible}
+        onRequestClose={closeDeleteAccountModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+
+            <Text style={styles.modalText}>
+              This will permanently delete your account. This action cannot be undone.
+            </Text>
+
+            {user?.providerData?.map((p) => p.providerId).includes('password') ? (
+              <>
+                <Text style={styles.modalLabel}>
+                  Type <Text style={styles.modalHighlight}>DELETE</Text> to confirm:
+                </Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={confirmationText}
+                  onChangeText={setConfirmationText}
+                  placeholder="Type DELETE here"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  editable={!isDeleting}
+                />
+                <Text style={styles.modalLabel}>Enter your password:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  placeholder="Password"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isDeleting}
+                />
+              </>
+            ) : (
+              <Text style={[styles.modalText, { marginTop: 8 }]}>
+                You will be asked to sign in with Google to confirm.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={closeDeleteAccountModal}
+                disabled={isDeleting}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonDelete,
+                  isDeleting && styles.modalButtonDisabled,
+                ]}
+                onPress={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonDeleteText]}>
+                  {isDeleting ? 'Deleting...' : 'Delete Account'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Data Confirmation Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -767,52 +993,164 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     color: '#fff',
   },
-  // Account card (authenticated)
-  accountCard: {
+  // Unified account + profile (authenticated)
+  accountProfileCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  accountHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
   },
   avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#007AFF',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.activeBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    borderWidth: 2,
+    borderColor: COLORS.cardBorder,
   },
   avatarInitial: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#F4E4C1',
+    fontSize: 22,
     fontWeight: '700',
   },
   accountInfo: {
     flex: 1,
+    minWidth: 0,
   },
   accountLabel: {
     fontSize: 12,
-    color: '#888',
-    marginBottom: 2,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   accountEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  verifyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#f5d87e',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  verifyBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#996600',
+    lineHeight: 17,
+  },
+  accountDisplayName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  accountDisplayNameMuted: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
+    fontStyle: 'italic',
+    color: COLORS.textSecondary,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: COLORS.cardBorder,
+    marginVertical: 18,
+    marginHorizontal: 2,
+  },
+  profileEditBlock: {
+    paddingTop: 2,
+  },
+  profileEditTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  profileEditTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  profilePrefsHint: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    lineHeight: 19,
+  },
+  profileTextInput: {
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    backgroundColor: COLORS.inputBg,
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  profileCharCount: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    alignSelf: 'flex-end',
+    marginBottom: 12,
+  },
+  profileSaveButton: {
+    backgroundColor: COLORS.activeBorder,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  profileSaveButtonDisabled: {
+    opacity: 0.55,
+  },
+  profileSaveIcon: {
+    marginTop: 1,
+  },
+  profileSaveButtonText: {
+    color: '#F4E4C1',
+    fontSize: 16,
+    fontWeight: '700',
   },
   outlineButton: {
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: COLORS.activeBorder,
     borderRadius: 12,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: COLORS.inputBg,
   },
   outlineButtonText: {
-    color: '#007AFF',
+    color: COLORS.textPrimary,
     fontSize: 15,
     fontWeight: '600',
   },

@@ -5,11 +5,12 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
     "prebuild": "expo prebuild --clean --platform android",
+    "clean": "rm -rf android .expo .gradle node_modules/.cache && echo 'Cleaned android, .expo, .gradle, and cache directories'",
     "lint": "expo lint",
-    "format": "prettier --write ."
+    "lint:fix": "expo lint --fix",
+    "format": "prettier --write .",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

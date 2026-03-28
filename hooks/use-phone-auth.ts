@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 
 import { router } from 'expo-router';
 
-import { auth, setPhoneConfirmation, signInWithPhoneNumber } from '@/utils/firebase';
+import { auth, setPhoneConfirmation, signInWithPhoneNumber } from '@/utils/firebase/auth';
 import { getCountryCodeFromNumber, validatePhoneNumber } from '@/utils/phone-number';
 
 interface UsePhoneAuthProps {

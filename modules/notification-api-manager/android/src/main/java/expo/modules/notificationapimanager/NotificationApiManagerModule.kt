@@ -15,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.net.URL
 
 class NotificationApiManagerModule : Module() {
     override fun definition() = ModuleDefinition {
@@ -24,6 +25,17 @@ class NotificationApiManagerModule : Module() {
         // Quick smoke test
         Function("hello") {
             "Hello from NotificationApiManager!"
+        }
+
+        // Same module name as iOS — registers the native view for requireNativeView('NotificationApiManager').
+        View(NotificationApiManagerView::class) {
+            Events("onLoad")
+
+            Prop("url") { view: NotificationApiManagerView, url: URL? ->
+                if (url != null) {
+                    view.webView.loadUrl(url.toString())
+                }
+            }
         }
 
         // Android 13+ runtime notification permission (older versions don't require it)
@@ -141,6 +153,61 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.getBoolean("is_landline_mode_active", false)
+        }
+
+        // --- Notification whitelist (Landline Mode): allowed apps + emergency phone digits ---
+
+        Function("isNotificationFilterEnabled") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.getBoolean("notification_filter_enabled", false)
+        }
+
+        Function("setNotificationFilterEnabled") { enabled: Boolean ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("notification_filter_enabled", enabled).apply()
+            true
+        }
+
+        Function("getAllowedNotificationPackages") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
+            set.toList().sorted()
+        }
+
+        Function("setAllowedNotificationPackages") { packageNames: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("allowed_notification_packages", packageNames.toSet()).apply()
+            true
+        }
+
+        Function("getEmergencyPhoneNumbers") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
+            set.toList().sorted()
+        }
+
+        Function("setEmergencyPhoneNumbers") { phoneNumbers: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val normalized = phoneNumbers
+                .map { digits -> digits.filter { it.isDigit() } }
+                .filter { it.length >= 7 }
+                .toSet()
+            prefs.edit().putStringSet("emergency_phone_digits", normalized).apply()
+            true
+        }
+
+        Function("isNotificationFilterConfigured") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val packages = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
+            val emergency = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
+            packages.isNotEmpty() || emergency.isNotEmpty()
         }
 
         /**
@@ -322,6 +389,90 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("auto_reply_prefs", Context.MODE_PRIVATE)
             prefs.edit().putString("reply_history", "[]").apply()
+            true
+        }
+
+        // ============================================================
+        // EMERGENCY CONTACTS (JSON array; supports multiple)
+        // ============================================================
+
+        Function("setEmergencyContactsJson") { json: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("emergency_contacts_json", json)
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
+                .apply()
+            true
+        }
+
+        Function("getEmergencyContactsJson") {
+            val ctx = appContext.reactContext ?: return@Function "[]"
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("emergency_contacts_json", null)
+            if (!json.isNullOrBlank()) return@Function json
+            val name = prefs.getString("emergency_contact_name", null) ?: ""
+            val phone = prefs.getString("emergency_contact_phone", null)
+            if (!phone.isNullOrEmpty()) {
+                val arr = org.json.JSONArray()
+                val o = org.json.JSONObject()
+                o.put("name", name)
+                o.put("phone", phone)
+                arr.put(o)
+                return@Function arr.toString()
+            }
+            "[]"
+        }
+
+        /** Legacy: replaces list with a single contact */
+        Function("setEmergencyContact") { name: String, phone: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val arr = org.json.JSONArray()
+            val o = org.json.JSONObject()
+            o.put("name", name)
+            o.put("phone", phone)
+            arr.put(o)
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("emergency_contacts_json", arr.toString())
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
+                .apply()
+            true
+        }
+
+        /** Legacy: first contact if any */
+        Function("getEmergencyContact") {
+            val ctx = appContext.reactContext ?: return@Function mapOf<String, String?>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("emergency_contacts_json", null)
+            if (!json.isNullOrBlank()) {
+                try {
+                    val arr = org.json.JSONArray(json)
+                    if (arr.length() > 0) {
+                        val o = arr.getJSONObject(0)
+                        return@Function mapOf(
+                            "name" to if (o.has("name")) o.getString("name") else null,
+                            "phone" to if (o.has("phone")) o.getString("phone") else null
+                        )
+                    }
+                } catch (_: Exception) { }
+            }
+            mapOf(
+                "name" to prefs.getString("emergency_contact_name", null),
+                "phone" to prefs.getString("emergency_contact_phone", null)
+            )
+        }
+
+        Function("clearEmergencyContact") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("emergency_contacts_json", "[]")
+                .remove("emergency_contact_name")
+                .remove("emergency_contact_phone")
+                .apply()
             true
         }
 
