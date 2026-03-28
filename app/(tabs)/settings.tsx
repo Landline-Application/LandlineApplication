@@ -26,6 +26,7 @@ import { auth, onAuthStateChanged } from '@/utils/firebase';
 import {
   type LoggedNotificationRow,
   type NotificationLogDateRangePreset,
+  type NotificationLogPrivacyMode,
   type NotificationLogSortOrder,
   prepareNotificationLogsForExport,
   saveNotificationLogsCSVAndroid,
@@ -48,6 +49,8 @@ export default function SettingsScreen() {
   const [exportLogModalVisible, setExportLogModalVisible] = useState(false);
   const [exportLogPreset, setExportLogPreset] = useState<NotificationLogDateRangePreset>('7d');
   const [exportLogSort, setExportLogSort] = useState<NotificationLogSortOrder>('newest');
+  const [exportLogPrivacyMode, setExportLogPrivacyMode] =
+    useState<NotificationLogPrivacyMode>('metadataOnly');
   const [exportLogAppName, setExportLogAppName] = useState('');
   const [exportLogRows, setExportLogRows] = useState<LoggedNotificationRow[] | null>(null);
   const [exportLogLoading, setExportLogLoading] = useState(false);
@@ -123,6 +126,7 @@ export default function SettingsScreen() {
       const result = await saveNotificationLogsCSVAndroid({
         datePreset: exportLogPreset,
         sortOrder: exportLogSort,
+        privacyMode: exportLogPrivacyMode,
         appNameContains: exportLogAppName.trim() || undefined,
       });
       if (!result.ok) {
@@ -488,8 +492,9 @@ export default function SettingsScreen() {
           <View style={[styles.modalContent, styles.exportLogModalContent]}>
             <Text style={styles.modalTitle}>Export notification logs</Text>
             <Text style={[styles.modalText, { marginBottom: 16 }]}>
-              Rows are filtered by logged time. The CSV is saved with Storage Access Framework to a
-              folder you pick.
+              Rows are filtered by logged time. Choose whether message titles and body text are
+              included or redacted. The file is saved with Storage Access Framework to a folder you
+              pick.
             </Text>
 
             <ScrollView
@@ -545,6 +550,32 @@ export default function SettingsScreen() {
                 onPress={() => setExportLogSort('oldest')}
               >
                 <Text style={styles.exportLogSortText}>Oldest first</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.exportLogSectionLabel}>Export content</Text>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogPrivacyMode === 'metadataOnly' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogPrivacyMode('metadataOnly')}
+              >
+                <Text style={styles.exportLogSortText}>Metadata only (recommended)</Text>
+                <Text style={styles.exportLogSortSubtext}>
+                  Times, package, app name, post time, id — title and text columns show [redacted]
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogPrivacyMode === 'full' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogPrivacyMode('full')}
+              >
+                <Text style={styles.exportLogSortText}>Full detail</Text>
+                <Text style={styles.exportLogSortSubtext}>
+                  Includes notification titles and message text as stored
+                </Text>
               </TouchableOpacity>
 
               <Text style={styles.exportLogSectionLabel}>App name contains (optional)</Text>
@@ -940,6 +971,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#222',
+  },
+  exportLogSortSubtext: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#666',
+    marginTop: 4,
+    fontWeight: '400',
   },
   exportLogFilterInput: {
     borderWidth: 1,
