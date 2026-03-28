@@ -365,14 +365,14 @@ export default function PermissionsScreen() {
           )}
         </View>
 
-        {/* Next Step - App Selection */}
+        {/* Next Step - notification permissions */}
         <TouchableOpacity style={styles.nextStepCard} onPress={() => router.push('/app-selection')}>
           <View style={styles.nextStepContent}>
             <Text style={styles.nextStepIcon}>📱</Text>
             <View style={styles.nextStepText}>
-              <Text style={styles.nextStepTitle}>Next: Choose Your Apps</Text>
+              <Text style={styles.nextStepTitle}>Next: Notification permissions</Text>
               <Text style={styles.nextStepDescription}>
-                Select which apps to include in Landline Mode
+                Optional: apps that bypass Landline Mode and emergency contacts (Android)
               </Text>
             </View>
           </View>

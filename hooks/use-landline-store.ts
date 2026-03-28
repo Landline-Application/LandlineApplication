@@ -2,8 +2,13 @@ import { Platform } from 'react-native';
 
 import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager from '@/modules/notification-api-manager';
+import NotificationApiManager, {
+  isNotificationFilterEffective,
+} from '@/modules/notification-api-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+
+const SESSION_START_KEY = 'landline_session_start_time';
 
 interface LandlineModeState {
   // State
@@ -54,11 +59,26 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       const active = NotificationApiManager.isLandlineModeActive();
       const logs = await NotificationApiManager.getLoggedNotifications();
 
+      let sessionStart: Date | null = null;
+      if (active) {
+        try {
+          const stored = await AsyncStorage.getItem(SESSION_START_KEY);
+          const fallbackTs = Date.now();
+          sessionStart = stored ? new Date(parseInt(stored, 10)) : new Date(fallbackTs);
+          if (!stored) {
+            await AsyncStorage.setItem(SESSION_START_KEY, fallbackTs.toString());
+          }
+        } catch (storageErr) {
+          console.warn('Failed to read session start time:', storageErr);
+          sessionStart = new Date();
+        }
+      }
+
       set({
         hasPermission: perm,
         isActive: active,
         notifications: Array.isArray(logs) ? logs : [],
-        sessionStartTime: active ? new Date() : null,
+        sessionStartTime: sessionStart,
         error: null,
       });
 
@@ -82,10 +102,16 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Call native API to set landline mode
       NotificationApiManager.setLandlineMode(true);
 
-      // Try to enable DND (optional)
+      // Try to enable DND (optional). When notification permissions (bypass list) are active, use normal
+      // interruption mode so allowed alerts can appear; others are cancelled in the listener.
       try {
         if (DndManager.hasPermission()) {
-          await DndManager.setDNDEnabled(true);
+          if (isNotificationFilterEffective()) {
+            const constants = DndManager.getInterruptionFilterConstants();
+            await DndManager.setInterruptionFilter(constants.ALL);
+          } else {
+            await DndManager.setDNDEnabled(true);
+          }
         }
       } catch (dndErr) {
         console.warn('DND not available:', dndErr);
@@ -106,9 +132,18 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Verify it actually activated
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
+      const now = new Date();
+      if (actualActive) {
+        try {
+          await AsyncStorage.setItem(SESSION_START_KEY, now.getTime().toString());
+        } catch (storageErr) {
+          console.warn('Failed to persist session start time:', storageErr);
+        }
+      }
+
       set({
         isActive: actualActive,
-        sessionStartTime: actualActive ? new Date() : null,
+        sessionStartTime: actualActive ? now : null,
       });
 
       // Start auto-refresh if successful
@@ -159,9 +194,17 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Verify it actually deactivated
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
+      if (!actualActive) {
+        try {
+          await AsyncStorage.removeItem(SESSION_START_KEY);
+        } catch (storageErr) {
+          console.warn('Failed to clear session start time:', storageErr);
+        }
+      }
+
       set({
         isActive: actualActive,
-        sessionStartTime: null,
+        sessionStartTime: actualActive ? get().sessionStartTime : null,
       });
 
       // Final refresh to get latest notifications

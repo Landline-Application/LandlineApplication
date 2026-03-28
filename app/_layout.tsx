@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { Text } from 'react-native';
+import { LogBox, Text } from 'react-native';
 
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -21,6 +21,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -97,6 +99,8 @@ export default function RootLayout() {
             <Stack.Screen name="app-selection" options={{ headerShown: false }} />
             <Stack.Screen name="create-account" options={{ headerShown: false }} />
             <Stack.Screen name="create-account-email" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password-confirm" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="login-email" options={{ headerShown: false }} />
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />

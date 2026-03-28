@@ -32,6 +32,10 @@ export const NATIVE_STORAGE = {
   KEYS: {
     IS_LANDLINE_MODE_ACTIVE: 'is_landline_mode_active',
     NOTIFICATION_LOGS_DATA: 'notification_logs',
+    /** User-facing: notification permissions / bypass + emergency (Landline Mode) */
+    NOTIFICATION_FILTER_ENABLED: 'notification_filter_enabled',
+    ALLOWED_NOTIFICATION_PACKAGES: 'allowed_notification_packages',
+    EMERGENCY_PHONE_DIGITS: 'emergency_phone_digits',
   },
 } as const;
 

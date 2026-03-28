@@ -1,3 +1,5 @@
+import type { ViewProps } from 'react-native';
+
 export type NotificationApiManagerModuleType = {
   hello(): string;
 
@@ -11,3 +13,8 @@ export type NotificationApiManagerModuleType = {
   // Post a notification
   notify(title: string, body: string, channelId: string, notificationId: number): boolean;
 };
+
+export type NotificationApiManagerViewProps = {
+  url?: string;
+  onLoad?: (event: { nativeEvent: { url: string } }) => void;
+} & ViewProps;

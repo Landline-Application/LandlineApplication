@@ -290,33 +290,35 @@ export default function HomeScreen() {
         </View>
 
         {/* Main Toggle Area */}
-        <Animated.View style={[styles.toggleContainer, { transform: [{ scale: pulseAnim }] }]}>
-          <Animated.View style={[styles.glowEffect, { backgroundColor: glowColor }]} />
+        <View style={styles.toggleContainer}>
+          <Animated.View style={{ transform: [{ scale: pulseAnim }], alignItems: 'center' }}>
+            <Animated.View style={[styles.glowEffect, { backgroundColor: glowColor }]} />
 
-          <Pressable
-            onPress={isActive ? handleDeactivate : handleActivate}
-            style={({ pressed }) => [
-              styles.mainToggle,
-              isActive && styles.mainToggleActive,
-              pressed && styles.mainTogglePressed,
-            ]}
-          >
-            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <MaterialIcons
-                name={isActive ? 'notifications-off' : 'notifications'}
-                size={56}
-                color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
-                style={styles.toggleIcon}
-              />
-              <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
-                {isActive ? 'ACTIVE' : 'INACTIVE'}
-              </Text>
-              <Text style={styles.toggleHint}>
-                {isActive ? 'Tap to deactivate' : 'Tap to activate'}
-              </Text>
-            </Animated.View>
-          </Pressable>
-        </Animated.View>
+            <Pressable
+              onPress={isActive ? handleDeactivate : handleActivate}
+              style={({ pressed }) => [
+                styles.mainToggle,
+                isActive && styles.mainToggleActive,
+                pressed && styles.mainTogglePressed,
+              ]}
+            >
+              <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
+                <MaterialIcons
+                  name={isActive ? 'notifications-off' : 'notifications'}
+                  size={56}
+                  color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
+                  style={styles.toggleIcon}
+                />
+                <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
+                  {isActive ? 'ACTIVE' : 'INACTIVE'}
+                </Text>
+                <Text style={styles.toggleHint}>
+                  {isActive ? 'Tap to deactivate' : 'Tap to activate'}
+                </Text>
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
+        </View>
 
         {/* Session Info (when active) */}
         {isActive && (
@@ -530,7 +532,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
@@ -544,15 +547,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   toggleContainer: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginBottom: 20,
   },
   glowEffect: {
     position: 'absolute',
     width: width * 0.7,
     height: width * 0.7,
     borderRadius: width * 0.35,
+    alignSelf: 'center',
   },
   mainToggle: {
     width: width * 0.55,
@@ -561,6 +566,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.dark.surface,
     borderWidth: 3,
     borderColor: COLORS.dark.border,
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -678,6 +684,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.dark.divider,
   },
   breakdownItem: {
+    flex: 1,
     alignItems: 'center',
   },
   breakdownValue: {

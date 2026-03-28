@@ -47,6 +47,28 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return false;
   }
 
+  isNotificationFilterEnabled() {
+    return false;
+  }
+  setNotificationFilterEnabled() {
+    return false;
+  }
+  getAllowedNotificationPackages() {
+    return [];
+  }
+  setAllowedNotificationPackages() {
+    return false;
+  }
+  getEmergencyPhoneNumbers() {
+    return [];
+  }
+  setEmergencyPhoneNumbers() {
+    return false;
+  }
+  isNotificationFilterConfigured() {
+    return false;
+  }
+
   // Auto-Reply (Web stubs - not supported)
   isAutoReplyEnabled() {
     return false;
@@ -77,6 +99,14 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   }
   async getActiveNotifications() {
     return [];
+  }
+
+  // Emergency contacts (web stubs)
+  setEmergencyContactsJson() {
+    return false;
+  }
+  getEmergencyContactsJson() {
+    return '[]';
   }
 
   // Data Management
