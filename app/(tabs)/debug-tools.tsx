@@ -18,7 +18,6 @@ import {
 } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { saveNotificationLogsCSVAndroid, type NotificationLogDateRangePreset } from '@/utils/notification-logs-csv';
 
 export default function DebugToolsScreen() {
   const insets = useSafeAreaInsets();
@@ -51,7 +50,6 @@ export default function DebugToolsScreen() {
   const [isDozeMode, setIsDozeMode] = useState(false);
   const [androidVersion, setAndroidVersion] = useState<any>(null);
   const [notifCount, setNotifCount] = useState(0);
-  const [csvExporting, setCsvExporting] = useState(false);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
 
@@ -478,110 +476,6 @@ export default function DebugToolsScreen() {
             color={COLORS.dark.primary}
           />
 
-          {/* Export logs to CSV (date range presets) */}
-          {Platform.OS === 'android' && (
-            <View style={{ gap: 8 }}>
-              <Text style={{ fontSize: 14, color: COLORS.dark.textSecondary }}>
-                Export logs (date range)
-              </Text>
-
-              <Button
-                title={csvExporting ? 'Saving CSV…' : 'Last 24 hours'}
-                disabled={csvExporting}
-                onPress={async () => {
-                  const preset: NotificationLogDateRangePreset = '24h';
-                  setCsvExporting(true);
-                  try {
-                    const result = await saveNotificationLogsCSVAndroid(preset);
-                    if (!result.ok) {
-                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
-                    } else {
-                      await refreshStatus();
-                      Alert.alert(
-                        'Saved',
-                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
-                      );
-                    }
-                  } finally {
-                    setCsvExporting(false);
-                  }
-                }}
-                color={COLORS.dark.primary}
-              />
-
-              <Button
-                title={csvExporting ? 'Saving CSV…' : 'Last 7 days'}
-                disabled={csvExporting}
-                onPress={async () => {
-                  const preset: NotificationLogDateRangePreset = '7d';
-                  setCsvExporting(true);
-                  try {
-                    const result = await saveNotificationLogsCSVAndroid(preset);
-                    if (!result.ok) {
-                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
-                    } else {
-                      await refreshStatus();
-                      Alert.alert(
-                        'Saved',
-                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
-                      );
-                    }
-                  } finally {
-                    setCsvExporting(false);
-                  }
-                }}
-                color={COLORS.dark.primary}
-              />
-
-              <Button
-                title={csvExporting ? 'Saving CSV…' : 'Last 30 days'}
-                disabled={csvExporting}
-                onPress={async () => {
-                  const preset: NotificationLogDateRangePreset = '30d';
-                  setCsvExporting(true);
-                  try {
-                    const result = await saveNotificationLogsCSVAndroid(preset);
-                    if (!result.ok) {
-                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
-                    } else {
-                      await refreshStatus();
-                      Alert.alert(
-                        'Saved',
-                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
-                      );
-                    }
-                  } finally {
-                    setCsvExporting(false);
-                  }
-                }}
-                color={COLORS.dark.primary}
-              />
-
-              <Button
-                title={csvExporting ? 'Saving CSV…' : 'All time'}
-                disabled={csvExporting}
-                onPress={async () => {
-                  const preset: NotificationLogDateRangePreset = 'all';
-                  setCsvExporting(true);
-                  try {
-                    const result = await saveNotificationLogsCSVAndroid(preset);
-                    if (!result.ok) {
-                      Alert.alert('Nothing to export', result.error ?? 'Unknown error');
-                    } else {
-                      await refreshStatus();
-                      Alert.alert(
-                        'Saved',
-                        `Saved ${result.rowCount} row(s) to device storage.${result.fileUri ? `\n\nURI: ${result.fileUri}` : ''}`,
-                      );
-                    }
-                  } finally {
-                    setCsvExporting(false);
-                  }
-                }}
-                color={COLORS.dark.primary}
-              />
-            </View>
-          )}
           <Button
             title="Clear All Logs"
             onPress={() => {

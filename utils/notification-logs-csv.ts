@@ -1,7 +1,6 @@
 /**
  * Build a CSV export from native notification logs (Android).
- * Used for dev/debug export; production flows may add consent.
- * Saves the CSV to a user-selected on-device folder (no immediate app sharing).
+ * Saves the CSV to a user-selected on-device folder (Storage Access Framework).
  */
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -28,38 +27,16 @@ const CSV_COLUMNS = [
   'notificationId',
 ] as const;
 
-// Helper function to quote fields if needed
-export function escapeCSVField(value: string): string {
-  const needsQuotes =
-    value.includes(',') || value.includes('"') || value.includes('\r') || value.includes('\n');
-
-  const escaped = value.replace(/"/g, '""');
-  return needsQuotes ? `"${escaped}"` : escaped;
-}
-
-function rowToCSVLine(row: LoggedNotificationRow): string {
-  const cells = [
-    row.timestamp != null ? String(row.timestamp) : '',
-    row.packageName ?? '',
-    row.appName ?? '',
-    row.title ?? '',
-    row.text ?? '',
-    row.postTime != null ? String(row.postTime) : '',
-    row.id != null ? String(row.id) : '',
-  ];
-  return cells.map((c) => escapeCSVField(c)).join(',');
-}
-
-// Convert parsed notification rows to CSV string
-export function notificationLogsToCSV(rows: LoggedNotificationRow[]): string {
-  const header = CSV_COLUMNS.join(',');
-  const lines = rows.map(rowToCSVLine);
-  const body = [header, ...lines].join('\r\n');
-  return `\ufeff${body}`;
-}
-
-// Fetch logs from native storage and export as CSV via system share sheet
 export type NotificationLogDateRangePreset = '24h' | '7d' | '30d' | 'all';
+export type NotificationLogSortOrder = 'newest' | 'oldest';
+
+export type NotificationLogExportOptions = {
+  datePreset: NotificationLogDateRangePreset;
+  sortOrder: NotificationLogSortOrder;
+  /** Case-insensitive substring match on app name (optional) */
+  appNameContains?: string;
+};
+
 let directoryPermissionRequestInFlight = false;
 
 function getCutoffTimeMs(preset: NotificationLogDateRangePreset, nowMs: number): number | null {
@@ -80,7 +57,7 @@ function getCutoffTimeMs(preset: NotificationLogDateRangePreset, nowMs: number):
   }
 }
 
-function getPresetLabel(preset: NotificationLogDateRangePreset): string {
+function getPresetSlug(preset: NotificationLogDateRangePreset): string {
   switch (preset) {
     case '24h':
       return 'last-24-hours';
@@ -89,14 +66,94 @@ function getPresetLabel(preset: NotificationLogDateRangePreset): string {
     case '30d':
       return 'last-30-days';
     case 'all':
-      return 'all-time';
     default:
       return 'all-time';
   }
 }
 
+function getSortSlug(order: NotificationLogSortOrder): string {
+  return order === 'newest' ? 'newest-first' : 'oldest-first';
+}
 
-export async function saveNotificationLogsCSVAndroid(preset: NotificationLogDateRangePreset = '7d'): Promise<{
+export type NotificationLogFilterOptions = Pick<
+  NotificationLogExportOptions,
+  'datePreset' | 'appNameContains'
+>;
+
+export function filterNotificationLogsForExport(
+  rows: LoggedNotificationRow[],
+  options: NotificationLogFilterOptions,
+  nowMs: number = Date.now(),
+): LoggedNotificationRow[] {
+  const cutoff = getCutoffTimeMs(options.datePreset, nowMs);
+  let out =
+    cutoff == null
+      ? [...rows]
+      : rows.filter((row) => typeof row.timestamp === 'number' && row.timestamp >= cutoff);
+
+  const q = options.appNameContains?.trim().toLowerCase();
+  if (q) {
+    out = out.filter((r) => (r.appName ?? '').toLowerCase().includes(q));
+  }
+
+  return out;
+}
+
+
+export function sortNotificationLogsByLoggedAt(
+  rows: LoggedNotificationRow[],
+  order: NotificationLogSortOrder,
+): LoggedNotificationRow[] {
+  return [...rows].sort((a, b) => {
+    const ta = typeof a.timestamp === 'number' ? a.timestamp : 0;
+    const tb = typeof b.timestamp === 'number' ? b.timestamp : 0;
+    return order === 'newest' ? tb - ta : ta - tb;
+  });
+}
+
+export function prepareNotificationLogsForExport(
+  rows: LoggedNotificationRow[],
+  options: NotificationLogExportOptions,
+  nowMs: number = Date.now(),
+): LoggedNotificationRow[] {
+  const filtered = filterNotificationLogsForExport(
+    rows,
+    { datePreset: options.datePreset, appNameContains: options.appNameContains },
+    nowMs,
+  );
+  return sortNotificationLogsByLoggedAt(filtered, options.sortOrder);
+}
+
+export function escapeCSVField(value: string): string {
+  const needsQuotes =
+    value.includes(',') || value.includes('"') || value.includes('\r') || value.includes('\n');
+  const escaped = value.replace(/"/g, '""');
+  return needsQuotes ? `"${escaped}"` : escaped;
+}
+
+function rowToCSVLine(row: LoggedNotificationRow): string {
+  const cells = [
+    row.timestamp != null ? String(row.timestamp) : '',
+    row.packageName ?? '',
+    row.appName ?? '',
+    row.title ?? '',
+    row.text ?? '',
+    row.postTime != null ? String(row.postTime) : '',
+    row.id != null ? String(row.id) : '',
+  ];
+  return cells.map((c) => escapeCSVField(c)).join(',');
+}
+
+export function notificationLogsToCSV(rows: LoggedNotificationRow[]): string {
+  const header = CSV_COLUMNS.join(',');
+  const lines = rows.map(rowToCSVLine);
+  const body = [header, ...lines].join('\r\n');
+  return `\ufeff${body}`;
+}
+
+export async function saveNotificationLogsCSVAndroid(
+  options: NotificationLogExportOptions,
+): Promise<{
   ok: boolean;
   rowCount: number;
   fileUri?: string;
@@ -114,31 +171,25 @@ export async function saveNotificationLogsCSVAndroid(preset: NotificationLogDate
     return { ok: false, rowCount: 0, error: 'No notifications found' };
   }
 
-  const nowMs = Date.now();
-  const cutOffTimeMs = getCutoffTimeMs(preset, nowMs);
+  const prepared = prepareNotificationLogsForExport(rows, options);
 
-  const filteredRows =
-    cutOffTimeMs == null
-      ? rows
-      : rows.filter((row) => typeof row.timestamp === 'number' && row.timestamp >= cutOffTimeMs);
-
-  if (!filteredRows.length) {
+  if (!prepared.length) {
     return {
       ok: false,
       rowCount: 0,
-      error: `No notifications found for preset "${preset}".`,
+      error: `No notifications match the selected filters.`,
     };
   }
 
-  const csv = notificationLogsToCSV(filteredRows);
-  const filename = `landline-notification-logs-${getPresetLabel(preset)}-${new Date()
+  const csv = notificationLogsToCSV(prepared);
+  const filename = `landline-notification-logs-${getPresetSlug(options.datePreset)}-${getSortSlug(options.sortOrder)}-${new Date()
     .toISOString()
     .replace(/[:.]/g, '-')}.csv`;
 
   if (directoryPermissionRequestInFlight) {
     return {
       ok: false,
-      rowCount: filteredRows.length,
+      rowCount: prepared.length,
       error: 'Export already in progress. Please finish the current folder selection first.',
     };
   }
@@ -151,12 +202,11 @@ export async function saveNotificationLogsCSVAndroid(preset: NotificationLogDate
     if (!permission.granted) {
       return {
         ok: false,
-        rowCount: filteredRows.length,
+        rowCount: prepared.length,
         error: 'Storage permission was not granted.',
       };
     }
 
-    // SAF createFileAsync expects the filename without extension.
     const fileNameWithoutExt = filename.replace(/\.csv$/i, '');
     const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
       permission.directoryUri,
@@ -167,10 +217,10 @@ export async function saveNotificationLogsCSVAndroid(preset: NotificationLogDate
       encoding: 'utf8',
     });
 
-    return { ok: true, rowCount: filteredRows.length, fileUri };
+    return { ok: true, rowCount: prepared.length, fileUri };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, rowCount: filteredRows.length, error: message };
+    return { ok: false, rowCount: prepared.length, error: message };
   } finally {
     directoryPermissionRequestInFlight = false;
   }
