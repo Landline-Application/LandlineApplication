@@ -30,9 +30,13 @@ const CSV_COLUMNS = [
 export type NotificationLogDateRangePreset = '24h' | '7d' | '30d' | 'all';
 export type NotificationLogSortOrder = 'newest' | 'oldest';
 
+/** full: real title & text. metadataOnly: those columns replaced (message content not exported). */
+export type NotificationLogPrivacyMode = 'full' | 'metadataOnly';
+
 export type NotificationLogExportOptions = {
   datePreset: NotificationLogDateRangePreset;
   sortOrder: NotificationLogSortOrder;
+  privacyMode: NotificationLogPrivacyMode;
   /** Case-insensitive substring match on app name (optional) */
   appNameContains?: string;
 };
@@ -75,6 +79,27 @@ function getSortSlug(order: NotificationLogSortOrder): string {
   return order === 'newest' ? 'newest-first' : 'oldest-first';
 }
 
+function getPrivacySlug(mode: NotificationLogPrivacyMode): string {
+  return mode === 'full' ? 'full-detail' : 'metadata-only';
+}
+
+const REDACTED_PLACEHOLDER = '[redacted]';
+
+/** Apply privacy mode for CSV cells (row count and filter order unchanged). */
+export function applyPrivacyModeToExportRows(
+  rows: LoggedNotificationRow[],
+  mode: NotificationLogPrivacyMode,
+): LoggedNotificationRow[] {
+  if (mode === 'full') {
+    return rows.map((r) => ({ ...r }));
+  }
+  return rows.map((r) => ({
+    ...r,
+    title: REDACTED_PLACEHOLDER,
+    text: REDACTED_PLACEHOLDER,
+  }));
+}
+
 export type NotificationLogFilterOptions = Pick<
   NotificationLogExportOptions,
   'datePreset' | 'appNameContains'
@@ -111,9 +136,14 @@ export function sortNotificationLogsByLoggedAt(
   });
 }
 
+export type NotificationLogPrepareExportOptions = Pick<
+  NotificationLogExportOptions,
+  'datePreset' | 'sortOrder' | 'appNameContains'
+>;
+
 export function prepareNotificationLogsForExport(
   rows: LoggedNotificationRow[],
-  options: NotificationLogExportOptions,
+  options: NotificationLogPrepareExportOptions,
   nowMs: number = Date.now(),
 ): LoggedNotificationRow[] {
   const filtered = filterNotificationLogsForExport(
@@ -181,8 +211,9 @@ export async function saveNotificationLogsCSVAndroid(
     };
   }
 
-  const csv = notificationLogsToCSV(prepared);
-  const filename = `landline-notification-logs-${getPresetSlug(options.datePreset)}-${getSortSlug(options.sortOrder)}-${new Date()
+  const forCsv = applyPrivacyModeToExportRows(prepared, options.privacyMode);
+  const csv = notificationLogsToCSV(forCsv);
+  const filename = `landline-notification-logs-${getPresetSlug(options.datePreset)}-${getSortSlug(options.sortOrder)}-${getPrivacySlug(options.privacyMode)}-${new Date()
     .toISOString()
     .replace(/[:.]/g, '-')}.csv`;
 
