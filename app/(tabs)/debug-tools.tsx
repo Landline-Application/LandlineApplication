@@ -19,7 +19,6 @@ import { COLORS } from '@/constants/colors';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
-import BackgroundServiceManager from '@/modules/background-service-manager';
 import {
   getAllInstalledApps,
   getCurrentState,
@@ -65,11 +64,6 @@ export default function DebugToolsScreen() {
     checkStatus: checkAutoReplyStatus,
   } = useAutoReplyStore();
 
-  const [serviceRunning, setServiceRunning] = useState(false);
-  const [workScheduled, setWorkScheduled] = useState(false);
-  const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState(false);
-  const [isDozeMode, setIsDozeMode] = useState(false);
-  const [androidVersion, setAndroidVersion] = useState<any>(null);
   const [notifCount, setNotifCount] = useState(0);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
@@ -109,13 +103,6 @@ export default function DebugToolsScreen() {
 
   const refreshStatus = async () => {
     if (Platform.OS !== 'android') return;
-
-    setServiceRunning(BackgroundServiceManager.isForegroundServiceRunning());
-    setWorkScheduled(BackgroundServiceManager.isBackgroundWorkScheduled());
-    setBatteryOptimizationIgnored(BackgroundServiceManager.isIgnoringBatteryOptimizations());
-    setIsDozeMode(BackgroundServiceManager.isDeviceIdleMode());
-    const versionInfo = BackgroundServiceManager.getAndroidVersion();
-    setAndroidVersion(versionInfo?.release || 'Unknown');
 
     await checkStatus();
     checkAutoReplyStatus();
@@ -202,246 +189,8 @@ export default function DebugToolsScreen() {
             📱 System Status
           </Text>
 
-          {androidVersion && typeof androidVersion === 'string' && (
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                paddingBottom: 8,
-                borderBottomWidth: 1,
-                borderBottomColor: COLORS.dark.divider,
-              }}
-            >
-              <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-                Android Version:
-              </Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark.textMuted }}>
-                {androidVersion}
-              </Text>
-            </View>
-          )}
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-              Foreground Service:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: serviceRunning ? COLORS.dark.success : COLORS.dark.textMuted,
-              }}
-            >
-              {serviceRunning ? 'Running' : 'Stopped'}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-              Background Work:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: workScheduled ? COLORS.dark.success : COLORS.dark.textMuted,
-              }}
-            >
-              {workScheduled ? 'Scheduled' : 'Not Scheduled'}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-              Battery Optimization:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: batteryOptimizationIgnored ? COLORS.dark.success : COLORS.dark.textMuted,
-              }}
-            >
-              {batteryOptimizationIgnored ? 'Ignored' : 'Enabled'}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
-              Doze Mode:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: isDozeMode ? COLORS.dark.warning : COLORS.dark.textMuted,
-              }}
-            >
-              {isDozeMode ? 'Active' : 'Inactive'}
-            </Text>
-          </View>
-
-          {/* Battery Optimization Disclaimer */}
-          <View
-            style={{
-              backgroundColor: COLORS.dark.card,
-              padding: 12,
-              borderRadius: 8,
-              borderLeftWidth: 3,
-              borderLeftColor: COLORS.dark.warning,
-              borderCurve: 'continuous',
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, lineHeight: 18 }}>
-              ⚠️ Use with caution. Google Play may reject apps that unnecessarily request to ignore
-              battery optimization.
-            </Text>
-          </View>
-
           <View style={{ gap: 8 }}>
             <Button title="Refresh Status" onPress={refreshStatus} color={COLORS.dark.primary} />
-
-            {/* Foreground Service Dynamic Toggle */}
-            <Button
-              key={`foreground-${serviceRunning}`}
-              title={serviceRunning ? 'Stop Foreground Service' : 'Start Foreground Service'}
-              onPress={async () => {
-                try {
-                  if (serviceRunning) {
-                    console.log('[DEBUG] Stopping foreground service...');
-                    const success = BackgroundServiceManager.stopForegroundService();
-                    console.log('[DEBUG] Stop service result:', success);
-                    await new Promise((resolve) => setTimeout(resolve, 500));
-                    const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
-                    console.log('[DEBUG] Service running after stop:', isRunning);
-                    Alert.alert('Foreground Service', 'Service stopped');
-                    await refreshStatus();
-                  } else {
-                    // Check if POST_NOTIFICATIONS permission is granted (required on Android 13+)
-                    if (!NotificationApiManager.hasPostPermission()) {
-                      Alert.alert(
-                        'Permission Required',
-                        'POST_NOTIFICATIONS permission is required to start the foreground service. Please grant it first.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Grant Permission',
-                            onPress: async () => {
-                              const granted = await NotificationApiManager.requestPostPermission();
-                              if (granted) {
-                                Alert.alert(
-                                  'Success',
-                                  'Permission granted! You can now start the service.',
-                                );
-                                await refreshStatus();
-                              } else {
-                                Alert.alert(
-                                  'Error',
-                                  'Permission denied. Cannot start foreground service.',
-                                );
-                              }
-                            },
-                          },
-                        ],
-                      );
-                      return;
-                    }
-
-                    console.log('[DEBUG] Starting foreground service...');
-                    const success = BackgroundServiceManager.startForegroundService(
-                      'Landline Monitor',
-                      'Monitoring notifications',
-                    );
-                    console.log('[DEBUG] Start service result:', success);
-                    await new Promise((resolve) => setTimeout(resolve, 500));
-                    const isRunning = BackgroundServiceManager.isForegroundServiceRunning();
-                    console.log('[DEBUG] Service running after start:', isRunning);
-                    Alert.alert('Foreground Service', 'Service started');
-                    await refreshStatus();
-                  }
-                } catch (error) {
-                  console.error('[DEBUG] Error toggling service:', error);
-                  Alert.alert('Error', `Failed to toggle service: ${error}`);
-                }
-              }}
-              color={serviceRunning ? COLORS.dark.error : COLORS.dark.success}
-            />
-
-            {/* Background Work Dynamic Toggle */}
-            <Button
-              key={`work-${workScheduled}`}
-              title={workScheduled ? 'Cancel Background Work' : 'Schedule Background Work'}
-              onPress={async () => {
-                try {
-                  if (workScheduled) {
-                    Alert.alert('Background Work', 'Work cancelled (method not exposed yet)');
-                  } else {
-                    Alert.alert('Background Work', 'Work scheduled (method not exposed yet)');
-                  }
-                  await refreshStatus();
-                } catch (error) {
-                  console.error('[DEBUG] Error toggling background work:', error);
-                  Alert.alert('Error', `Failed to toggle background work: ${error}`);
-                }
-              }}
-              color={workScheduled ? COLORS.dark.error : COLORS.dark.success}
-            />
-
-            {/* Battery Optimization */}
-            {!batteryOptimizationIgnored && (
-              <Button
-                title="Request Battery Optimization Exemption"
-                onPress={async () => {
-                  try {
-                    const granted =
-                      await BackgroundServiceManager.requestIgnoreBatteryOptimizations();
-                    Alert.alert(
-                      'Battery Optimization',
-                      granted
-                        ? 'Permission granted! Background service will run more reliably.'
-                        : 'Permission denied. The app may be restricted in the background.',
-                    );
-                    await refreshStatus();
-                  } catch (error) {
-                    console.error('[DEBUG] Error requesting battery optimization:', error);
-                    Alert.alert('Error', `Failed to request permission: ${error}`);
-                  }
-                }}
-                color={COLORS.dark.warning}
-              />
-            )}
           </View>
         </View>
 

@@ -25,13 +25,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'android.permission.BIND_APPWIDGET',
       'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
       'android.permission.CALL_PHONE',
-      'android.permission.FOREGROUND_SERVICE',
-      'android.permission.FOREGROUND_SERVICE_SPECIAL_USE',
       'android.permission.POST_NOTIFICATIONS',
       'android.permission.READ_CONTACTS',
       'android.permission.READ_PHONE_STATE',
       'android.permission.RECEIVE_SMS',
-      'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
       'android.permission.SEND_SMS',
       'android.permission.WAKE_LOCK',
     ],
@@ -73,7 +70,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         ],
       },
     ],
-    './plugins/withAndroidForegroundService.js',
   ],
 
   experiments: {

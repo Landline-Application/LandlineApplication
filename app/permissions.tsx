@@ -6,7 +6,6 @@ import { router } from 'expo-router';
 
 import { LandlineColors } from '@/constants/theme';
 // Import native modules for permission checks
-import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
 import {
   hasNotificationListenerPermission,
@@ -103,30 +102,6 @@ export default function PermissionsScreen() {
         requestPermission: async () => {
           try {
             return await DndManager.requestPermission();
-          } catch {
-            return false;
-          }
-        },
-      },
-      {
-        id: 'battery_optimization',
-        name: 'Battery Optimization',
-        description: 'Run reliably in the background',
-        whyNeeded:
-          "Prevents Android from stopping Landline while it's running in the background. This ensures notifications are captured even when you're not using the app.",
-        icon: '🔋',
-        status: 'unknown',
-        isRequired: false,
-        checkPermission: () => {
-          try {
-            return BackgroundServiceManager.isIgnoringBatteryOptimizations();
-          } catch {
-            return false;
-          }
-        },
-        requestPermission: async () => {
-          try {
-            return await BackgroundServiceManager.requestIgnoreBatteryOptimizations();
           } catch {
             return false;
           }
