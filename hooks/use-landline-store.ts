@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 
-import * as BackgroundServiceManager from '@/modules/background-service-manager';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
@@ -118,17 +117,6 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         // Continue anyway - DND is optional
       }
 
-      // Start foreground service for reliability
-      try {
-        BackgroundServiceManager.startForegroundService(
-          'Landline Mode Active',
-          'Your notifications are being captured',
-        );
-      } catch (serviceErr) {
-        console.warn('Background service not available:', serviceErr);
-        // Continue anyway - service is optional
-      }
-
       // Verify it actually activated
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
@@ -180,14 +168,6 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         }
       } catch (dndErr) {
         console.warn('DND disable failed:', dndErr);
-        // Continue anyway
-      }
-
-      // Stop foreground service
-      try {
-        BackgroundServiceManager.stopForegroundService();
-      } catch (serviceErr) {
-        console.warn('Service stop failed:', serviceErr);
         // Continue anyway
       }
 
