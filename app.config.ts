@@ -6,7 +6,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'landline',
   version: '0.1.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/landline-icon.png',
   scheme: 'landlineapplication',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
@@ -14,9 +14,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/images/android-icon-foreground.png',
+      foregroundImage: './assets/landline-icon.png',
       backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
+      monochromeImage: './assets/landline-icon.png',
     },
     edgeToEdgeEnabled: true,
     package: 'com.outersnail.Landline',
