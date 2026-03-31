@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
+  ActivityIndicator,
   Alert,
   Button,
   Modal,
@@ -19,10 +20,19 @@ import { router } from 'expo-router';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
 import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
 import { updateUserDisplayName } from '@/utils/firebase/user-service';
+import {
+  type LoggedNotificationRow,
+  type NotificationLogDateRangePreset,
+  type NotificationLogPrivacyMode,
+  type NotificationLogSortOrder,
+  prepareNotificationLogsForExport,
+  saveNotificationLogsCSVAndroid,
+} from '@/utils/notification-logs-csv';
 import { StorageManager } from '@/utils/storage/storage-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,6 +51,25 @@ export default function SettingsScreen() {
     landlineKeys: number;
     estimatedSize: string;
   } | null>(null);
+
+  const [exportLogModalVisible, setExportLogModalVisible] = useState(false);
+  const [exportLogPreset, setExportLogPreset] = useState<NotificationLogDateRangePreset>('7d');
+  const [exportLogSort, setExportLogSort] = useState<NotificationLogSortOrder>('newest');
+  const [exportLogPrivacyMode, setExportLogPrivacyMode] =
+    useState<NotificationLogPrivacyMode>('metadataOnly');
+  const [exportLogAppName, setExportLogAppName] = useState('');
+  const [exportLogRows, setExportLogRows] = useState<LoggedNotificationRow[] | null>(null);
+  const [exportLogLoading, setExportLogLoading] = useState(false);
+  const [csvExporting, setCsvExporting] = useState(false);
+
+  const matchingExportCount = useMemo(() => {
+    if (!exportLogRows) return 0;
+    return prepareNotificationLogsForExport(exportLogRows, {
+      datePreset: exportLogPreset,
+      sortOrder: exportLogSort,
+      appNameContains: exportLogAppName.trim() || undefined,
+    }).length;
+  }, [exportLogRows, exportLogPreset, exportLogSort, exportLogAppName]);
 
   // Load storage info on mount
   React.useEffect(() => {
@@ -74,6 +103,52 @@ export default function SettingsScreen() {
     } catch (error) {
       Alert.alert('Export Failed', 'Could not export your data. Please try again.');
       console.error('Export error:', error);
+    }
+  }
+
+  async function openExportLogModal() {
+    setExportLogModalVisible(true);
+    setExportLogLoading(true);
+    setExportLogRows(null);
+    try {
+      const rows = (await NotificationApiManager.getLoggedNotifications()) as LoggedNotificationRow[];
+      setExportLogRows(rows);
+    } catch (error) {
+      console.error('Notification log load error:', error);
+      setExportLogRows([]);
+      Alert.alert('Error', 'Could not load notification logs.');
+    } finally {
+      setExportLogLoading(false);
+    }
+  }
+
+  function closeExportLogModal() {
+    setExportLogModalVisible(false);
+  }
+
+  async function handleSaveNotificationLogsCSV() {
+    setCsvExporting(true);
+    try {
+      const result = await saveNotificationLogsCSVAndroid({
+        datePreset: exportLogPreset,
+        sortOrder: exportLogSort,
+        privacyMode: exportLogPrivacyMode,
+        appNameContains: exportLogAppName.trim() || undefined,
+      });
+      if (!result.ok) {
+        Alert.alert('Export', result.error ?? 'Could not save the file.');
+      } else {
+        Alert.alert(
+          'Saved',
+          `Saved ${result.rowCount} notification row(s) to the folder you chose.`,
+        );
+        closeExportLogModal();
+      }
+    } catch (error) {
+      Alert.alert('Export', 'An unexpected error occurred.');
+      console.error('CSV export error:', error);
+    } finally {
+      setCsvExporting(false);
     }
   }
 
@@ -492,6 +567,23 @@ export default function SettingsScreen() {
           </View>
           <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
         </TouchableOpacity>
+
+        {Platform.OS === 'android' && (
+          <TouchableOpacity style={styles.actionButton} onPress={openExportLogModal}>
+            <View style={styles.actionButtonRow}>
+              <MaterialIcons
+                name="description"
+                size={18}
+                color="#fff"
+                style={styles.actionButtonIcon}
+              />
+              <Text style={styles.actionButtonText}>Export notification logs (CSV)</Text>
+            </View>
+            <Text style={styles.actionButtonSubtext}>
+              Date range, sort order, optional app filter — save to a folder
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Data Management Section — only shown when signed in */}
@@ -540,6 +632,157 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
+
+      {/* Notification log CSV export (Android) */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={exportLogModalVisible}
+        onRequestClose={closeExportLogModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.exportLogModalContent]}>
+            <Text style={styles.modalTitle}>Export notification logs</Text>
+            <Text style={[styles.modalText, { marginBottom: 16 }]}>
+              Rows are filtered by logged time. Choose whether message titles and body text are
+              included or redacted. The file is saved with Storage Access Framework to a folder you
+              pick.
+            </Text>
+
+            <ScrollView
+              style={styles.exportLogScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.exportLogSectionLabel}>Date range</Text>
+              <View style={styles.exportLogChipRow}>
+                {(
+                  [
+                    { key: '24h' as const, label: '24h' },
+                    { key: '7d' as const, label: '7 days' },
+                    { key: '30d' as const, label: '30 days' },
+                    { key: 'all' as const, label: 'All' },
+                  ] as const
+                ).map(({ key, label }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.exportLogChip,
+                      exportLogPreset === key && styles.exportLogChipSelected,
+                    ]}
+                    onPress={() => setExportLogPreset(key)}
+                  >
+                    <Text
+                      style={[
+                        styles.exportLogChipText,
+                        exportLogPreset === key && styles.exportLogChipTextSelected,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.exportLogSectionLabel}>Sort by logged time</Text>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogSort === 'newest' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogSort('newest')}
+              >
+                <Text style={styles.exportLogSortText}>Newest first</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogSort === 'oldest' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogSort('oldest')}
+              >
+                <Text style={styles.exportLogSortText}>Oldest first</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.exportLogSectionLabel}>Export content</Text>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogPrivacyMode === 'metadataOnly' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogPrivacyMode('metadataOnly')}
+              >
+                <Text style={styles.exportLogSortText}>Metadata only (recommended)</Text>
+                <Text style={styles.exportLogSortSubtext}>
+                  Times, package, app name, post time, id — title and text columns show [redacted]
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.exportLogSortRow,
+                  exportLogPrivacyMode === 'full' && styles.exportLogSortRowSelected,
+                ]}
+                onPress={() => setExportLogPrivacyMode('full')}
+              >
+                <Text style={styles.exportLogSortText}>Full detail</Text>
+                <Text style={styles.exportLogSortSubtext}>
+                  Includes notification titles and message text as stored
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.exportLogSectionLabel}>App name contains (optional)</Text>
+              <TextInput
+                style={styles.exportLogFilterInput}
+                value={exportLogAppName}
+                onChangeText={setExportLogAppName}
+                placeholder="e.g. Messages"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              {exportLogLoading ? (
+                <View style={styles.exportLogPreviewRow}>
+                  <ActivityIndicator color="#007AFF" />
+                  <Text style={styles.exportLogPreviewText}>Loading logs…</Text>
+                </View>
+              ) : (
+                <Text style={styles.exportLogPreviewText}>
+                  {exportLogRows === null
+                    ? ''
+                    : matchingExportCount === 0
+                      ? 'No notifications match these options.'
+                      : `${matchingExportCount} notification${matchingExportCount === 1 ? '' : 's'} will be exported.`}
+                </Text>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={closeExportLogModal}
+                disabled={csvExporting}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  (matchingExportCount === 0 || exportLogLoading || csvExporting) &&
+                    styles.modalButtonDisabled,
+                ]}
+                onPress={handleSaveNotificationLogsCSV}
+                disabled={matchingExportCount === 0 || exportLogLoading || csvExporting}
+              >
+                <Text style={styles.modalButtonPrimaryText}>
+                  {csvExporting ? 'Saving…' : 'Save CSV'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Delete Account Modal */}
       <Modal
@@ -749,15 +992,6 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#fff',
-  },
-  secondaryButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  secondaryButtonText: {
-    color: '#333',
-  },
-  secondaryButtonSubtext: {
-    color: '#555',
   },
   // Unified account + profile (authenticated)
   accountProfileCard: {
@@ -1016,6 +1250,103 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
+  },
+  exportLogModalContent: {
+    maxHeight: '88%',
+    maxWidth: 420,
+  },
+  exportLogScroll: {
+    maxHeight: 320,
+    marginBottom: 8,
+  },
+  exportLogSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  exportLogChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  exportLogChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#ccc',
+    backgroundColor: '#f8f8f8',
+  },
+  exportLogChipSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#e8f2ff',
+  },
+  exportLogChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+  },
+  exportLogChipTextSelected: {
+    color: '#007AFF',
+  },
+  exportLogSortRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#ddd',
+    marginBottom: 8,
+    backgroundColor: '#fafafa',
+  },
+  exportLogSortRowSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#e8f2ff',
+  },
+  exportLogSortText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#222',
+  },
+  exportLogSortSubtext: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#666',
+    marginTop: 4,
+    fontWeight: '400',
+  },
+  exportLogFilterInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 12,
+    color: '#111',
+  },
+  exportLogPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  exportLogPreviewText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#555',
+    marginBottom: 8,
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#007AFF',
+  },
+  modalButtonPrimaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   modalTitle: {
     fontSize: 22,

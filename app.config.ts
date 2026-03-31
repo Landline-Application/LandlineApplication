@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/landline-icon.png',
   scheme: 'landlineapplication',
   userInterfaceStyle: 'automatic',
+  // Must stay true: react-native-reanimated 4 + react-native-worklets require New Architecture.
   newArchEnabled: true,
 
   android: {
@@ -87,3 +88,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   owner: 'landline-application',
 });
+
+
+
+
+
+
