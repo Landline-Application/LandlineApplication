@@ -76,3 +76,7 @@ GoogleService-Info.plist
 
 # AAB build artifacts
 *.aab
+
+.specstory/
+.cursorindexingignore
+.vscode/settings.json
