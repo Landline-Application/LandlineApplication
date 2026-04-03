@@ -14,6 +14,7 @@ import {
 } from '@/utils/firebase/auth';
 import { signInWithGoogle as firebaseSignInWithGoogle } from '@/utils/firebase/google-auth';
 import { upsertUserDocument } from '@/utils/firebase/user-service';
+import { fetchAndApplyUserPreferences } from '@/utils/user-preferences-sync';
 import { getIdToken, reload } from '@react-native-firebase/auth';
 
 interface AuthContextType {
@@ -71,6 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return () => subscription.remove();
   }, [reloadUser]);
+
+  useEffect(() => {
+    if (!user) return;
+    upsertUserDocument(user).catch((e) => console.warn('upsertUserDocument (session):', e));
+    const t = setTimeout(() => {
+      fetchAndApplyUserPreferences(user.uid).catch((e) =>
+        console.warn('fetchAndApplyUserPreferences:', e),
+      );
+    }, 400);
+    return () => clearTimeout(t);
+  }, [user?.uid]);
 
   useEffect(() => {
     // isFirstEvent distinguishes a persisted session being restored on startup
