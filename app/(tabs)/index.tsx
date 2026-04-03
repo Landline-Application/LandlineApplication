@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Alert,
-  Animated,
   Dimensions,
   Modal,
   Platform,
@@ -11,19 +10,37 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  Vibration,
   View,
 } from 'react-native';
 
 import { router } from 'expo-router';
 
+import { Card } from '@/components/core/card';
+import { RotaryDialButton } from '@/components/core/rotary-dial-button';
+import { SessionCard } from '@/components/core/session-card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
-import { COLORS } from '@/constants/colors';
+import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
-import { useLandlineStore } from '@/hooks/use-landline-store';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SessionMode, useLandlineStore } from '@/hooks/use-landline-store';
+import { haptics } from '@/services/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
+
+// Format duration in human-readable format
+const formatDuration = (diffSeconds: number): string => {
+  const days = Math.floor(diffSeconds / 86400);
+  const hours = Math.floor((diffSeconds % 86400) / 3600);
+  const minutes = Math.floor((diffSeconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m`;
+  }
+};
 
 interface NotificationSummary {
   total: number;
@@ -34,12 +51,15 @@ interface NotificationSummary {
 
 // Redirect to landline screen as the main entry point
 export default function HomeScreen() {
-  // Get state from Zustand store
+  const insets = useSafeAreaInsets();
+  // Get state from Zustand store (FIXED: no broken dependencies)
   const {
     isActive,
     hasPermission,
     notifications,
     sessionStartTime,
+    sessionMode,
+    sessionEndTime,
     activateLandlineMode,
     deactivateLandlineMode,
     requestPermission,
@@ -48,14 +68,11 @@ export default function HomeScreen() {
   } = useLandlineStore();
 
   // Component-specific UI state (keep these)
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState('0:00');
-
-  // Animations (keep these - component-specific)
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<SessionMode>('indefinite');
+  const [selectedDuration, setSelectedDuration] = useState(30);
+  const [timeDisplay, setTimeDisplay] = useState('0:00');
 
   // Initialize store on mount (FIXED: no broken dependencies)
   useEffect(() => {
@@ -66,61 +83,40 @@ export default function HomeScreen() {
   // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
 
-  // Pulse animation when active
-  useEffect(() => {
-    if (isActive) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      pulse.start();
-
-      // Glow animation
-      Animated.timing(glowAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: false,
-      }).start();
-
-      return () => pulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-      glowAnim.setValue(0);
-    }
-  }, [isActive, pulseAnim, glowAnim]);
-
-  // Timer for session duration
+  // Timer for session duration / countdown
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (isActive && sessionStartTime) {
       interval = setInterval(() => {
         const now = new Date();
-        const diff = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
-        const hours = Math.floor(diff / 3600);
-        const minutes = Math.floor((diff % 3600) / 60);
-        const seconds = diff % 60;
-
-        if (hours > 0) {
-          setElapsedTime(
-            `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+        if (sessionMode === 'timer' && sessionEndTime) {
+          // Countdown mode
+          const remaining = Math.max(
+            0,
+            Math.floor((sessionEndTime.getTime() - now.getTime()) / 1000),
           );
+          setTimeDisplay(formatDuration(remaining));
+          if (remaining === 0) {
+            // Timer complete - could auto-deactivate here
+            Alert.alert(
+              'Focus Time Complete',
+              'Your Landline session has ended. You can stay in Landline mode or deactivate now.',
+              [
+                { text: 'Stay Active', style: 'cancel' },
+                { text: 'Deactivate', onPress: () => deactivateLandlineMode() },
+              ],
+            );
+          }
         } else {
-          setElapsedTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+          // Indefinite mode - count up
+          const diff = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
+          setTimeDisplay(formatDuration(diff));
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, sessionStartTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, sessionStartTime, sessionMode, sessionEndTime]);
 
   const handleRequestPermission = async () => {
     try {
@@ -147,35 +143,22 @@ export default function HomeScreen() {
       );
       return;
     }
-    setShowConfirmModal(true);
+    setShowModeSelectionModal(true);
   };
 
   const confirmActivation = async () => {
-    setShowConfirmModal(false);
-
-    // Haptic feedback
-    if (Platform.OS !== 'web') {
-      Vibration.vibrate(50);
-    }
-
-    // Button press animation
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    setShowModeSelectionModal(false);
+    haptics.medium();
 
     try {
-      // Activate via store (handles all native calls, verification, auto-refresh)
-      await activateLandlineMode();
-      setElapsedTime('0:00');
+      // Activate via store with selected mode and duration
+      if (selectedMode === 'timer') {
+        await activateLandlineMode('timer', selectedDuration);
+        setTimeDisplay(formatDuration(selectedDuration * 60));
+      } else {
+        await activateLandlineMode('indefinite');
+        setTimeDisplay('0m');
+      }
     } catch {
       Alert.alert('Error', 'Could not activate Landline Mode. Please try again.');
     }
@@ -187,11 +170,7 @@ export default function HomeScreen() {
 
   const confirmDeactivation = async () => {
     setShowDeactivateModal(false);
-
-    // Haptic feedback
-    if (Platform.OS !== 'web') {
-      Vibration.vibrate(50);
-    }
+    haptics.medium();
 
     try {
       // Deactivate via store (handles all native calls, verification, stop refresh)
@@ -221,64 +200,66 @@ export default function HomeScreen() {
 
   const summary = getNotificationSummary();
 
-  const glowColor = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(37, 99, 235, 0)', 'rgba(37, 99, 235, 0.3)'],
-  });
-
   // Web fallback with mock UI
   if (Platform.OS === 'web') {
     return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+        >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Landline Mode</Text>
-            <Text style={styles.headerSubtitle}>Take a break from notifications</Text>
+            <Text style={[styles.headerTitle, { color: COLORS.foreground }]}>Landline Mode</Text>
+            <Text style={[styles.headerSubtitle, { color: COLORS.text.secondary }]}>
+              Take a break from notifications
+            </Text>
           </View>
 
           <View style={styles.toggleContainer}>
-            <Pressable
-              onPress={() => {
-                // Web fallback - just toggle for demo
-                if (isActive) {
-                  deactivateLandlineMode();
-                } else {
-                  activateLandlineMode();
-                }
-              }}
-              style={[styles.mainToggle, isActive && styles.mainToggleActive]}
-            >
-              <MaterialIcons
-                name={isActive ? 'notifications-off' : 'notifications'}
-                size={56}
-                color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
-                style={styles.toggleIcon}
-              />
-              <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
-                {isActive ? 'ACTIVE' : 'INACTIVE'}
-              </Text>
-              <Text style={styles.toggleHint}>
-                {isActive ? 'Tap to deactivate' : 'Tap to activate'}
-              </Text>
-            </Pressable>
+            <Card variant="elevated" padding="lg" borderRadius="xl">
+              <Pressable
+                onPress={() => {
+                  if (isActive) {
+                    deactivateLandlineMode();
+                  } else {
+                    activateLandlineMode();
+                  }
+                }}
+                style={styles.webToggleButton}
+              >
+                <MaterialIcons
+                  name={isActive ? 'notifications-off' : 'notifications'}
+                  size={56}
+                  color={isActive ? COLORS.primary : COLORS.text.muted}
+                />
+                <Text
+                  style={[
+                    styles.webToggleStatus,
+                    { color: isActive ? COLORS.primary : COLORS.text.secondary },
+                  ]}
+                >
+                  {isActive ? 'ACTIVE' : 'INACTIVE'}
+                </Text>
+              </Pressable>
+            </Card>
           </View>
 
-          <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>Web Preview Mode</Text>
-            <Text style={styles.infoText}>
+          <Card variant="base" padding="lg">
+            <Text style={[styles.infoTitle, { color: COLORS.foreground }]}>Web Preview Mode</Text>
+            <Text style={[styles.infoText, { color: COLORS.text.secondary }]}>
               Full Landline Mode functionality is available on Android devices.
             </Text>
-          </View>
+          </Card>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -289,101 +270,64 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Main Toggle Area */}
+        {/* Main Toggle Area - Rotary Dial Button */}
         <View style={styles.toggleContainer}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }], alignItems: 'center' }}>
-            <Animated.View style={[styles.glowEffect, { backgroundColor: glowColor }]} />
-
-            <Pressable
-              onPress={isActive ? handleDeactivate : handleActivate}
-              style={({ pressed }) => [
-                styles.mainToggle,
-                isActive && styles.mainToggleActive,
-                pressed && styles.mainTogglePressed,
-              ]}
-            >
-              <Animated.View style={{ transform: [{ scale: scaleAnim }], alignItems: 'center' }}>
-                <MaterialIcons
-                  name={isActive ? 'notifications-off' : 'notifications'}
-                  size={56}
-                  color={isActive ? COLORS.dark.primary : COLORS.dark.textSecondary}
-                  style={styles.toggleIcon}
-                />
-                <Text style={[styles.toggleStatus, isActive && styles.toggleStatusActive]}>
-                  {isActive ? 'ACTIVE' : 'INACTIVE'}
-                </Text>
-                <Text style={styles.toggleHint}>
-                  {isActive ? 'Tap to deactivate' : 'Tap to activate'}
-                </Text>
-              </Animated.View>
-            </Pressable>
-          </Animated.View>
+          <RotaryDialButton
+            active={isActive}
+            onPress={isActive ? handleDeactivate : handleActivate}
+            disabled={false}
+          />
         </View>
 
         {/* Session Info (when active) */}
         {isActive && (
           <View style={styles.sessionInfo}>
-            <View style={styles.sessionCard}>
-              <Text style={styles.sessionLabel}>Session Duration</Text>
-              <Text style={styles.sessionValue}>{elapsedTime}</Text>
-            </View>
-            <View style={styles.sessionCard}>
-              <Text style={styles.sessionLabel}>Notifications Captured</Text>
-              <Text style={styles.sessionValue}>{summary.total}</Text>
-            </View>
+            <SessionCard
+              label={sessionMode === 'timer' ? 'Time Remaining' : 'Session Duration'}
+              value={timeDisplay}
+              variant="primary"
+              style={styles.flexCard}
+            />
+            <SessionCard
+              label="Notifications"
+              value={summary.total}
+              variant="secondary"
+              style={styles.flexCard}
+            />
           </View>
         )}
 
         {/* Status Cards */}
         <View style={styles.statusSection}>
-          {/* Permission Status */}
-          <View style={[styles.statusCard, !hasPermission && styles.statusCardWarning]}>
-            <View style={styles.statusCardHeader}>
-              <MaterialIcons
-                name={hasPermission ? 'check-circle' : 'warning'}
-                size={18}
-                color={hasPermission ? COLORS.dark.primary : COLORS.dark.warning}
-                style={styles.statusCardIcon}
-              />
-              <Text style={styles.statusCardTitle}>Notification Access</Text>
-            </View>
-            <Text style={styles.statusCardText}>
-              {hasPermission ? 'Landline can capture notifications' : 'Required for Landline Mode'}
-            </Text>
-            {!hasPermission && (
-              <TouchableOpacity style={styles.statusCardButton} onPress={handleRequestPermission}>
-                <Text style={styles.statusCardButtonText}>Grant Access</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           {/* Notification Summary (when active or has notifications) */}
           {(isActive || notifications.length > 0) && (
-            <TouchableOpacity style={styles.statusCard} onPress={handleViewNotifications}>
-              <View style={styles.statusCardHeader}>
-                <MaterialIcons
-                  name="all-inbox"
-                  size={18}
-                  color={COLORS.dark.textSecondary}
-                  style={styles.statusCardIcon}
-                />
-                <Text style={styles.statusCardTitle}>Captured Notifications</Text>
-              </View>
-              <View style={styles.notificationBreakdown}>
-                <View style={styles.breakdownItem}>
-                  <Text style={styles.breakdownValue}>{summary.messages}</Text>
-                  <Text style={styles.breakdownLabel}>Messages</Text>
+            <TouchableOpacity onPress={handleViewNotifications} activeOpacity={0.7}>
+              <Card variant="elevated" style={styles.statusCard}>
+                <View style={styles.statusCardHeader}>
+                  <MaterialIcons
+                    name="all-inbox"
+                    size={18}
+                    color={COLORS.text.secondary}
+                    style={styles.statusCardIcon}
+                  />
+                  <Text style={styles.statusCardTitle}>Notifications</Text>
                 </View>
-                <View style={styles.breakdownItem}>
-                  <Text style={styles.breakdownValue}>{summary.calls}</Text>
-                  <Text style={styles.breakdownLabel}>Calls</Text>
+                <View style={styles.notificationBreakdown}>
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownValue}>{summary.messages}</Text>
+                    <Text style={styles.breakdownLabel}>Messages</Text>
+                  </View>
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownValue}>{summary.calls}</Text>
+                    <Text style={styles.breakdownLabel}>Calls</Text>
+                  </View>
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownValue}>{summary.apps}</Text>
+                    <Text style={styles.breakdownLabel}>Apps</Text>
+                  </View>
                 </View>
-                <View style={styles.breakdownItem}>
-                  <Text style={styles.breakdownValue}>{summary.apps}</Text>
-                  <Text style={styles.breakdownLabel}>Apps</Text>
-                </View>
-              </View>
-              <Text style={styles.viewAllText}>Tap to view all →</Text>
+                <Text style={styles.viewAllText}>Tap to view all →</Text>
+              </Card>
             </TouchableOpacity>
           )}
         </View>
@@ -401,7 +345,7 @@ export default function HomeScreen() {
             <MaterialIcons
               name="move-to-inbox"
               size={20}
-              color={COLORS.dark.textSecondary}
+              color={COLORS.primary}
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>Notifications are silently captured and logged</Text>
@@ -410,7 +354,7 @@ export default function HomeScreen() {
             <MaterialIcons
               name="volume-off"
               size={20}
-              color={COLORS.dark.textSecondary}
+              color={COLORS.primary}
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>Your phone stays silent - no sounds or vibrations</Text>
@@ -419,7 +363,7 @@ export default function HomeScreen() {
             <MaterialIcons
               name="fact-check"
               size={20}
-              color={COLORS.dark.textSecondary}
+              color={COLORS.primary}
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>Review all notifications later at your convenience</Text>
@@ -428,7 +372,7 @@ export default function HomeScreen() {
             <MaterialIcons
               name="contact-emergency"
               size={20}
-              color={COLORS.dark.textSecondary}
+              color={COLORS.primary}
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>Emergency contacts can still reach you</Text>
@@ -436,31 +380,118 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Activation Confirmation Modal */}
+      {/* Mode Selection Modal */}
       <Modal
-        visible={showConfirmModal}
+        visible={showModeSelectionModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowConfirmModal(false)}
+        onRequestClose={() => setShowModeSelectionModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <MaterialIcons
-              name="notifications-off"
-              size={56}
-              color={COLORS.dark.primary}
-              style={styles.modalIcon}
-            />
-            <Text style={styles.modalTitle}>Activate Landline Mode?</Text>
-            <Text style={styles.modalText}>
-              Your phone will go silent and all notifications will be captured for later review.
-              {'\n\n'}
-              You can deactivate at any time.
-            </Text>
+          <View style={[styles.modalContent, { maxWidth: 380 }]}>
+            <Text style={styles.modalTitle}>Choose Session Type</Text>
+            <Text style={styles.modalText}>How would you like to use Landline Mode?</Text>
+
+            {/* Mode Options */}
+            <View style={styles.modeOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.modeOption,
+                  selectedMode === 'indefinite' && styles.modeOptionSelected,
+                ]}
+                onPress={() => {
+                  haptics.light();
+                  setSelectedMode('indefinite');
+                }}
+              >
+                <MaterialIcons
+                  name="all-inclusive"
+                  size={32}
+                  color={selectedMode === 'indefinite' ? COLORS.primary : COLORS.text.secondary}
+                />
+                <Text
+                  style={[
+                    styles.modeOptionTitle,
+                    selectedMode === 'indefinite' && styles.modeOptionTitleSelected,
+                  ]}
+                >
+                  Indefinite
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modeOption, selectedMode === 'timer' && styles.modeOptionSelected]}
+                onPress={() => {
+                  haptics.light();
+                  setSelectedMode('timer');
+                }}
+              >
+                <MaterialIcons
+                  name="timer"
+                  size={32}
+                  color={selectedMode === 'timer' ? COLORS.primary : COLORS.text.secondary}
+                />
+                <Text
+                  style={[
+                    styles.modeOptionTitle,
+                    selectedMode === 'timer' && styles.modeOptionTitleSelected,
+                  ]}
+                >
+                  Focus Timer
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Description / Duration Selector Area */}
+            <View style={styles.descriptionArea}>
+              {/* Indefinite description */}
+              <View
+                style={[
+                  styles.indefiniteDescription,
+                  { opacity: selectedMode === 'indefinite' ? 1 : 0 },
+                ]}
+                pointerEvents="none"
+              >
+                <Text style={styles.descriptionText}>Stay focused until you decide to stop</Text>
+              </View>
+
+              {/* Timer duration selector */}
+              <View
+                style={[styles.timerControls, { opacity: selectedMode === 'timer' ? 1 : 0 }]}
+                pointerEvents={selectedMode === 'timer' ? 'auto' : 'none'}
+              >
+                <Text style={styles.durationLabel}>Duration</Text>
+                <View style={styles.durationOptions}>
+                  {[15, 30, 60, 120].map((mins) => (
+                    <TouchableOpacity
+                      key={mins}
+                      style={[
+                        styles.durationOption,
+                        selectedDuration === mins && styles.durationOptionSelected,
+                      ]}
+                      onPress={() => {
+                        haptics.light();
+                        setSelectedDuration(mins);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.durationOptionText,
+                          selectedDuration === mins && styles.durationOptionTextSelected,
+                        ]}
+                      >
+                        {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setShowConfirmModal(false)}
+                onPress={() => setShowModeSelectionModal(false)}
               >
                 <Text style={styles.modalButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -468,7 +499,9 @@ export default function HomeScreen() {
                 style={[styles.modalButton, styles.modalButtonConfirm]}
                 onPress={confirmActivation}
               >
-                <Text style={styles.modalButtonConfirmText}>Activate</Text>
+                <Text style={styles.modalButtonConfirmText}>
+                  {selectedMode === 'timer' ? 'Start Timer' : 'Start Session'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -487,7 +520,7 @@ export default function HomeScreen() {
             <MaterialIcons
               name="notifications-active"
               size={56}
-              color={COLORS.dark.warning}
+              color={COLORS.warning}
               style={styles.modalIcon}
             />
             <Text style={styles.modalTitle}>End Landline Mode?</Text>
@@ -514,159 +547,170 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
+
+const organicDialSize = width * 0.75;
+const centerDisplaySize = width * 0.45;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.dark.background,
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   header: {
+    paddingVertical: Spacing.xxl,
     alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.dark.text,
-    marginBottom: 8,
+    fontSize: 32,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.xs,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: COLORS.dark.textSecondary,
-    textAlign: 'center',
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
   },
   toggleContainer: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.xxxl,
+    marginTop: Spacing.lg,
   },
-  glowEffect: {
-    position: 'absolute',
-    width: width * 0.7,
-    height: width * 0.7,
-    borderRadius: width * 0.35,
-    alignSelf: 'center',
-  },
-  mainToggle: {
-    width: width * 0.55,
-    height: width * 0.55,
-    borderRadius: width * 0.275,
-    backgroundColor: COLORS.dark.surface,
-    borderWidth: 3,
-    borderColor: COLORS.dark.border,
-    alignSelf: 'center',
+  // Web toggle styles
+  webToggleButton: {
+    width: organicDialSize,
+    height: organicDialSize,
+    borderRadius: organicDialSize / 2,
+    backgroundColor: COLORS.surface.elevated,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    paddingVertical: Spacing.xl,
   },
-  mainToggleActive: {
-    backgroundColor: COLORS.dark.primary + '20',
-    borderColor: COLORS.dark.primary,
+  webToggleStatus: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    letterSpacing: 1,
+    marginTop: Spacing.lg,
+    fontFamily: 'Nunito_400Regular',
   },
-  mainTogglePressed: {
+  mainButton: {
+    width: width * 0.15,
+    height: width * 0.15,
+    borderRadius: (width * 0.15) / 2,
+    backgroundColor: COLORS.surface.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    zIndex: 10,
+    ...Shadows.lg,
+  },
+  mainButtonPressed: {
     opacity: 0.9,
   },
-  toggleIcon: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  toggleStatus: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.dark.textSecondary,
-    textAlign: 'center',
-    letterSpacing: 2,
-  },
-  toggleStatusActive: {
-    color: COLORS.dark.primary,
-  },
-  toggleHint: {
-    fontSize: 12,
-    color: COLORS.dark.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  sessionInfo: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  sessionCard: {
-    flex: 1,
-    backgroundColor: COLORS.dark.card,
-    borderRadius: 12,
-    padding: 16,
+  centerDashboard: {
+    width: centerDisplaySize,
+    height: centerDisplaySize,
+    borderRadius: Radius.xl,
+    backgroundColor: COLORS.surface.card,
+    justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
+    borderColor: COLORS.accent,
+    ...Shadows.md,
   },
-  sessionLabel: {
+  dashboardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusLabel: {
     fontSize: 12,
-    color: COLORS.dark.textMuted,
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+    letterSpacing: 1,
+    fontFamily: 'Nunito_400Regular',
+    textTransform: 'uppercase',
   },
-  sessionValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.dark.primary,
+  displayValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.sm,
+  },
+  secondaryInfo: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+  },
+  // Session info styles
+  sessionInfo: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginBottom: Spacing.xxxl,
+    width: '100%',
+  },
+  flexCard: {
+    flex: 1,
+    flexBasis: 0,
   },
   statusSection: {
-    gap: 12,
-    marginBottom: 24,
+    gap: Spacing.lg,
+    marginBottom: Spacing.xxxl,
   },
   statusCard: {
-    backgroundColor: COLORS.dark.card,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.surface.card,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
+    borderColor: COLORS.accent,
+    ...Shadows.sm,
   },
   statusCardWarning: {
-    borderColor: COLORS.dark.warning,
-    backgroundColor: COLORS.dark.warning + '10',
+    borderColor: COLORS.warning,
+    backgroundColor: COLORS.warning + '15',
   },
   statusCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.md,
   },
   statusCardIcon: {
-    marginRight: 10,
+    marginRight: Spacing.lg,
     width: 24,
     textAlign: 'center',
   },
   statusCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark.text,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
   },
   statusCardText: {
     fontSize: 14,
-    color: COLORS.dark.textSecondary,
+    color: COLORS.text.secondary,
     marginLeft: 34,
+    fontFamily: 'Nunito_400Regular',
   },
   statusCardButton: {
-    backgroundColor: COLORS.dark.warning,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
+    backgroundColor: COLORS.warning,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.lg,
     marginLeft: 34,
     alignSelf: 'flex-start',
   },
@@ -674,14 +718,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+    fontFamily: 'Nunito_400Regular',
   },
   notificationBreakdown: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: COLORS.dark.divider,
+    borderTopColor: COLORS.accent,
   },
   breakdownItem: {
     flex: 1,
@@ -689,131 +734,239 @@ const styles = StyleSheet.create({
   },
   breakdownValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.dark.text,
+    fontWeight: '700',
+    color: COLORS.primary,
+    fontFamily: 'Fraunces_700Bold',
   },
   breakdownLabel: {
     fontSize: 12,
-    color: COLORS.dark.textMuted,
-    marginTop: 4,
+    color: COLORS.text.muted,
+    marginTop: Spacing.sm,
+    fontFamily: 'Nunito_400Regular',
   },
   viewAllText: {
     fontSize: 14,
-    color: COLORS.dark.primary,
+    color: COLORS.primary,
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: Spacing.lg,
+    fontFamily: 'Nunito_400Regular',
   },
   recentSessionsSection: {
-    backgroundColor: COLORS.dark.card,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.surface.card,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
-    marginBottom: 24,
+    borderColor: COLORS.accent,
+    marginBottom: Spacing.xxxl,
+    ...Shadows.sm,
   },
   recentSessionsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark.text,
-    marginBottom: 12,
+    color: COLORS.foreground,
+    marginBottom: Spacing.lg,
+    fontFamily: 'Nunito_400Regular',
   },
   recentSessionsPlaceholder: {
     fontSize: 14,
-    color: COLORS.dark.textMuted,
+    color: COLORS.text.muted,
     textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
   },
   infoSection: {
-    backgroundColor: COLORS.dark.card,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.surface.card,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
+    borderColor: COLORS.accent,
+    ...Shadows.sm,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark.text,
-    marginBottom: 16,
+    color: COLORS.foreground,
+    marginBottom: Spacing.xl,
+    fontFamily: 'Nunito_400Regular',
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.lg,
   },
   infoIcon: {
-    marginRight: 12,
+    marginRight: Spacing.lg,
     width: 28,
     textAlign: 'center',
   },
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: COLORS.dark.textSecondary,
+    color: COLORS.text.secondary,
     lineHeight: 20,
+    fontFamily: 'Nunito_400Regular',
   },
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
   },
   modalContent: {
-    backgroundColor: COLORS.dark.card,
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: COLORS.surface.elevated,
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
     width: '100%',
     maxWidth: 340,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    ...Shadows.lg,
   },
   modalIcon: {
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.dark.text,
-    marginBottom: 12,
+    fontWeight: '700',
+    color: COLORS.foreground,
+    marginBottom: Spacing.md,
     textAlign: 'center',
+    fontFamily: 'Fraunces_700Bold',
   },
   modalText: {
     fontSize: 16,
-    color: COLORS.dark.textSecondary,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
+    fontFamily: 'Nunito_400Regular',
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.lg,
     width: '100%',
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: Spacing.lg,
+    borderRadius: Radius.lg,
     alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: COLORS.dark.surface,
+    backgroundColor: COLORS.surface.base,
     borderWidth: 1,
-    borderColor: COLORS.dark.border,
+    borderColor: COLORS.accent,
   },
   modalButtonConfirm: {
-    backgroundColor: COLORS.dark.primary,
+    backgroundColor: COLORS.primary,
   },
   modalButtonDeactivate: {
-    backgroundColor: COLORS.dark.warning,
+    backgroundColor: COLORS.warning,
   },
   modalButtonCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark.textSecondary,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
   },
   modalButtonConfirmText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.text.onPrimary,
+    fontFamily: 'Nunito_400Regular',
+  },
+  // Mode Selection Styles
+  modeOptions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+    width: '100%',
+  },
+  modeOption: {
+    flex: 1,
+    backgroundColor: COLORS.surface.base,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  modeOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '15',
+  },
+  modeOptionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    marginTop: Spacing.sm,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  modeOptionTitleSelected: {
+    color: COLORS.primary,
+  },
+  // Description Area Styles (shared space for description and timer)
+  descriptionArea: {
+    width: '100%',
+    minHeight: 80,
+    marginBottom: Spacing.xl,
+    position: 'relative',
+  },
+  indefiniteDescription: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: Spacing.lg,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    textAlign: 'center',
+  },
+  timerControls: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  durationLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  durationOptions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  durationOption: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.md,
+    backgroundColor: COLORS.surface.base,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+  },
+  durationOptionSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  durationOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  durationOptionTextSelected: {
+    color: COLORS.text.onPrimary,
   },
 });

@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScreenLayoutProps {
   children: React.ReactNode;
@@ -10,12 +10,21 @@ interface ScreenLayoutProps {
 }
 
 export function FormLayout({ children, style }: ScreenLayoutProps) {
+  const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView style={[styles.container, style]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+        style,
+      ]}
+    >
+      <KeyboardAvoidingView behavior="padding" style={styles.keyboardView}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -24,7 +33,7 @@ export function FormLayout({ children, style }: ScreenLayoutProps) {
           {children}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

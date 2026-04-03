@@ -33,16 +33,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_REFRESH_MS = 15_000;
 
-function getIdTokenWithTimeout(
-  user: FirebaseAuthTypes.User,
-): Promise<string> {
+function getIdTokenWithTimeout(user: FirebaseAuthTypes.User): Promise<string> {
   return Promise.race([
     getIdToken(user, true),
     new Promise<string>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('token-refresh-timeout')),
-        TOKEN_REFRESH_MS,
-      ),
+      setTimeout(() => reject(new Error('token-refresh-timeout')), TOKEN_REFRESH_MS),
     ),
   ]);
 }

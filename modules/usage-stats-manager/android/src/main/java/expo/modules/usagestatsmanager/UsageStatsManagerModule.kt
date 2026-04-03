@@ -4,10 +4,15 @@ import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.provider.Settings
+import android.util.Base64
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.io.ByteArrayOutputStream
 
 class UsageStatsManagerModule : Module() {
     override fun definition() = ModuleDefinition {
@@ -49,33 +54,67 @@ class UsageStatsManagerModule : Module() {
                     ?: emptyList()
 
             val packageManager = ctx.packageManager
-            val appUsage = stats
-                .filter { it.packageName != ctx.packageName }
-                .mapNotNull { stat ->
-                    val totalTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        stat.totalTimeVisible
-                    } else {
-                        stat.totalTimeInForeground
-                    }
-                    if (totalTime <= 0L) return@mapNotNull null
 
+            // INTERVAL_DAILY returns one entry per package per day bucket — group and sum first.
+            val aggregated = mutableMapOf<String, Long>()
+            for (stat in stats) {
+                if (stat.packageName == ctx.packageName) continue
+                val totalTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    stat.totalTimeVisible
+                } else {
+                    stat.totalTimeInForeground
+                }
+                if (totalTime <= 0L) continue
+                aggregated[stat.packageName] = (aggregated[stat.packageName] ?: 0L) + totalTime
+            }
+
+            val appUsage = aggregated.entries
+                .sortedByDescending { it.value }
+                .take(safeLimit)
+                .mapNotNull { (pkg, totalTime) ->
                     val appName = try {
-                        val appInfo = packageManager.getApplicationInfo(stat.packageName, 0)
+                        val appInfo = packageManager.getApplicationInfo(pkg, 0)
                         packageManager.getApplicationLabel(appInfo).toString()
                     } catch (_: Exception) {
-                        stat.packageName
+                        pkg
                     }
 
-                    mapOf(
-                        "packageName" to stat.packageName,
+                    val iconBase64 = try {
+                        val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                        val drawable = packageManager.getApplicationIcon(appInfo)
+                        drawableToBase64(drawable)
+                    } catch (_: Exception) {
+                        null
+                    }
+
+                    val entry = mutableMapOf<String, Any>(
+                        "packageName" to pkg,
                         "appName" to appName,
                         "totalTimeMs" to totalTime
                     )
+                    if (iconBase64 != null) {
+                        entry["iconBase64"] = iconBase64
+                    }
+                    entry
                 }
-                .sortedByDescending { (it["totalTimeMs"] as? Long) ?: 0L }
-                .take(safeLimit)
 
             appUsage
+        }
+    }
+
+    private fun drawableToBase64(drawable: Drawable): String? {
+        return try {
+            val size = 48
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream)
+            bitmap.recycle()
+            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+        } catch (_: Exception) {
+            null
         }
     }
 
