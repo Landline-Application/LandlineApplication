@@ -106,6 +106,7 @@ export default function RootLayout() {
             <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="permissions" options={{ headerShown: false }} />
+            <Stack.Screen name="profile" options={{ headerShown: false }} />
             <Stack.Screen name="terms-and-privacy" options={{ headerShown: false }} />
             <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
           </Stack>

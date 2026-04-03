@@ -432,6 +432,14 @@ export default function SettingsScreen() {
               </View>
             </View>
 
+            <TouchableOpacity
+              style={styles.outlineButton}
+              onPress={() => router.push('/profile' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.outlineButtonText}>Profile & preferences</Text>
+            </TouchableOpacity>
+
             {user?.email && !user.emailVerified && (
               <View style={styles.verifyBanner}>
                 <MaterialIcons name="info-outline" size={14} color="#996600" />
