@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 
 interface EmailPasswordInputProps {
   email: string;
@@ -43,7 +43,7 @@ export function EmailPasswordInput({
           autoCorrect={false}
           editable={!isLoading}
           accessibilityLabel="Email Input"
-          accessibilityErrorMessage={emailError}
+          accessibilityHint={emailError}
         />
         {emailError ? (
           <Text style={styles.errorText} accessibilityLiveRegion="polite">
@@ -66,7 +66,7 @@ export function EmailPasswordInput({
           autoCorrect={false}
           editable={!isLoading}
           accessibilityLabel="Password Input"
-          accessibilityErrorMessage={passwordError}
+          accessibilityHint={passwordError}
         />
         {passwordError ? (
           <Text style={styles.errorText} accessibilityLiveRegion="polite">
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     borderWidth: 1.5,
-    borderColor: COLORS.cardBorder,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    borderColor: COLORS.surface.border,
+    fontFamily: 'monospace',
   },
   inputError: {
     borderColor: '#c44536',

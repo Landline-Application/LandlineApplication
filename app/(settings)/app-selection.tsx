@@ -22,7 +22,7 @@ import { LandlineColors } from '@/constants/theme';
 import * as DndManager from '@/modules/dnd-manager';
 import type { AppInfo } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function normalizeDigits(input: string): string {
   return input.replace(/\D/g, '');
@@ -44,6 +44,7 @@ const BYPASS_PRESET_CALLS = [
 ] as const;
 
 export default function AppSelectionScreen() {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [installedApps, setInstalledApps] = useState<AppInfo[]>([]);
@@ -119,8 +120,7 @@ export default function AppSelectionScreen() {
     if (!searchQuery.trim()) return installedApps;
     const q = searchQuery.toLowerCase();
     return installedApps.filter(
-      (a) =>
-        a.appName.toLowerCase().includes(q) || a.packageName.toLowerCase().includes(q),
+      (a) => a.appName.toLowerCase().includes(q) || a.packageName.toLowerCase().includes(q),
     );
   }, [installedApps, searchQuery]);
 
@@ -165,7 +165,10 @@ export default function AppSelectionScreen() {
     if (Platform.OS !== 'android') return;
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow contacts access to add numbers from your address book.');
+      Alert.alert(
+        'Permission needed',
+        'Allow contacts access to add numbers from your address book.',
+      );
       return;
     }
     const { data } = await Contacts.getContactsAsync({
@@ -186,10 +189,14 @@ export default function AppSelectionScreen() {
   const onPickContact = useCallback(
     (contact: Contacts.Contact) => {
       const digitsList =
-        contact.phoneNumbers?.map((p) => normalizeDigits(p.number ?? '')).filter((d) => d.length >= 7) ??
-        [];
+        contact.phoneNumbers
+          ?.map((p) => normalizeDigits(p.number ?? ''))
+          .filter((d) => d.length >= 7) ?? [];
       if (digitsList.length === 0) {
-        Alert.alert('No valid numbers', 'That contact has no phone numbers with at least 7 digits.');
+        Alert.alert(
+          'No valid numbers',
+          'That contact has no phone numbers with at least 7 digits.',
+        );
         return;
       }
       mergeEmergencyDigits(digitsList);
@@ -198,23 +205,24 @@ export default function AppSelectionScreen() {
     [mergeEmergencyDigits],
   );
 
-  const addBypassPreset = useCallback((packageNames: readonly string[]) => {
-    setAllowedPackages((prev) => {
-      const next = new Set(prev);
-      for (const p of packageNames) {
-        if (installedApps.some((a) => a.packageName === p)) {
-          next.add(p);
+  const addBypassPreset = useCallback(
+    (packageNames: readonly string[]) => {
+      setAllowedPackages((prev) => {
+        const next = new Set(prev);
+        for (const p of packageNames) {
+          if (installedApps.some((a) => a.packageName === p)) {
+            next.add(p);
+          }
         }
-      }
-      return next;
-    });
-  }, [installedApps]);
+        return next;
+      });
+    },
+    [installedApps],
+  );
 
   const filteredContacts = useMemo(
     () =>
-      contactList.filter((c) =>
-        (c.name ?? '').toLowerCase().includes(contactSearch.toLowerCase()),
-      ),
+      contactList.filter((c) => (c.name ?? '').toLowerCase().includes(contactSearch.toLowerCase())),
     [contactList, contactSearch],
   );
 
@@ -264,8 +272,8 @@ export default function AppSelectionScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
+      <View style={styles.container}>
+        <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
           <Text style={styles.unsupportedTitle}>Android only</Text>
           <Text style={styles.unsupportedText}>
             Notification permissions use Android notification access. They are not available on this
@@ -275,24 +283,24 @@ export default function AppSelectionScreen() {
             <Text style={styles.backBtnText}>Go back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
+      <View style={styles.container}>
+        <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
           <ActivityIndicator size="large" color={LandlineColors.dark.primary} />
           <Text style={styles.loadingText}>Loading apps…</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
           <Text style={styles.headerBtnText}>← Back</Text>
         </TouchableOpacity>
@@ -305,7 +313,7 @@ export default function AppSelectionScreen() {
           <Text
             style={[
               styles.headerBtnText,
-              (hasChanges && !saving) ? styles.headerBtnTextActive : styles.headerBtnTextMuted,
+              hasChanges && !saving ? styles.headerBtnTextActive : styles.headerBtnTextMuted,
             ]}
           >
             {saving ? '…' : 'Save'}
@@ -348,7 +356,11 @@ export default function AppSelectionScreen() {
             </View>
 
             <View style={styles.sectionHeaderRow}>
-              <MaterialIcons name="phone-in-talk" size={18} color={LandlineColors.dark.textSecondary} />
+              <MaterialIcons
+                name="phone-in-talk"
+                size={18}
+                color={LandlineColors.dark.text.secondary}
+              />
               <Text style={styles.sectionHeader}>Emergency contacts</Text>
             </View>
             <Text style={styles.hint}>
@@ -356,7 +368,11 @@ export default function AppSelectionScreen() {
               pick from contacts. Minimum 7 digits per entry.
             </Text>
 
-            <TouchableOpacity style={styles.primaryOutlineButton} onPress={openContactPicker} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.primaryOutlineButton}
+              onPress={openContactPicker}
+              activeOpacity={0.8}
+            >
               <MaterialIcons name="contact-phone" size={20} color={LandlineColors.dark.primary} />
               <Text style={styles.primaryOutlineButtonText}>Add from contacts</Text>
             </TouchableOpacity>
@@ -365,7 +381,7 @@ export default function AppSelectionScreen() {
               <View key={num} style={styles.emergencyRow}>
                 <Text style={styles.emergencyDigits}>{num}</Text>
                 <TouchableOpacity onPress={() => removeEmergency(num)} hitSlop={12}>
-                  <MaterialIcons name="close" size={22} color={LandlineColors.dark.textMuted} />
+                  <MaterialIcons name="close" size={22} color={LandlineColors.dark.text.muted} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -376,7 +392,7 @@ export default function AppSelectionScreen() {
                 value={newPhone}
                 onChangeText={setNewPhone}
                 placeholder="Add number"
-                placeholderTextColor={LandlineColors.dark.textMuted}
+                placeholderTextColor={LandlineColors.dark.text.muted}
                 keyboardType="phone-pad"
                 autoComplete="tel"
               />
@@ -386,13 +402,13 @@ export default function AppSelectionScreen() {
             </View>
 
             <View style={[styles.sectionHeaderRow, styles.appsHeader]}>
-              <MaterialIcons name="apps" size={18} color={LandlineColors.dark.textSecondary} />
+              <MaterialIcons name="apps" size={18} color={LandlineColors.dark.text.secondary} />
               <Text style={styles.sectionHeader}>Apps that bypass Landline Mode</Text>
               <Text style={styles.appsCount}>{allowedPackages.size} selected</Text>
             </View>
             <Text style={styles.hint}>
-              Selected apps can still show notifications while Landline Mode is on. Use quick add for
-              common apps, then refine the list below.
+              Selected apps can still show notifications while Landline Mode is on. Use quick add
+              for common apps, then refine the list below.
             </Text>
 
             <View style={styles.presetRow}>
@@ -416,13 +432,13 @@ export default function AppSelectionScreen() {
               <MaterialIcons
                 name="search"
                 size={16}
-                color={LandlineColors.dark.textMuted}
+                color={LandlineColors.dark.text.muted}
                 style={styles.searchIcon}
               />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search installed apps…"
-                placeholderTextColor={LandlineColors.dark.textMuted}
+                placeholderTextColor={LandlineColors.dark.text.muted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -451,7 +467,9 @@ export default function AppSelectionScreen() {
                 false: LandlineColors.dark.border,
                 true: LandlineColors.dark.primary,
               }}
-              thumbColor={allowedPackages.has(item.packageName) ? '#fff' : LandlineColors.dark.textSecondary}
+              thumbColor={
+                allowedPackages.has(item.packageName) ? '#fff' : LandlineColors.dark.text.secondary
+              }
             />
           </View>
         )}
@@ -481,7 +499,7 @@ export default function AppSelectionScreen() {
               <TextInput
                 style={styles.modalSearch}
                 placeholder="Search contacts…"
-                placeholderTextColor={LandlineColors.dark.textMuted}
+                placeholderTextColor={LandlineColors.dark.text.muted}
                 value={contactSearch}
                 onChangeText={setContactSearch}
                 autoCorrect={false}
@@ -522,7 +540,7 @@ export default function AppSelectionScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -539,7 +557,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.text.secondary,
   },
   unsupportedTitle: {
     fontSize: 18,
@@ -549,7 +567,7 @@ const styles = StyleSheet.create({
   },
   unsupportedText: {
     fontSize: 14,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -585,7 +603,7 @@ const styles = StyleSheet.create({
     color: LandlineColors.dark.primary,
   },
   headerBtnTextMuted: {
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
   },
   headerTitle: {
     fontSize: 18,
@@ -609,7 +627,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.text.secondary,
     lineHeight: 20,
   },
   toggleRow: {
@@ -631,7 +649,7 @@ const styles = StyleSheet.create({
   },
   toggleSub: {
     fontSize: 12,
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
     marginTop: 4,
   },
   sectionHeaderRow: {
@@ -652,11 +670,11 @@ const styles = StyleSheet.create({
   },
   appsCount: {
     fontSize: 12,
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
   },
   hint: {
     fontSize: 13,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.text.secondary,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -758,7 +776,7 @@ const styles = StyleSheet.create({
   },
   appPackage: {
     fontSize: 11,
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
     marginTop: 2,
   },
   emptyState: {
@@ -766,7 +784,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateText: {
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
   },
   primaryOutlineButton: {
     flexDirection: 'row',
@@ -884,7 +902,7 @@ const styles = StyleSheet.create({
   },
   modalPhone: {
     fontSize: 12,
-    color: LandlineColors.dark.textSecondary,
+    color: LandlineColors.dark.text.secondary,
     marginTop: 2,
   },
   modalEmpty: {
@@ -892,7 +910,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalEmptyText: {
-    color: LandlineColors.dark.textMuted,
+    color: LandlineColors.dark.text.muted,
     fontSize: 14,
   },
 });

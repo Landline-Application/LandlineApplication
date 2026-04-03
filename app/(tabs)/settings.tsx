@@ -3,11 +3,9 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   Modal,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -17,14 +15,16 @@ import {
 
 import { router } from 'expo-router';
 
+import { Button } from '@/components/core/button';
+import { Card } from '@/components/core/card';
+import { AppAttentionCard } from '@/components/settings/app-attention-card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
-import { COLORS } from '@/constants/colors';
+import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { haptics } from '@/services/haptics';
 import { clearAcceptance } from '@/utils/acceptance-storage';
-import { deleteAccountWithEmail } from '@/utils/firebase/auth';
-import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
-import { updateUserDisplayName } from '@/utils/firebase/user-service';
 import {
   type LoggedNotificationRow,
   type NotificationLogDateRangePreset,
@@ -38,14 +38,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut, refreshUser, resetPassword } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
+
+  // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
-  const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
-  const [savingDisplayName, setSavingDisplayName] = useState(false);
+
+  // Deletion state
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
+
+  // Storage state
   const [storageInfo, setStorageInfo] = useState<{
     totalKeys: number;
     landlineKeys: number;
@@ -81,37 +83,13 @@ export default function SettingsScreen() {
     setStorageInfo(info);
   }
 
-  async function handleExportData() {
-    try {
-      const exportedData = await StorageManager.exportUserData();
-
-      if (Platform.OS === 'web') {
-        // For web, create a download
-        const blob = new Blob([exportedData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `landline-data-${new Date().toISOString()}.json`;
-        a.click();
-      } else {
-        // For mobile, use Share API
-        await Share.share({
-          message: exportedData,
-          title: 'Landline Data Export',
-        });
-      }
-    } catch (error) {
-      Alert.alert('Export Failed', 'Could not export your data. Please try again.');
-      console.error('Export error:', error);
-    }
-  }
-
   async function openExportLogModal() {
     setExportLogModalVisible(true);
     setExportLogLoading(true);
     setExportLogRows(null);
     try {
-      const rows = (await NotificationApiManager.getLoggedNotifications()) as LoggedNotificationRow[];
+      const rows =
+        (await NotificationApiManager.getLoggedNotifications()) as LoggedNotificationRow[];
       setExportLogRows(rows);
     } catch (error) {
       console.error('Notification log load error:', error);
@@ -174,21 +152,16 @@ export default function SettingsScreen() {
       const result = await StorageManager.deleteAllUserData();
 
       if (result.success) {
-        // Close modal
         closeDeleteModal();
-
-        // Show success message
         Alert.alert('Data Deleted', 'All your data has been permanently deleted from the app.', [
           {
             text: 'OK',
             onPress: () => {
-              // Navigate to terms screen (fresh start)
-              router.replace('/terms-and-privacy' as any);
+              router.replace('/(onboarding)/onboarding');
             },
           },
         ]);
       } else {
-        // Show error
         Alert.alert(
           'Deletion Failed',
           `Some data could not be deleted:\n${result.errors?.join('\n')}`,
@@ -203,45 +176,6 @@ export default function SettingsScreen() {
     }
   }
 
-  async function handleSaveDisplayName() {
-    if (!user) return;
-    setSavingDisplayName(true);
-    try {
-      await updateUserDisplayName(user, displayNameInput);
-      await refreshUser();
-      Alert.alert('Saved', 'Your display name was updated.');
-    } catch (error) {
-      console.error('Save display name:', error);
-      Alert.alert(
-        'Error',
-        'Could not save your display name. Check your connection and try again.',
-      );
-    } finally {
-      setSavingDisplayName(false);
-    }
-  }
-
-  const isEmailUser = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
-
-  async function handleChangePassword() {
-    if (!user?.email) return;
-    try {
-      await resetPassword(user.email);
-      Alert.alert(
-        'Reset email sent',
-        `We've sent a password reset link to ${user.email}. Check your inbox.`,
-        [{ text: 'OK' }],
-      );
-    } catch (error: any) {
-      const code = error?.code;
-      if (code === 'auth/too-many-requests') {
-        Alert.alert('Too many attempts', 'Please try again later.');
-      } else {
-        Alert.alert('Error', error?.message || 'Could not send reset email. Please try again.');
-      }
-    }
-  }
-
   async function handleSignOut() {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -250,94 +184,25 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut();
-          router.replace('/onboarding');
         },
       },
     ]);
   }
 
-  function openDeleteAccountModal() {
-    Alert.alert(
-      'Delete Account',
-      'This is permanent. Your account cannot be recovered once deleted. Are you sure you want to continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, delete it',
-          style: 'destructive',
-          onPress: () => {
-            setDeleteAccountModalVisible(true);
-            setConfirmationText('');
-            setDeletePassword('');
-          },
-        },
-      ],
-    );
-  }
-
-  function closeDeleteAccountModal() {
-    setDeleteAccountModalVisible(false);
-    setConfirmationText('');
-    setDeletePassword('');
-  }
-
-  async function handleDeleteAccount() {
-    if (!user) return;
-
-    const providers = user.providerData?.map((p) => p.providerId) ?? [];
-    const isEmailUser = providers.includes('password');
-    const isGoogleUser = providers.includes('google.com');
-
-    if (isEmailUser) {
-      if (confirmationText !== 'DELETE') {
-        Alert.alert('Incorrect Confirmation', 'Please type "DELETE" to confirm.');
-        return;
-      }
-      if (!deletePassword) {
-        Alert.alert('Password Required', 'Please enter your password to confirm deletion.');
-        return;
-      }
-    }
-
-    setIsDeleting(true);
-    try {
-      if (isEmailUser) {
-        await deleteAccountWithEmail(user, deletePassword);
-      } else if (isGoogleUser) {
-        await deleteAccountWithGoogle(user);
-      } else {
-        Alert.alert('Unsupported', 'Cannot delete this account type from the app.');
-        setIsDeleting(false);
-        return;
-      }
-
-      // Account deleted — sign out locally and navigate away.
-      await signOut().catch(() => {});
-      closeDeleteAccountModal();
-      router.replace('/onboarding');
-    } catch (error: any) {
-      const code = error?.code;
-      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        Alert.alert('Wrong Password', 'The password you entered is incorrect.');
-      } else if (code === 'auth/too-many-requests') {
-        Alert.alert('Too Many Attempts', 'Too many failed attempts. Please try again later.');
-      } else {
-        Alert.alert('Delete Failed', error?.message || 'An unexpected error occurred.');
-      }
-    } finally {
-      setIsDeleting(false);
-    }
-  }
-
   async function resetTermsAcceptance() {
     try {
+      const { resetOnboarding } = await import('@/utils/onboarding-storage');
       await clearAcceptance();
+      await resetOnboarding();
+
+      // Refresh global status
+      await useLandlineStore.getState().checkStatus();
+
       Alert.alert('Success', 'Terms acceptance cleared. App will now redirect to terms screen.', [
         {
           text: 'OK',
           onPress: () => {
-            // Navigate to terms screen to restart the flow
-            router.replace('/terms-and-privacy' as any);
+            router.replace('/onboarding' as any);
           },
         },
       ]);
@@ -348,19 +213,23 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-      </View>
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.headerSubtitle}>Manage your account and app data</Text>
+        </View>
 
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Account</Text>
+        {/* Account Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Account</Text>
 
-        {isAuthenticated ? (
-          <>
-            <View style={styles.accountProfileCard}>
-              <View style={styles.accountHeaderRow}>
+          {isAuthenticated ? (
+            <Card variant="elevated" padding="lg" style={styles.card}>
+              <View style={styles.profileHeader}>
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>
                     {(user?.displayName?.trim()?.[0] ||
@@ -370,268 +239,275 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
                 <View style={styles.accountInfo}>
-                  <Text style={styles.accountLabel}>Signed in as</Text>
                   {user?.displayName ? (
                     <Text style={styles.accountDisplayName} numberOfLines={1}>
                       {user.displayName}
                     </Text>
                   ) : (
                     <Text style={styles.accountDisplayNameMuted} numberOfLines={1}>
-                      Add a display name below
+                      Anonymous User
                     </Text>
                   )}
                   <Text style={styles.accountEmail} numberOfLines={1}>
-                    {user?.email || user?.phoneNumber || 'Unknown'}
+                    {user?.email || user?.phoneNumber || 'No email associated'}
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.profileDivider} />
-
-              <View style={styles.profileEditBlock}>
-                <View style={styles.profileEditTitleRow}>
-                  <MaterialIcons name="edit" size={20} color={COLORS.textPrimary} />
-                  <Text style={styles.profileEditTitle}>Display name</Text>
-                </View>
-                <Text style={styles.profilePrefsHint}>
-                  This is how you appear in Landline. It stays with your account when you sign in on
-                  another device.
-                </Text>
-                <TextInput
-                  style={styles.profileTextInput}
-                  value={displayNameInput}
-                  onChangeText={setDisplayNameInput}
-                  placeholder="e.g. Alex M."
-                  placeholderTextColor={COLORS.placeholder}
-                  editable={!savingDisplayName}
-                  maxLength={80}
-                  autoCapitalize="words"
-                  autoCorrect
+              <View style={styles.accountActions}>
+                <Button
+                  label="Manage Account"
+                  onPress={() => router.push('/(settings)/account')}
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  style={{ marginBottom: Spacing.md }}
                 />
-                <Text style={styles.profileCharCount}>{displayNameInput.length} / 80</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.profileSaveButton,
-                    (savingDisplayName || !displayNameInput.trim()) &&
-                      styles.profileSaveButtonDisabled,
-                  ]}
-                  onPress={handleSaveDisplayName}
-                  disabled={savingDisplayName || !displayNameInput.trim()}
-                  activeOpacity={0.85}
-                >
-                  <MaterialIcons
-                    name="check"
-                    size={20}
-                    color="#fff"
-                    style={styles.profileSaveIcon}
-                  />
-                  <Text style={styles.profileSaveButtonText}>
-                    {savingDisplayName ? 'Saving…' : 'Save'}
-                  </Text>
-                </TouchableOpacity>
+                <Button
+                  label="Sign Out"
+                  onPress={handleSignOut}
+                  variant="ghost"
+                  size="md"
+                  fullWidth
+                />
               </View>
-            </View>
-
-            {user?.email && !user.emailVerified && (
-              <View style={styles.verifyBanner}>
-                <MaterialIcons name="info-outline" size={14} color="#996600" />
-                <Text style={styles.verifyBannerText}>
-                  Please verify your email. Check your inbox for a verification link.
-                </Text>
-              </View>
-            )}
-
-            {isEmailUser && (
-              <TouchableOpacity style={styles.outlineButton} onPress={handleChangePassword}>
-                <Text style={styles.outlineButtonText}>Change Password</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity style={styles.outlineButton} onPress={handleSignOut}>
-              <Text style={styles.outlineButtonText}>Sign Out</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.dangerButton]}
-              onPress={openDeleteAccountModal}
-            >
-              <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Delete Account</Text>
-              <Text style={styles.actionButtonSubtext}>Permanently remove your account</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <View style={styles.unauthCard}>
+            </Card>
+          ) : (
+            <Card variant="elevated" padding="lg" style={styles.card}>
               <Text style={styles.unauthTitle}>Join Landline</Text>
               <Text style={styles.unauthSubtitle}>
                 Create an account to sync your settings and access features across devices.
               </Text>
-              <TouchableOpacity
-                style={styles.primaryAuthButton}
-                onPress={() => router.push('/create-account')}
-              >
-                <Text style={styles.primaryAuthButtonText}>Create Account</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.secondaryAuthButton}
-                onPress={() => router.push('/login')}
-              >
-                <Text style={styles.secondaryAuthButtonText}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
+              <View style={styles.unauthButtons}>
+                <Button
+                  label="Create Account"
+                  onPress={() => router.push('/(settings)/create-account')}
+                  fullWidth
+                  variant="primary"
+                  style={{ marginBottom: Spacing.md }}
+                />
+                <Button
+                  label="Sign In"
+                  onPress={() => router.push('/(settings)/sign-in')}
+                  fullWidth
+                  variant="secondary"
+                />
+              </View>
+            </Card>
+          )}
+        </View>
 
-      {/* Storage Info Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Storage Information</Text>
-        {storageInfo && (
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Landline Data:</Text>
-              <Text style={styles.infoValue}>{storageInfo.landlineKeys} items</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Estimated Size:</Text>
-              <Text style={styles.infoValue}>{storageInfo.estimatedSize}</Text>
-            </View>
-          </View>
-        )}
-      </View>
+        {/* App Permissions Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>App Permissions</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/core-permissions' as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="lock" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Permissions</Text>
+                  <Text style={styles.menuItemSubtitle}>Review and grant app access</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
 
-      <View style={styles.section}>
-        <Button
-          title="Reset Terms Acceptance (Testing)"
-          onPress={resetTermsAcceptance}
-          color="#ff6b6b"
-        />
-      </View>
+            <View style={styles.itemDivider} />
 
-      {/* App Permissions Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>App Permissions</Text>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/app-selection' as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="apps" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Bypass List</Text>
+                  <Text style={styles.menuItemSubtitle}>Choose apps that can ignore silencing</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/permissions' as any)}
-        >
-          <View style={styles.actionButtonRow}>
-            <MaterialIcons name="lock" size={18} color="#fff" style={styles.actionButtonIcon} />
-            <Text style={styles.actionButtonText}>Manage Permissions</Text>
-          </View>
-          <Text style={styles.actionButtonSubtext}>Review and grant app permissions</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/app-selection' as any)}
-        >
-          <View style={styles.actionButtonRow}>
-            <MaterialIcons name="apps" size={18} color="#fff" style={styles.actionButtonIcon} />
-            <Text style={styles.actionButtonText}>Notification permissions</Text>
-          </View>
-          <Text style={styles.actionButtonSubtext}>
-            Choose which apps bypass Landline Mode and add emergency contacts (Android)
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tools Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Tools</Text>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/(tabs)/landline' as any)}
-        >
-          <View style={styles.actionButtonRow}>
-            <MaterialIcons
-              name="notifications-off"
-              size={18}
-              color="#fff"
-              style={styles.actionButtonIcon}
-            />
-            <Text style={styles.actionButtonText}>Landline Mode</Text>
-          </View>
-          <Text style={styles.actionButtonSubtext}>Manage your Landline mode settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/(tabs)/debug-tools' as any)}
-        >
-          <View style={styles.actionButtonRow}>
-            <MaterialIcons name="build" size={18} color="#fff" style={styles.actionButtonIcon} />
-            <Text style={styles.actionButtonText}>Debug Tools</Text>
-          </View>
-          <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
-        </TouchableOpacity>
-
+        {/* App Attention Section */}
         {Platform.OS === 'android' && (
-          <TouchableOpacity style={styles.actionButton} onPress={openExportLogModal}>
-            <View style={styles.actionButtonRow}>
-              <MaterialIcons
-                name="description"
-                size={18}
-                color="#fff"
-                style={styles.actionButtonIcon}
-              />
-              <Text style={styles.actionButtonText}>Export notification logs (CSV)</Text>
-            </View>
-            <Text style={styles.actionButtonSubtext}>
-              Date range, sort order, optional app filter — save to a folder
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>App Attention</Text>
+            <AppAttentionCard limit={5} showViewMore />
+          </View>
         )}
-      </View>
 
-      {/* Data Management Section — only shown when signed in */}
-      {isAuthenticated && (
+        {/* Tools Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Tools & Diagnostics</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/(tabs)/landline' as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="notifications-off" size={22} color={COLORS.secondary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Landline Mode</Text>
+                  <Text style={styles.menuItemSubtitle}>Configure silencing engine</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/(tabs)/debug-tools' as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="build" size={22} color={COLORS.secondary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Debug Console</Text>
+                  <Text style={styles.menuItemSubtitle}>System logs and developer tools</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Data Management</Text>
-
-          <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
-            <View style={styles.actionButtonRow}>
-              <MaterialIcons name="upload" size={18} color="#fff" style={styles.actionButtonIcon} />
-              <Text style={styles.actionButtonText}>Export My Data</Text>
+          <Card variant="elevated" padding="lg" style={styles.card}>
+            <View style={styles.storageSummary}>
+              <View style={styles.storageItem}>
+                <Text style={styles.storageValue}>{storageInfo?.landlineKeys ?? 0}</Text>
+                <Text style={styles.storageLabel}>Data Points</Text>
+              </View>
+              <View style={styles.storageDivider} />
+              <View style={styles.storageItem}>
+                <Text style={styles.storageValue}>{storageInfo?.estimatedSize ?? '0 KB'}</Text>
+                <Text style={styles.storageLabel}>Total Size</Text>
+              </View>
             </View>
-            <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.actionButton, styles.dangerButton]}
-            onPress={openDeleteModal}
-          >
-            <View style={styles.actionButtonRow}>
-              <MaterialIcons
-                name="delete-forever"
-                size={18}
-                color="#fff"
-                style={styles.actionButtonIcon}
+            <View style={styles.dataActions}>
+              {Platform.OS === 'android' && (
+                <Button
+                  label="Export notification logs"
+                  onPress={openExportLogModal}
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  style={{ marginBottom: Spacing.md }}
+                />
+              )}
+              <Button
+                label="Delete All Data"
+                onPress={openDeleteModal}
+                variant="danger"
+                size="md"
+                fullWidth
               />
-              <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
-                Delete All My Data
+            </View>
+
+            <View style={styles.warningBox}>
+              <MaterialIcons name="info-outline" size={18} color={COLORS.error} />
+              <Text style={styles.warningText}>
+                Deleting all data is permanent. Export first if you need a backup.
               </Text>
             </View>
-            <Text style={styles.actionButtonSubtext}>
-              Permanently remove all your data from this app
-            </Text>
-          </TouchableOpacity>
-
-          {/* Inline info about what gets deleted */}
-          <View style={styles.deletionInfoBox}>
-            <Text style={styles.deletionInfoTitle}>What gets deleted</Text>
-            <Text style={styles.bulletPoint}>• Terms of Use acceptance record</Text>
-            <Text style={styles.bulletPoint}>• All captured notification logs</Text>
-            <Text style={styles.bulletPoint}>• Landline mode settings</Text>
-            <Text style={styles.bulletPoint}>• All app preferences and settings</Text>
-            <Text style={[styles.infoText, styles.warningText, { marginBottom: 0 }]}>
-              This action cannot be undone. Export your data first.
-            </Text>
-          </View>
+          </Card>
         </View>
-      )}
+
+        {/* Developer Testing */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Development</Text>
+          <Button
+            label="Reset Terms Acceptance"
+            onPress={resetTermsAcceptance}
+            variant="ghost"
+            size="sm"
+            fullWidth
+          />
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.versionText}>Landline v0.1.0 (Alpha)</Text>
+          <Text style={styles.copyrightText}>© 2026 Landline Application</Text>
+        </View>
+      </ScrollView>
+
+      {/* Delete Data Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeDeleteModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Deletion</Text>
+            <Text style={styles.modalBody}>
+              This will permanently delete ALL your data from the Landline app.
+            </Text>
+
+            <View style={styles.confirmBox}>
+              <Text style={styles.confirmLabel}>
+                Type <Text style={styles.confirmHighlight}>DELETE</Text> to confirm:
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                value={confirmationText}
+                onChangeText={setConfirmationText}
+                placeholder="DELETE"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Button
+                label="Cancel"
+                onPress={closeDeleteModal}
+                variant="secondary"
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label="Delete"
+                onPress={handleDeleteAllData}
+                variant="danger"
+                size="md"
+                disabled={confirmationText !== 'DELETE' || isDeleting}
+                loading={isDeleting}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
 
       {/* Notification log CSV export (Android) */}
       <Modal
@@ -670,7 +546,10 @@ export default function SettingsScreen() {
                       styles.exportLogChip,
                       exportLogPreset === key && styles.exportLogChipSelected,
                     ]}
-                    onPress={() => setExportLogPreset(key)}
+                    onPress={() => {
+                      haptics.light();
+                      setExportLogPreset(key);
+                    }}
                   >
                     <Text
                       style={[
@@ -690,7 +569,10 @@ export default function SettingsScreen() {
                   styles.exportLogSortRow,
                   exportLogSort === 'newest' && styles.exportLogSortRowSelected,
                 ]}
-                onPress={() => setExportLogSort('newest')}
+                onPress={() => {
+                  haptics.light();
+                  setExportLogSort('newest');
+                }}
               >
                 <Text style={styles.exportLogSortText}>Newest first</Text>
               </TouchableOpacity>
@@ -699,7 +581,10 @@ export default function SettingsScreen() {
                   styles.exportLogSortRow,
                   exportLogSort === 'oldest' && styles.exportLogSortRowSelected,
                 ]}
-                onPress={() => setExportLogSort('oldest')}
+                onPress={() => {
+                  haptics.light();
+                  setExportLogSort('oldest');
+                }}
               >
                 <Text style={styles.exportLogSortText}>Oldest first</Text>
               </TouchableOpacity>
@@ -710,7 +595,10 @@ export default function SettingsScreen() {
                   styles.exportLogSortRow,
                   exportLogPrivacyMode === 'metadataOnly' && styles.exportLogSortRowSelected,
                 ]}
-                onPress={() => setExportLogPrivacyMode('metadataOnly')}
+                onPress={() => {
+                  haptics.light();
+                  setExportLogPrivacyMode('metadataOnly');
+                }}
               >
                 <Text style={styles.exportLogSortText}>Metadata only (recommended)</Text>
                 <Text style={styles.exportLogSortSubtext}>
@@ -722,7 +610,10 @@ export default function SettingsScreen() {
                   styles.exportLogSortRow,
                   exportLogPrivacyMode === 'full' && styles.exportLogSortRowSelected,
                 ]}
-                onPress={() => setExportLogPrivacyMode('full')}
+                onPress={() => {
+                  haptics.light();
+                  setExportLogPrivacyMode('full');
+                }}
               >
                 <Text style={styles.exportLogSortText}>Full detail</Text>
                 <Text style={styles.exportLogSortSubtext}>
@@ -783,473 +674,238 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Delete Account Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={deleteAccountModalVisible}
-        onRequestClose={closeDeleteAccountModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete Account</Text>
-
-            <Text style={styles.modalText}>
-              This will permanently delete your account. This action cannot be undone.
-            </Text>
-
-            {user?.providerData?.map((p) => p.providerId).includes('password') ? (
-              <>
-                <Text style={styles.modalLabel}>
-                  Type <Text style={styles.modalHighlight}>DELETE</Text> to confirm:
-                </Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={confirmationText}
-                  onChangeText={setConfirmationText}
-                  placeholder="Type DELETE here"
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  editable={!isDeleting}
-                />
-                <Text style={styles.modalLabel}>Enter your password:</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={deletePassword}
-                  onChangeText={setDeletePassword}
-                  placeholder="Password"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isDeleting}
-                />
-              </>
-            ) : (
-              <Text style={[styles.modalText, { marginTop: 8 }]}>
-                You will be asked to sign in with Google to confirm.
-              </Text>
-            )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={closeDeleteAccountModal}
-                disabled={isDeleting}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonDelete,
-                  isDeleting && styles.modalButtonDisabled,
-                ]}
-                onPress={handleDeleteAccount}
-                disabled={isDeleting}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonDeleteText]}>
-                  {isDeleting ? 'Deleting...' : 'Delete Account'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Delete Data Confirmation Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={deleteModalVisible}
-        onRequestClose={closeDeleteModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Data Deletion</Text>
-
-            <Text style={styles.modalText}>
-              This will permanently delete ALL your data from the Landline app, including:
-            </Text>
-
-            <View style={styles.modalList}>
-              <Text style={styles.modalListItem}>• Terms acceptance</Text>
-              <Text style={styles.modalListItem}>• Notification logs</Text>
-              <Text style={styles.modalListItem}>• App settings</Text>
-            </View>
-
-            <Text style={[styles.modalText, styles.modalWarning]}>
-              This action cannot be undone!
-            </Text>
-
-            <Text style={styles.modalLabel}>
-              Type <Text style={styles.modalHighlight}>DELETE</Text> to confirm:
-            </Text>
-
-            <TextInput
-              style={styles.modalInput}
-              value={confirmationText}
-              onChangeText={setConfirmationText}
-              placeholder="Type DELETE here"
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={closeDeleteModal}
-                disabled={isDeleting}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonDelete,
-                  (confirmationText !== 'DELETE' || isDeleting) && styles.modalButtonDisabled,
-                ]}
-                onPress={handleDeleteAllData}
-                disabled={confirmationText !== 'DELETE' || isDeleting}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonDeleteText]}>
-                  {isDeleting ? 'Deleting...' : 'Delete All Data'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.jumbo,
+  },
+  header: {
+    paddingVertical: Spacing.xxl,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 32,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.xs,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
   },
   section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  sectionTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: Spacing.xxl,
   },
   sectionHeader: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 15,
+    fontSize: 18,
+    color: COLORS.primary,
+    fontFamily: 'Fraunces_600SemiBold',
+    marginBottom: Spacing.md,
+    marginLeft: Spacing.xs,
   },
-  infoCard: {
-    backgroundColor: '#f5f5f5',
-    padding: 15,
-    borderRadius: 8,
+  card: {
+    ...Shadows.sm,
   },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  actionButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  actionButtonRow: {
+  // Account section
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  actionButtonIcon: {},
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionButtonSubtext: {
-    color: '#fff',
-    fontSize: 12,
-    opacity: 0.8,
-  },
-  dangerButton: {
-    backgroundColor: '#FF3B30',
-  },
-  dangerButtonText: {
-    color: '#fff',
-  },
-  // Unified account + profile (authenticated)
-  accountProfileCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-      },
-      android: { elevation: 3 },
-    }),
-  },
-  accountHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: Spacing.xl,
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.activeBorder,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: Spacing.lg,
     borderWidth: 2,
-    borderColor: COLORS.cardBorder,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
   avatarInitial: {
-    color: '#F4E4C1',
-    fontSize: 22,
-    fontWeight: '700',
+    color: COLORS.primary,
+    fontSize: 28,
+    fontFamily: 'Fraunces_700Bold',
   },
   accountInfo: {
     flex: 1,
-    minWidth: 0,
   },
-  accountLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  accountDisplayName: {
+    fontSize: 20,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
+  },
+  accountDisplayNameMuted: {
+    fontSize: 18,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    fontStyle: 'italic',
   },
   accountEmail: {
     fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
     marginTop: 2,
   },
-  verifyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#f5d87e',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-  },
-  verifyBannerText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#996600',
-    lineHeight: 17,
-  },
-  accountDisplayName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  accountDisplayNameMuted: {
-    fontSize: 15,
-    fontStyle: 'italic',
-    color: COLORS.textSecondary,
-  },
-  profileDivider: {
-    height: 1,
-    backgroundColor: COLORS.cardBorder,
-    marginVertical: 18,
-    marginHorizontal: 2,
-  },
   profileEditBlock: {
-    paddingTop: 2,
+    marginBottom: Spacing.md,
   },
-  profileEditTitleRow: {
+  inputLabel: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_600SemiBold',
+    marginBottom: Spacing.xs,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  textInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+    marginBottom: Spacing.md,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.accent,
+    marginVertical: Spacing.xl,
+    opacity: 0.5,
+  },
+  accountActions: {
+    marginTop: Spacing.md,
+  },
+  // Menu items
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    paddingVertical: Spacing.md,
   },
-  profileEditTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  profilePrefsHint: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-    lineHeight: 19,
-  },
-  profileTextInput: {
-    borderWidth: 1.5,
-    borderColor: COLORS.cardBorder,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    backgroundColor: COLORS.inputBg,
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  profileCharCount: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    alignSelf: 'flex-end',
-    marginBottom: 12,
-  },
-  profileSaveButton: {
-    backgroundColor: COLORS.activeBorder,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
+  menuItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(93, 112, 82, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    marginRight: Spacing.md,
   },
-  profileSaveButtonDisabled: {
-    opacity: 0.55,
-  },
-  profileSaveIcon: {
-    marginTop: 1,
-  },
-  profileSaveButtonText: {
-    color: '#F4E4C1',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  outlineButton: {
-    borderWidth: 1.5,
-    borderColor: COLORS.activeBorder,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: COLORS.inputBg,
-  },
-  outlineButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  // Unauthenticated card
-  unauthCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-  },
-  unauthTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 8,
-  },
-  unauthSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  primaryAuthButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 10,
-  },
-  primaryAuthButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryAuthButton: {
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-    width: '100%',
-  },
-  secondaryAuthButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deletionInfoBox: {
-    backgroundColor: '#fff5f5',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ffd0cc',
-    padding: 14,
-    marginTop: 4,
-  },
-  deletionInfoTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#cc3b30',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  infoValueEllipsis: {
+  menuItemContent: {
     flex: 1,
-    textAlign: 'right',
   },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#666',
-    marginBottom: 12,
+  menuItemTitle: {
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_600SemiBold',
   },
-  bulletPoint: {
-    fontSize: 14,
-    lineHeight: 24,
-    color: '#666',
-    marginLeft: 10,
+  menuItemSubtitle: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+  },
+  itemDivider: {
+    height: 1,
+    backgroundColor: COLORS.accent,
+    marginLeft: 56,
+    opacity: 0.3,
+  },
+  // Storage
+  storageSummary: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(93, 112, 82, 0.05)',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    alignItems: 'center',
+  },
+  storageItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  storageDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.accent,
+  },
+  storageValue: {
+    fontSize: 22,
+    color: COLORS.primary,
+    fontFamily: 'Fraunces_700Bold',
+  },
+  storageLabel: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    marginTop: 2,
+  },
+  dataActions: {
+    marginBottom: Spacing.lg,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    backgroundColor: 'rgba(193, 140, 93, 0.08)',
+    padding: Spacing.md,
+    borderRadius: Radius.md,
   },
   warningText: {
-    color: '#FF3B30',
-    fontWeight: '600',
-    marginTop: 12,
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 18,
   },
+  // Unauth
+  unauthTitle: {
+    fontSize: 22,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  unauthSubtitle: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: Spacing.xl,
+  },
+  unauthButtons: {
+    width: '100%',
+  },
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(44, 44, 36, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.xl,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
     width: '100%',
     maxWidth: 400,
+    ...Shadows.xl,
   },
   exportLogModalContent: {
     maxHeight: '88%',
@@ -1277,55 +933,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#ccc',
-    backgroundColor: '#f8f8f8',
+    borderColor: COLORS.accent,
+    backgroundColor: COLORS.surface.elevated,
   },
   exportLogChipSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#e8f2ff',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '15',
   },
   exportLogChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#444',
+    color: COLORS.text.secondary,
   },
   exportLogChipTextSelected: {
-    color: '#007AFF',
+    color: COLORS.primary,
   },
   exportLogSortRow: {
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#ddd',
+    borderColor: COLORS.accent,
     marginBottom: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: COLORS.surface.base,
   },
   exportLogSortRowSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#e8f2ff',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '15',
   },
   exportLogSortText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#222',
+    color: COLORS.foreground,
   },
   exportLogSortSubtext: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#666',
+    color: COLORS.text.muted,
     marginTop: 4,
     fontWeight: '400',
   },
   exportLogFilterInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.accent,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
     marginBottom: 12,
-    color: '#111',
+    color: COLORS.foreground,
   },
   exportLogPreviewRow: {
     flexDirection: 'row',
@@ -1337,86 +993,105 @@ const styles = StyleSheet.create({
   exportLogPreviewText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#555',
+    color: COLORS.text.muted,
     marginBottom: 8,
   },
   modalButtonPrimary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
   },
   modalButtonPrimaryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.text.onPrimary,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.md,
     textAlign: 'center',
   },
-  modalText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#666',
-    marginBottom: 12,
-  },
-  modalList: {
-    marginLeft: 10,
-    marginBottom: 12,
-  },
-  modalListItem: {
-    fontSize: 14,
-    lineHeight: 24,
-    color: '#666',
-  },
-  modalWarning: {
-    color: '#FF3B30',
-    fontWeight: 'bold',
+  modalBody: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 22,
     textAlign: 'center',
+    marginBottom: Spacing.xl,
   },
-  modalLabel: {
+  confirmBox: {
+    marginBottom: Spacing.xl,
+  },
+  confirmLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_600SemiBold',
+    marginBottom: Spacing.sm,
   },
-  modalHighlight: {
+  confirmHighlight: {
+    color: COLORS.error,
     fontWeight: 'bold',
-    color: '#FF3B30',
   },
   modalInput: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
     fontSize: 16,
-    marginBottom: 20,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.foreground,
+    marginBottom: Spacing.md,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.md,
+  },
+  modalText: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 22,
+  },
+  modalTextExtra: {
+    fontSize: 14,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
   },
   modalButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: Radius.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: '#f0f0f0',
-  },
-  modalButtonDelete: {
-    backgroundColor: '#FF3B30',
-  },
-  modalButtonDisabled: {
-    opacity: 0.5,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#444',
   },
-  modalButtonDeleteText: {
-    color: '#fff',
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  footer: {
+    marginTop: Spacing.xxl,
+    alignItems: 'center',
+    opacity: 0.5,
+  },
+  versionText: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    marginTop: 4,
   },
 });

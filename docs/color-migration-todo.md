@@ -1,67 +1,29 @@
-# Color Migration TODO
+# Color & Token Migration
 
-`ThemedView` and `ThemedText` have been removed and replaced with plain `View` and `Text`.
-The components no longer auto-inject `backgroundColor` or text `color`.
+The app has been migrated to a standardized design token system in `constants/theme.ts`.
 
-The files below need inline color values added using tokens from `constants/colors.ts` (`COLORS`).
+## Standardized Patterns
 
-## COLORS reference
+### Colors (`COLORS`)
 
-```ts
-COLORS.background; // '#2b2b2b'  — dark app background
-COLORS.cardBg; // '#f5f1e8'  — cream card background
-COLORS.cardBorder; // '#d4c5a0'
-COLORS.activeBorder; // '#5d4e37'
-COLORS.tabBg; // '#c8b88a'
-COLORS.tabBorder; // '#a89968'
-COLORS.textPrimary; // '#5d4e37'  — brown, for use on light (cardBg) backgrounds
-COLORS.textSecondary; // '#7a6a4a'
-COLORS.inputBg; // '#ffffff'
-COLORS.placeholder; // '#999999'
-COLORS.googleBlue; // '#4285F4'
-COLORS.shadow; // '#000000'
-```
+- `COLORS.text.primary` — Main body/heading text (`#2C2C24`)
+- `COLORS.text.secondary` — Muted/secondary text (`#6B6B63`)
+- `COLORS.text.muted` — Placeholder or disabled text
+- `COLORS.text.onPrimary` — Text on top of primary color background
+- `COLORS.surface.base` — Main app background
+- `COLORS.surface.elevated` — Elevated surface (e.g. Navigation Bar)
+- `COLORS.surface.card` — Card background
+- `COLORS.surface.border` — Standard border color
 
----
+### Radius (`Radius`)
 
-## Files needing color pass
+- `Radius.sm` (8px), `Radius.md` (12px), `Radius.lg` (16px), `Radius.xl` (24px)
+- `Radius.full` (9999px), `Radius.pill` (999px)
+- `Radius.card` (32px)
+- `Radius.standard` (16px)
 
-### app/(tabs)/debug-tools.tsx
+## Implementation Notes
 
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/(tabs)/index.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/(tabs)/landline.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/(tabs)/settings.tsx
-
-- `<View>` (was `<ThemedView>`) — needs `backgroundColor`
-- `<Text>` (was `<ThemedText>`) — needs text `color`
-
-### app/onboarding.tsx
-
-- `<View>` (was `<ThemedView>`, `style={styles.container}`) — had `backgroundColor: '#000'` already in StyleSheet, likely fine
-- `<Text>` nodes inside gradient slides — most already have `color: '#fff'` in StyleSheet styles, review remaining unstyled ones
-
-### components/ui/collapsible.tsx
-
-- `<View>` and `<Text>` — title text color not yet set, icon color uses `COLORS.textSecondary` (done)
-
-### components/parallax-scroll-view.tsx
-
-- `headerBackgroundColor` — prop still accepts `{ light, dark }` shape but now only reads `.light`; callers should be updated to pass a single color or the prop shape cleaned up
-
----
-
-## Notes
-
-- `ThemedText` had a `type` prop with a typographic scale (`title`, `subtitle`, `defaultSemiBold`, `link`). Those type-specific font sizes/weights were dropped during the swap. Where headings look wrong, re-add font size/weight to the relevant StyleSheet entries.
-- `parallax-scroll-view.tsx` no longer reads `backgroundColor` from theme; the `<Animated.ScrollView>` background is now transparent (inherits). Add `backgroundColor: COLORS.background` to the scrollview style when doing the color pass.
+- **CVA:** New components should use `class-variance-authority` for variant management (see `components/ui/form/button.tsx`).
+- **Standardized Tokens:** Avoid hardcoded hex values. Always prefer `COLORS`, `Radius`, and `Spacing` tokens.
+- **Landline Mode Store:** Use `useLandlineStore` for managing Landline sessions. The store now handles auto-deactivation and refresh intervals internally.

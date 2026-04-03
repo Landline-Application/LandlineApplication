@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
@@ -8,22 +9,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 const SESSION_START_KEY = 'landline_session_start_time';
+const SESSION_MODE_KEY = 'landline_session_mode';
+const SESSION_END_TIME_KEY = 'landline_session_end_time';
+
+export type SessionMode = 'indefinite' | 'timer';
 
 interface LandlineModeState {
   // State
   isActive: boolean;
   hasPermission: boolean;
-  notifications: any[];
+  hasPostPermission: boolean;
+  hasDndPermission: boolean;
+  lastStatusUpdate: number;
+  notifications: NotebookLogEntry[];
   sessionStartTime: Date | null;
+  sessionMode: SessionMode | null;
+  sessionEndTime: Date | null;
   isLoading: boolean;
   error: string | null;
   refreshError: string | null;
 
   // Internal state (not exposed to UI)
   refreshInterval: ReturnType<typeof setInterval> | null;
+  countdownInterval: ReturnType<typeof setInterval> | null;
 
   // Actions
-  activateLandlineMode: () => Promise<void>;
+  activateLandlineMode: (mode?: SessionMode, durationMinutes?: number) => Promise<void>;
   deactivateLandlineMode: () => Promise<void>;
   checkStatus: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
@@ -32,18 +43,25 @@ interface LandlineModeState {
   clearRefreshError: () => void;
   startAutoRefresh: () => void;
   stopAutoRefresh: () => void;
+  checkTimerCompletion: () => boolean;
 }
 
 export const useLandlineStore = create<LandlineModeState>((set, get) => ({
   // Initial State
   isActive: false,
   hasPermission: false,
+  hasPostPermission: false,
+  hasDndPermission: false,
+  lastStatusUpdate: 0,
   notifications: [],
   sessionStartTime: null,
+  sessionMode: null,
+  sessionEndTime: null,
   isLoading: false,
   error: null,
   refreshError: null,
   refreshInterval: null,
+  countdownInterval: null,
 
   // Action: Check current status from native
   checkStatus: async () => {
@@ -55,10 +73,14 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
     set({ isLoading: true });
     try {
       const perm = NotificationApiManager.hasNotificationListenerPermission();
+      const postPerm = NotificationApiManager.hasPostPermission();
+      const dndPerm = DndManager.hasPermission();
       const active = NotificationApiManager.isLandlineModeActive();
       const logs = await NotificationApiManager.getLoggedNotifications();
 
       let sessionStart: Date | null = null;
+      let sessionMode: SessionMode | null = null;
+      let sessionEnd: Date | null = null;
       if (active) {
         try {
           const stored = await AsyncStorage.getItem(SESSION_START_KEY);
@@ -67,17 +89,27 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
           if (!stored) {
             await AsyncStorage.setItem(SESSION_START_KEY, fallbackTs.toString());
           }
+          const storedMode = (await AsyncStorage.getItem(SESSION_MODE_KEY)) as SessionMode | null;
+          sessionMode = storedMode || 'indefinite';
+          const storedEnd = await AsyncStorage.getItem(SESSION_END_TIME_KEY);
+          sessionEnd = storedEnd ? new Date(parseInt(storedEnd, 10)) : null;
         } catch (storageErr) {
-          console.warn('Failed to read session start time:', storageErr);
+          console.warn('Failed to read session data:', storageErr);
           sessionStart = new Date();
+          sessionMode = 'indefinite';
         }
       }
 
       set({
         hasPermission: perm,
+        hasPostPermission: postPerm,
+        hasDndPermission: dndPerm,
+        lastStatusUpdate: Date.now(),
         isActive: active,
         notifications: Array.isArray(logs) ? logs : [],
         sessionStartTime: sessionStart,
+        sessionMode,
+        sessionEndTime: sessionEnd,
         error: null,
       });
 
@@ -95,7 +127,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
   },
 
   // Action: Activate Landline Mode
-  activateLandlineMode: async () => {
+  activateLandlineMode: async (mode: SessionMode = 'indefinite', durationMinutes?: number) => {
     set({ isLoading: true, error: null });
     try {
       // Call native API to set landline mode
@@ -121,17 +153,25 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
       const now = new Date();
+      let endTime: Date | null = null;
       if (actualActive) {
         try {
           await AsyncStorage.setItem(SESSION_START_KEY, now.getTime().toString());
+          await AsyncStorage.setItem(SESSION_MODE_KEY, mode);
+          if (mode === 'timer' && durationMinutes) {
+            endTime = new Date(now.getTime() + durationMinutes * 60 * 1000);
+            await AsyncStorage.setItem(SESSION_END_TIME_KEY, endTime.getTime().toString());
+          }
         } catch (storageErr) {
-          console.warn('Failed to persist session start time:', storageErr);
+          console.warn('Failed to persist session data:', storageErr);
         }
       }
 
       set({
         isActive: actualActive,
         sessionStartTime: actualActive ? now : null,
+        sessionMode: actualActive ? mode : null,
+        sessionEndTime: actualActive ? endTime : null,
       });
 
       // Start auto-refresh if successful
@@ -177,14 +217,25 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       if (!actualActive) {
         try {
           await AsyncStorage.removeItem(SESSION_START_KEY);
+          await AsyncStorage.removeItem(SESSION_MODE_KEY);
+          await AsyncStorage.removeItem(SESSION_END_TIME_KEY);
         } catch (storageErr) {
-          console.warn('Failed to clear session start time:', storageErr);
+          console.warn('Failed to clear session data:', storageErr);
         }
+      }
+
+      // Clear countdown interval if exists
+      const { countdownInterval } = get();
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
       }
 
       set({
         isActive: actualActive,
         sessionStartTime: actualActive ? get().sessionStartTime : null,
+        sessionMode: actualActive ? get().sessionMode : null,
+        sessionEndTime: actualActive ? get().sessionEndTime : null,
+        countdownInterval: null,
       });
 
       // Final refresh to get latest notifications
@@ -215,33 +266,56 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
     }
   },
 
-  // Action: Start 30-second auto-refresh
+  // Action: Start 30-second auto-refresh and timer check
   startAutoRefresh: () => {
-    const { refreshInterval } = get();
+    const { refreshInterval, countdownInterval } = get();
 
-    // Don't start if already running
-    if (refreshInterval) {
-      return;
+    // 1. Manage Refresh Interval (Notifications)
+    if (!refreshInterval) {
+      // Refresh immediately
+      get().refreshNotifications();
+
+      const interval = setInterval(() => {
+        get().refreshNotifications();
+      }, 30000);
+
+      set({ refreshInterval: interval });
     }
 
-    // Refresh immediately
-    get().refreshNotifications();
+    // 2. Manage Countdown/Timer Interval
+    if (!countdownInterval) {
+      const interval = setInterval(() => {
+        const { sessionMode, sessionEndTime, isActive } = get();
 
-    // Then every 30 seconds
-    const interval = setInterval(() => {
-      get().refreshNotifications();
-    }, 30000);
+        if (!isActive) {
+          get().stopAutoRefresh();
+          return;
+        }
 
-    set({ refreshInterval: interval });
+        // Auto-deactivate if timer mode is complete
+        if (sessionMode === 'timer' && sessionEndTime) {
+          const now = new Date();
+          if (now.getTime() >= sessionEndTime.getTime()) {
+            console.log('Session timer expired, deactivating...');
+            get().deactivateLandlineMode();
+          }
+        }
+      }, 5000); // Check every 5s for timer completion
+
+      set({ countdownInterval: interval });
+    }
   },
 
-  // Action: Stop auto-refresh
+  // Action: Stop all intervals
   stopAutoRefresh: () => {
-    const { refreshInterval } = get();
+    const { refreshInterval, countdownInterval } = get();
     if (refreshInterval) {
       clearInterval(refreshInterval);
-      set({ refreshInterval: null });
     }
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+    }
+    set({ refreshInterval: null, countdownInterval: null });
   },
 
   // Action: Request notification permission
@@ -262,4 +336,15 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
   // Action: Clear errors (for UI to call)
   clearError: () => set({ error: null }),
   clearRefreshError: () => set({ refreshError: null }),
+
+  // Action: Check if timer has completed
+  checkTimerCompletion: () => {
+    const { sessionMode, sessionEndTime, isActive } = get();
+    if (!isActive || sessionMode !== 'timer' || !sessionEndTime) {
+      return false;
+    }
+    const now = new Date();
+    const isComplete = now.getTime() >= sessionEndTime.getTime();
+    return isComplete;
+  },
 }));
