@@ -15,7 +15,7 @@ import {
 
 import * as Contacts from 'expo-contacts';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
@@ -160,14 +160,14 @@ export default function DebugToolsScreen() {
             style={{
               fontSize: 28,
               fontWeight: '800',
-              color: COLORS.dark.text,
+              color: COLORS.dark.text.primary,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
             }}
           >
             Debug Tools
           </Text>
-          <Text style={{ fontSize: 14, color: COLORS.dark.textSecondary }}>
+          <Text style={{ fontSize: 14, color: COLORS.dark.text.secondary }}>
             Testing & System Information
           </Text>
         </View>
@@ -185,7 +185,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             📱 System Status
           </Text>
 
@@ -207,7 +207,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🔔 Notification System
           </Text>
 
@@ -220,7 +220,7 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Permission:
             </Text>
             <Text
@@ -229,7 +229,7 @@ export default function DebugToolsScreen() {
                 fontWeight: '600',
                 color: NotificationApiManager.hasPostPermission()
                   ? COLORS.dark.success
-                  : COLORS.dark.textMuted,
+                  : COLORS.dark.text.muted,
               }}
             >
               {NotificationApiManager.hasPostPermission() ? 'Granted' : 'Denied'}
@@ -245,14 +245,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Logged Notifications:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: COLORS.dark.textMuted,
+                color: COLORS.dark.text.muted,
                 fontVariant: ['tabular-nums'],
               }}
             >
@@ -335,7 +335,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             📞 Landline Mode
           </Text>
 
@@ -348,14 +348,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Landline Mode:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: landlineActive ? COLORS.dark.success : COLORS.dark.textMuted,
+                color: landlineActive ? COLORS.dark.success : COLORS.dark.text.muted,
               }}
             >
               {landlineActive ? 'Active' : 'Inactive'}
@@ -371,14 +371,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Logged Notifications:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: COLORS.dark.textMuted,
+                color: COLORS.dark.text.muted,
                 fontVariant: ['tabular-nums'],
               }}
             >
@@ -445,7 +445,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🚫 Do Not Disturb
           </Text>
 
@@ -458,14 +458,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               DND Permission:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: hasDNDPermission() ? COLORS.dark.success : COLORS.dark.textMuted,
+                color: hasDNDPermission() ? COLORS.dark.success : COLORS.dark.text.muted,
               }}
             >
               {hasDNDPermission() ? 'Granted' : 'Denied'}
@@ -481,10 +481,10 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               DND Status:
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark.textMuted }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark.text.muted }}>
               {dndStatus}
             </Text>
           </View>
@@ -564,7 +564,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             💬 Auto-Reply
           </Text>
 
@@ -577,14 +577,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Auto-Reply Status:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: autoReplyEnabled ? COLORS.dark.success : COLORS.dark.textMuted,
+                color: autoReplyEnabled ? COLORS.dark.success : COLORS.dark.text.muted,
               }}
             >
               {autoReplyEnabled ? 'Enabled' : 'Disabled'}
@@ -600,14 +600,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Service Running:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: isServiceRunning() ? COLORS.dark.success : COLORS.dark.textMuted,
+                color: isServiceRunning() ? COLORS.dark.success : COLORS.dark.text.muted,
               }}
             >
               {isServiceRunning() ? 'Running' : 'Stopped'}
@@ -623,14 +623,14 @@ export default function DebugToolsScreen() {
               borderBottomColor: COLORS.dark.divider,
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, flex: 1 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
               Listener Permission:
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: isListenerEnabled() ? COLORS.dark.success : COLORS.dark.textMuted,
+                color: isListenerEnabled() ? COLORS.dark.success : COLORS.dark.text.muted,
               }}
             >
               {isListenerEnabled() ? 'Granted' : 'Denied'}
@@ -651,14 +651,17 @@ export default function DebugToolsScreen() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: COLORS.dark.textSecondary,
+                  color: COLORS.dark.text.secondary,
                   fontWeight: '600',
                   marginBottom: 4,
                 }}
               >
                 Current Message:
               </Text>
-              <Text selectable style={{ fontSize: 14, color: COLORS.dark.text, lineHeight: 20 }}>
+              <Text
+                selectable
+                style={{ fontSize: 14, color: COLORS.dark.text.primary, lineHeight: 20 }}
+              >
                 {autoReplyMessage}
               </Text>
             </View>
@@ -712,7 +715,7 @@ export default function DebugToolsScreen() {
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: COLORS.dark.textSecondary,
+                color: COLORS.dark.text.secondary,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginTop: 8,
@@ -720,7 +723,7 @@ export default function DebugToolsScreen() {
             >
               Quick Templates:
             </Text>
-            <Text style={{ fontSize: 12, color: COLORS.dark.textMuted, marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, color: COLORS.dark.text.muted, marginBottom: 4 }}>
               Tap a template to load it into the editor
             </Text>
 
@@ -808,7 +811,7 @@ export default function DebugToolsScreen() {
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: COLORS.dark.textSecondary,
+                color: COLORS.dark.text.secondary,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginTop: 8,
@@ -824,14 +827,14 @@ export default function DebugToolsScreen() {
                 borderColor: COLORS.dark.border,
                 borderRadius: 8,
                 padding: 12,
-                color: COLORS.dark.text,
+                color: COLORS.dark.text.primary,
                 fontSize: 14,
                 minHeight: 80,
                 textAlignVertical: 'top',
                 borderCurve: 'continuous',
               }}
               placeholder="Enter custom auto-reply message..."
-              placeholderTextColor={COLORS.dark.textMuted}
+              placeholderTextColor={COLORS.dark.text.muted}
               value={customMessage}
               onChangeText={setCustomMessage}
               multiline
@@ -860,7 +863,7 @@ export default function DebugToolsScreen() {
               style={{
                 fontSize: 13,
                 fontWeight: '600',
-                color: COLORS.dark.textSecondary,
+                color: COLORS.dark.text.secondary,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginTop: 8,
@@ -868,7 +871,7 @@ export default function DebugToolsScreen() {
             >
               Reply to Apps:
             </Text>
-            <Text style={{ fontSize: 12, color: COLORS.dark.textMuted, marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, color: COLORS.dark.text.muted, marginBottom: 4 }}>
               Choose which apps trigger an auto-reply
             </Text>
 
@@ -931,17 +934,17 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🆘 Emergency contacts
           </Text>
 
-          <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary }}>
+          <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary }}>
             Add one or more contacts. Their messages can bypass Landline restrictions (see listener
             rules). Duplicate numbers are skipped.
           </Text>
 
           {emergencyContacts.length === 0 ? (
-            <Text style={{ fontSize: 13, color: COLORS.dark.textMuted, fontStyle: 'italic' }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.muted, fontStyle: 'italic' }}>
               None selected
             </Text>
           ) : (
@@ -963,12 +966,14 @@ export default function DebugToolsScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text }}>
+                    <Text
+                      style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text.primary }}
+                    >
                       {row.name || 'Unknown'}
                     </Text>
                     <Text
                       selectable
-                      style={{ fontSize: 13, color: COLORS.dark.textSecondary, marginTop: 4 }}
+                      style={{ fontSize: 13, color: COLORS.dark.text.secondary, marginTop: 4 }}
                     >
                       {row.phone}
                     </Text>
@@ -1028,7 +1033,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🏠 Home Screen Widget
           </Text>
 
@@ -1042,7 +1047,7 @@ export default function DebugToolsScreen() {
               borderCurve: 'continuous',
             }}
           >
-            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary, lineHeight: 18 }}>
+            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, lineHeight: 18 }}>
               Widget provides quick access to Landline mode from your home screen and quick settings
               panel.
             </Text>
@@ -1117,7 +1122,7 @@ export default function DebugToolsScreen() {
                 marginBottom: 12,
               }}
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: COLORS.dark.text }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: COLORS.dark.text.primary }}>
                 Add emergency contact
               </Text>
               <TouchableOpacity onPress={() => setContactPickerVisible(false)} activeOpacity={0.7}>
@@ -1137,11 +1142,11 @@ export default function DebugToolsScreen() {
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
-                  color: COLORS.dark.text,
+                  color: COLORS.dark.text.primary,
                   fontSize: 14,
                 }}
                 placeholder="Search contacts..."
-                placeholderTextColor={COLORS.dark.textMuted}
+                placeholderTextColor={COLORS.dark.text.muted}
                 value={contactSearch}
                 onChangeText={setContactSearch}
                 autoCorrect={false}
@@ -1202,10 +1207,12 @@ export default function DebugToolsScreen() {
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text }}>
+                    <Text
+                      style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text.primary }}
+                    >
                       {item.name ?? 'Unknown'}
                     </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.dark.textSecondary, marginTop: 2 }}>
+                    <Text style={{ fontSize: 12, color: COLORS.dark.text.secondary, marginTop: 2 }}>
                       {item.phoneNumbers?.[0]?.number ?? ''}
                     </Text>
                   </View>
@@ -1213,7 +1220,7 @@ export default function DebugToolsScreen() {
               )}
               ListEmptyComponent={
                 <View style={{ padding: 24, alignItems: 'center' }}>
-                  <Text style={{ color: COLORS.dark.textMuted, fontSize: 14 }}>
+                  <Text style={{ color: COLORS.dark.text.muted, fontSize: 14 }}>
                     No contacts found
                   </Text>
                 </View>

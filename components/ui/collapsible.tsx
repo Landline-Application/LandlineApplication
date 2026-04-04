@@ -3,7 +3,7 @@ import { PropsWithChildren, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +18,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         <IconSymbol
           name="chevron-right"
           size={18}
-          color={COLORS.textSecondary}
+          color={COLORS.text.secondary}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
         />
 

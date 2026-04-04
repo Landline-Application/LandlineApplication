@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 import { getCountryFlagEmoji } from '@/utils/phone-number';
 
 interface PhoneInputProps {
@@ -34,7 +34,7 @@ export function PhoneInput({
           value={value}
           onChangeText={onChangeText}
           placeholder="2133734253"
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={COLORS.mutedForeground}
           keyboardType="phone-pad"
           autoComplete="tel"
           editable={!isLoading}
@@ -57,22 +57,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   wrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: COLORS.surface.card,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.surface.border,
     paddingHorizontal: 12,
     height: 54,
   },
   wrapperActive: {
-    borderColor: COLORS.activeBorder,
+    borderColor: COLORS.primary,
   },
   flag: {
     fontSize: 18,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   plus: {
     fontSize: 18,
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     fontWeight: '600',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontFamily: 'monospace',
     height: '100%',
   },
   disclaimer: {

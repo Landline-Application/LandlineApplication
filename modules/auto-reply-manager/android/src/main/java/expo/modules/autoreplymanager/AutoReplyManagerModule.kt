@@ -252,8 +252,7 @@ class AutoReplyManagerModule : Module() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun getActiveNotificationsFromService(): List<NotificationInfo> {
         return try {
-            val service = AutoReplyListenerService::class.java
-            val instance = service.getDeclaredField("serviceInstance").get(null) as? AutoReplyListenerService
+            val instance = AutoReplyListenerService.getInstance()
             
             instance?.getActiveNotificationsList()?.map { sbn ->
                 createNotificationInfo(sbn)

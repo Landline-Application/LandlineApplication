@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
 import { FormLayout } from '@/components/ui/form-layout';
 import { Button } from '@/components/ui/form/button';
 import { RolodexCard } from '@/components/ui/roledex-card';
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 import { getPhoneConfirmation, setPhoneConfirmation } from '@/utils/firebase/auth';
 
 const CODE_LENGTH = 6;
@@ -62,8 +62,8 @@ export default function VerifyPhoneScreen() {
         await confirmation.confirm(finalCode);
         setPhoneConfirmation(null);
         router.replace('/(tabs)');
-      } catch (error: any) {
-        const errorCode = error?.code;
+      } catch (error: unknown) {
+        const errorCode = (error as { code?: string })?.code;
         if (errorCode === 'auth/invalid-verification-code') {
           Alert.alert('Wrong Code', 'The code you entered is incorrect. Please try again.');
         } else if (errorCode === 'auth/session-expired') {
@@ -72,7 +72,10 @@ export default function VerifyPhoneScreen() {
             'The verification code has expired. Please request a new one.',
           );
         } else {
-          Alert.alert('Verification Failed', error?.message || 'An unexpected error occurred.');
+          Alert.alert(
+            'Verification Failed',
+            (error as Error)?.message || 'An unexpected error occurred.',
+          );
         }
         setCode(Array(CODE_LENGTH).fill(''));
         inputRefs.current[0]?.focus();
@@ -178,19 +181,19 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 26,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontFamily: 'monospace',
   },
   headerSubtitle: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: COLORS.text.secondary,
     marginTop: 4,
   },
   instruction: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 18,
@@ -206,16 +209,16 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: COLORS.cardBorder,
-    backgroundColor: COLORS.inputBg,
+    borderColor: COLORS.surface.border,
+    backgroundColor: COLORS.surface.card,
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
-    color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: COLORS.text.primary,
+    fontFamily: 'monospace',
   },
   codeInputFilled: {
-    borderColor: COLORS.activeBorder,
+    borderColor: COLORS.primary,
   },
   resendContainer: {
     alignItems: 'center',
@@ -223,11 +226,11 @@ const styles = StyleSheet.create({
   },
   resendTimer: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: COLORS.text.secondary,
   },
   resendLink: {
     fontSize: 13,
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

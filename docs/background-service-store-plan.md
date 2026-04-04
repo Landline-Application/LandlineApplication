@@ -57,7 +57,7 @@ interface BackgroundServiceState {
 
 1. ⏳ Create `hooks/use-background-service-store.ts`
 2. ⏳ Implement state management similar to existing stores
-3. ⏳ Update `app/(tabs)/debug-tools.tsx` to use the new store
+3. ⏳ Update `app/debug/tools.tsx` to use the new store
 4. ⏳ Consider refactoring `useLandlineStore` to use the service store
 
 ## Open Questions
@@ -101,7 +101,7 @@ interface BackgroundServiceState {
 ## Next Steps
 
 1. Create `hooks/use-background-service-store.ts` (not yet implemented)
-2. Wire up the store to `app/(tabs)/debug-tools.tsx` (currently calls `BackgroundServiceManager` directly)
+2. Wire up the store to `app/debug/tools.tsx` (currently calls `BackgroundServiceManager` directly)
 3. Test service control functionality
 4. Decide on landline store integration
 5. Consider adding service controls to main UI (optional)

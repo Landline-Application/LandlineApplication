@@ -58,13 +58,127 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         const val KEY_TIMESTAMP = "timestamp"
         const val KEY_ID = "id"
         
-        private var serviceInstance: LandlineNotificationListenerService? = null
+        @JvmStatic
+        internal var serviceInstance: LandlineNotificationListenerService? = null
         
+        @JvmStatic
         fun isServiceRunning(): Boolean = serviceInstance != null
+
+        @JvmStatic
+        fun getInstance(): LandlineNotificationListenerService? = serviceInstance
+
+        /**
+         * Robustly extract text from a notification, trying multiple sources
+         * and bypassing system censorship if possible.
+         */
+        fun extractNotificationText(notification: Notification): String {
+            val extras = notification.extras ?: return ""
+            
+            // Priority 1: NotificationCompat.MessagingStyle which handles SMS apps properly
+            val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+            if (style != null) {
+                val messages = style.messages
+                if (!messages.isNullOrEmpty()) {
+                    // Only take the last message to avoid building up history
+                    val lastMessage = messages.last()
+                    val text = lastMessage.text?.toString()
+                    if (!text.isNullOrBlank() && !isCensored(text)) {
+                        Log.d(TAG, "Got text from MessagingStyle (last message): ${text.take(50)}")
+                        return text
+                    }
+                }
+            }
+            
+            // Priority 2: EXTRA_BIG_TEXT (often uncensored when EXTRA_TEXT is hidden)
+            extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.takeIf { it.isNotBlank() && !isCensored(it) }?.let {
+                Log.d(TAG, "Got text from BIG_TEXT: ${it.take(50)}")
+                return it
+            }
+            
+            // Priority 3: EXTRA_TEXT (most common)
+            extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.takeIf { it.isNotBlank() && !isCensored(it) }?.let { 
+                Log.d(TAG, "Got text from EXTRA_TEXT: ${it.take(50)}")
+                return it 
+            }
+            
+            // Priority 4: MessagingStyle messages from extras (legacy/raw)
+            @Suppress("DEPRECATION")
+            run {
+                val messages = try {
+                    extras.getParcelableArray(Notification.EXTRA_MESSAGES)
+                } catch (e: Exception) {
+                    null
+                }
+                
+                if (messages != null && messages.isNotEmpty()) {
+                    // Only take the last message
+                    try {
+                        @Suppress("DEPRECATION")
+                        val msgBundle = messages.last() as? android.os.Bundle
+                        if (msgBundle != null) {
+                            val msgText = msgBundle.getCharSequence("text")?.toString()
+                            if (!msgText.isNullOrBlank() && !isCensored(msgText)) {
+                                Log.d(TAG, "Got text from EXTRA_MESSAGES (last): ${msgText.take(50)}")
+                                return msgText
+                            }
+                        }
+                    } catch (e: Exception) { }
+                }
+            }
+            
+            // Priority 5: EXTRA_TITLE_BIG
+            val titleBig = extras.getCharSequence("android.title.big")?.toString()
+            if (!titleBig.isNullOrBlank() && !isCensored(titleBig)) {
+                Log.d(TAG, "Got text from android.title.big: ${titleBig.take(50)}")
+                return titleBig
+            }
+
+            // Priority 6: SUMMARY_TEXT
+            extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString()?.takeIf { it.isNotBlank() && !isCensored(it) }?.let {
+                Log.d(TAG, "Got text from SUMMARY_TEXT: ${it.take(50)}")
+                return it
+            }
+            
+            // Final fallback: just return EXTRA_TEXT even if potentially censored
+            val finalText = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+            if (finalText.isBlank()) {
+                // Last ditch effort: try title as text if text is empty
+                return extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+            }
+            return finalText
+        }
+
+        /**
+         * Robustly extract title from a notification.
+         */
+        fun extractNotificationTitle(notification: Notification): String {
+            val extras = notification.extras ?: return ""
+            
+            // Try standard EXTRA_TITLE first
+            var title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+            
+            // Try CONVERSATION_TITLE for MessagingStyle notifications
+            if (title.isBlank()) {
+                extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()?.let { title = it }
+            }
+            
+            return title
+        }
+
+        private fun isCensored(text: String): Boolean {
+            val trimmed = text.trim()
+            if (trimmed.isEmpty()) return true
+            return trimmed.equals("Sensitive notification content hidden", ignoreCase = true) ||
+                   trimmed.equals("Content hidden", ignoreCase = true) ||
+                   trimmed.equals("New message", ignoreCase = true)
+        }
     }
     
     private val repliedNotifications = mutableSetOf<String>()
     private val emergencyAlertedNotifications = mutableSetOf<String>()
+    
+    private var rebindAttemptCount = 0
+    private val rebindHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     @Volatile private var cachedEmergencyContacts: List<EmergencyContactEntry>? = null
     private val emergencyContactsPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -85,6 +199,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         super.onDestroy()
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
+        rebindHandler.removeCallbacksAndMessages(null)
         serviceInstance = null
         Log.d(TAG, "LandlineNotificationListenerService destroyed")
     }
@@ -92,6 +207,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.d(TAG, "NotificationListener connected")
+        rebindAttemptCount = 0
+        rebindHandler.removeCallbacksAndMessages(null)
     }
 
     override fun onListenerDisconnected() {
@@ -100,7 +217,17 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         
         // Request reconnection if Android automatically disconnected us
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            requestRebind(android.content.ComponentName(this, this::class.java))
+            val delayMs = Math.min(Math.pow(2.0, rebindAttemptCount.toDouble()).toLong() * 1000L, 60000L)
+            Log.d(TAG, "Requesting rebind in ${delayMs}ms (attempt $rebindAttemptCount)")
+            
+            rebindHandler.postDelayed({
+                try {
+                    requestRebind(android.content.ComponentName(this, this::class.java))
+                    rebindAttemptCount++
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to request rebind", e)
+                }
+            }, delayMs)
         }
     }
 
@@ -121,21 +248,21 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
 
         try {
-            val notification = sbn.notification
-            val extras = notification?.extras
+            val notification = sbn.notification ?: return
+            val extras = notification.extras ?: Bundle()
             
-            if (extras == null) {
-                Log.w(TAG, "Notification extras are null, skipping")
-                return
-            }
-
-            // Extract notification data
+            // Debug: Log all extras keys to understand notification structure
+            Log.d(TAG, "Notification from ${sbn.packageName} - Extras keys: ${extras.keySet().joinToString()}")
+            
+            // Extract notification data using robust helper
             val packageName = sbn.packageName ?: "unknown"
-            val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
-            val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+            val title = extractNotificationTitle(notification)
+            val text = extractNotificationText(notification)
             val timestamp = sbn.postTime
             val notificationId = sbn.id
-
+            
+            Log.d(TAG, "Extracted - Title: '$title', Text: '${text.take(100)}...'")
+            
             // Skip if notification is from our own app or system notifications
             if (shouldSkipNotification(packageName, title, text)) {
                 return
@@ -323,8 +450,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             KEY_ID to notificationId
         )
         
+        // Sanitize title and text to avoid breaking the line-based format
+        val sanitizedTitle = title.replace("\n", " ").replace("|", " ")
+        val sanitizedText = text.replace("\n", " ").replace("|", " ")
+
         // Convert to simple string format (will be improved with database later)
-        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$title|$text|$timestamp|$notificationId"
+        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId"
         
         val updatedLogs = if (existingLogs.isEmpty()) {
             logEntry
@@ -477,7 +608,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     private fun saveReplyToHistory(message: String) {
         try {
             val prefs = getSharedPreferences(AUTO_REPLY_PREFS_NAME, Context.MODE_PRIVATE)
-            val historyJson = prefs.getString(KEY_REPLY_HISTORY, "[]")
+            val historyJson = prefs.getString("reply_history", "[]")
             val history = org.json.JSONArray(historyJson)
             
             val replyRecord = org.json.JSONObject()
@@ -493,7 +624,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 history
             }
             
-            prefs.edit().putString(KEY_REPLY_HISTORY, trimmedHistory.toString()).apply()
+            prefs.edit().putString("reply_history", trimmedHistory.toString()).apply()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save reply history", e)
         }
@@ -588,6 +719,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                         NotificationManager.IMPORTANCE_HIGH
                     ).apply {
                         description = "Alerts when your emergency contact reaches you during Landline Mode"
+                        lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
                         enableVibration(true)
                         setSound(
                             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
@@ -608,6 +740,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setVibrate(longArrayOf(0, 500, 200, 500))
@@ -621,4 +754,3 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
     }
 }
-

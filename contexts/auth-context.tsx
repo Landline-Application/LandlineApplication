@@ -33,16 +33,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_REFRESH_MS = 15_000;
 
-function getIdTokenWithTimeout(
-  user: FirebaseAuthTypes.User,
-): Promise<string> {
+function getIdTokenWithTimeout(user: FirebaseAuthTypes.User): Promise<string> {
   return Promise.race([
     getIdToken(user, true),
     new Promise<string>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('token-refresh-timeout')),
-        TOKEN_REFRESH_MS,
-      ),
+      setTimeout(() => reject(new Error('token-refresh-timeout')), TOKEN_REFRESH_MS),
     ),
   ]);
 }
@@ -86,16 +81,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser && isFirstEvent) {
-          // On startup: force a server round-trip to confirm the account still
-          // exists. Catches accounts deleted from the Firebase console while the
-          // app was closed (the local token would otherwise still look valid).
+          // On startup: attempt to refresh the token to confirm the account still exists.
+          // This catches accounts deleted from the Firebase console while the app was closed.
           isFirstEvent = false;
           try {
             await getIdTokenWithTimeout(firebaseUser);
             setUser(firebaseUser);
-          } catch {
-            // Token refresh failed or timed out — treat as signed out.
-            setUser(null);
+          } catch (error: any) {
+            // If the error is a network issue or timeout, DON'T sign out.
+            // Only sign out if the server explicitly tells us the user is gone.
+            const isUserNotFoundError = error?.code === 'auth/user-not-found';
+            if (isUserNotFoundError) {
+              console.warn('User deleted from console, signing out.');
+              setUser(null);
+            } else {
+              // Network error or timeout - stay logged in with current session.
+              console.log('Token refresh failed (likely offline), proceeding with cached user.');
+              setUser(firebaseUser);
+            }
           }
         } else {
           isFirstEvent = false;

@@ -9,8 +9,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/landline-icon.png',
   scheme: 'landlineapplication',
   userInterfaceStyle: 'automatic',
-  // Must stay true: react-native-reanimated 4 + react-native-worklets require New Architecture.
-  newArchEnabled: true,
 
   android: {
     adaptiveIcon: {
@@ -19,7 +17,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/landline-icon.png',
     },
-    edgeToEdgeEnabled: true,
     package: 'com.outersnail.Landline',
     permissions: [
       'android.permission.ACCESS_NOTIFICATION_POLICY',
@@ -49,7 +46,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        image: './assets/images/splash-icon.png',
+        image: './assets/landline-icon.png',
         imageWidth: 200,
         resizeMode: 'contain',
         backgroundColor: '#ffffff',
@@ -75,8 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   experiments: {
     typedRoutes: true,
-    // React Compiler can leave Fast Refresh stuck on "Reloading..." in dev; re-enable when stable.
-    reactCompiler: false,
+    reactCompiler: true,
   },
 
   extra: {
@@ -88,9 +84,3 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   owner: 'landline-application',
 });
-
-
-
-
-
-
