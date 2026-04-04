@@ -51,17 +51,46 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
-        // Opens the app's system notification settings. Returns true if we could launch it.
+        // Requests POST_NOTIFICATIONS via runtime dialog on Android 13+.
+        // Older versions return true immediately (no runtime permission needed).
         AsyncFunction("requestPostPermission") {
             val ctx = appContext.reactContext ?: return@AsyncFunction false
             if (Build.VERSION.SDK_INT < 33) return@AsyncFunction true
 
-            ctx.startActivity(
-                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-            true
+            val alreadyGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (alreadyGranted) return@AsyncFunction true
+
+            try {
+                val activity = appContext.activityProvider?.currentActivity
+                if (activity != null) {
+                    activity.requestPermissions(
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        1001
+                    )
+                    true
+                } else {
+                    // No activity available — fall back to settings
+                    ctx.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                    true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback to settings
+                try {
+                    ctx.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (_: Exception) { }
+                true
+            }
         }
 
         // Create/update a notification channel (Android O+). Returns true if OK.
@@ -132,6 +161,49 @@ class NotificationApiManagerModule : Module() {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 ctx.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        /**
+         * Check if SMS runtime permission is granted (RECEIVE_SMS + SEND_SMS).
+         */
+        Function("hasSmsPermission") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val receiveGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.RECEIVE_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+            val sendGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.SEND_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+            receiveGranted && sendGranted
+        }
+
+        /**
+         * Request SMS runtime permissions (RECEIVE_SMS + SEND_SMS)
+         * via the standard Android permission dialog.
+         */
+        AsyncFunction("requestSmsNotificationPermission") {
+            val ctx = appContext.reactContext ?: return@AsyncFunction false
+            val activity = appContext.activityProvider?.currentActivity
+            if (activity == null) return@AsyncFunction false
+
+            val permissions = arrayOf(
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.SEND_SMS
+            )
+
+            val alreadyGranted = permissions.all {
+                ContextCompat.checkSelfPermission(ctx, it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (alreadyGranted) return@AsyncFunction true
+
+            try {
+                val requestCode = 1002
+                activity.requestPermissions(permissions, requestCode)
                 true
             } catch (e: Exception) {
                 e.printStackTrace()

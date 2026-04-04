@@ -32,6 +32,8 @@ type NotificationApiNativeModule = {
   // Notification Listener (Landline Mode)
   hasNotificationListenerPermission(): boolean;
   requestNotificationListenerPermission(): Promise<boolean>;
+  hasSmsPermission(): boolean;
+  requestSmsNotificationPermission(): Promise<boolean>;
   setLandlineMode(isActive: boolean): boolean;
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
@@ -97,6 +99,14 @@ export function hasNotificationListenerPermission() {
 
 export function requestNotificationListenerPermission() {
   return Native.requestNotificationListenerPermission();
+}
+
+export function requestSmsNotificationPermission() {
+  return Native.requestSmsNotificationPermission();
+}
+
+export function hasSmsPermission() {
+  return Native.hasSmsPermission();
 }
 
 export function setLandlineMode(isActive: boolean) {
@@ -248,6 +258,8 @@ export default {
   notify,
   hasNotificationListenerPermission,
   requestNotificationListenerPermission,
+  hasSmsPermission,
+  requestSmsNotificationPermission,
   setLandlineMode,
   isLandlineModeActive,
   getLoggedNotifications,
