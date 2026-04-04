@@ -1,62 +1,157 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { GuidedNotificationStep } from '@/components/guided-setup/GuidedNotificationStep';
+import { useAppSelection } from '@/components/app-selection/use-app-selection';
+import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 
 const TOTAL_STEPS = 3;
 
 const STEP_CONTENT: { title: string; body: string }[] = [
   {
     title: 'Choose apps',
-    body: 'Placeholder - app selection will move here in the next task.',
+    body:
+      'Turn on notification filtering if you want it, then choose which apps can still notify you during Landline Mode. You’ll add emergency contacts in the next step. Tap Save when you’re ready, then Next.',
   },
   {
     title: 'Emergency contact',
-    body: 'Placeholder - emergency contact step will go here.',
+    body: 'Placeholder — refine this step or merge with app selection in a later pass.',
   },
   {
     title: 'Review',
-    body: 'Placeholder - summary and confirm before finishing.',
+    body: 'Placeholder — show a summary of choices before finishing.',
   },
 ];
 
 export default function GuidedSetup() {
   const insets = useSafeAreaInsets();
 
+  const appSelection = useAppSelection({ onSaveSuccessDismiss: () => {} });
+  const { loading: appListLoading, saving, hasChanges, persist } = appSelection;
+
   const [step, setStep] = useState(1);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.GUIDED_SETUP_STEP);
+        if (cancelled) return;
+        if (raw != null) {
+          const n = parseInt(raw, 10);
+          if (!Number.isNaN(n)) {
+            setStep(Math.min(TOTAL_STEPS, Math.max(1, n)));
+          }
+        }
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const persistStep = useCallback(async (next: number) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.GUIDED_SETUP_STEP, String(next));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const clearProgress = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.GUIDED_SETUP_STEP);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const isFirst = step === 1;
   const isLast = step === TOTAL_STEPS;
   const index = step - 1;
-
   const { title, body } = STEP_CONTENT[index];
 
   function goBack() {
-    if (!isFirst) setStep((s) => s - 1);
+    if (!isFirst) {
+      const next = step - 1;
+      setStep(next);
+      void persistStep(next);
+    }
   }
 
-  function goNext() {
+  async function goNext() {
     if (isLast) {
+      await clearProgress();
       router.replace('/(tabs)' as any);
       return;
     }
-    setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+    const next = Math.min(TOTAL_STEPS, step + 1);
+    setStep(next);
+    void persistStep(next);
   }
+
+  if (!hydrated) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  const showAndroidStep1 = step === 1 && Platform.OS === 'android';
 
   return (
     <View
-      style={[styles.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}
+      style={[
+        styles.container,
+        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+      ]}
     >
       <Text style={styles.progress}>
-        {' '}
-        Step {step} of {TOTAL_STEPS}{' '}
+        Step {step} of {TOTAL_STEPS}
       </Text>
 
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{body}</Text>
+
+      {showAndroidStep1 &&
+        (appListLoading ? (
+          <View style={styles.stepBody}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingHint}>Loading your apps…</Text>
+          </View>
+        ) : (
+          <View style={styles.stepBody}>
+            <GuidedNotificationStep model={appSelection} />
+          </View>
+        ))}
+
+      {step === 1 && Platform.OS !== 'android' && (
+        <Text style={styles.hint}>
+          Notification app selection is available on Android. Use Next to continue the rest of the
+          setup on this device.
+        </Text>
+      )}
 
       <View style={styles.row}>
         <TouchableOpacity
@@ -70,14 +165,36 @@ export default function GuidedSetup() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={goNext} activeOpacity={0.8}>
+        {showAndroidStep1 && (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.buttonOutline,
+              (!hasChanges || saving) && styles.buttonDisabled,
+            ]}
+            onPress={() => void persist()}
+            disabled={!hasChanges || saving}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.buttonTextOutline,
+                (!hasChanges || saving) && styles.buttonTextOutlineMuted,
+              ]}
+            >
+              {saving ? '…' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.button} onPress={() => void goNext()} activeOpacity={0.8}>
           <Text style={styles.buttonTextPrimary}>{isLast ? 'Finish' : 'Next'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={() => router.back()} activeOpacity={0.8}>
-          <Text style={styles.exitLink}>Close</Text>
-        </TouchableOpacity>
       </View>
+
+      <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <Text style={styles.exitLink}>Exit setup</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -87,6 +204,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     backgroundColor: '#fff',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepBody: {
+    flex: 1,
+    minHeight: 0,
+    marginBottom: 12,
+  },
+  loadingHint: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
   },
   progress: {
     fontSize: 13,
@@ -104,28 +236,36 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: '#666',
-    lineHeight: 20,
-    marginBottom: 32,
-    flex: 1,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#888',
   },
   row: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 'auto',
     marginBottom: 24,
   },
   button: {
     flex: 1,
-    alignSelf: 'flex-start',
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#007AFF',
   },
   buttonSecondary: {
-    flex: 1,
     backgroundColor: '#f0f0f0',
+  },
+  buttonOutline: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#007AFF',
   },
   buttonDisabled: {
     opacity: 0.45,
@@ -142,6 +282,14 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: '#999',
+  },
+  buttonTextOutline: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonTextOutlineMuted: {
+    color: '#007AFF',
   },
   exitLink: {
     fontSize: 15,
