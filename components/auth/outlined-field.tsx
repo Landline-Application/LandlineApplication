@@ -44,44 +44,63 @@ export function OutlinedField({
 }: OutlinedFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
   const floatAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const colorAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
 
   const isFloating = isFocused || !!value;
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    Animated.timing(floatAnim, {
-      toValue: 1,
-      duration: 150,
-      useNativeDriver: false,
-    }).start();
-  }, [floatAnim]);
+    Animated.parallel([
+      Animated.timing(floatAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(colorAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [floatAnim, colorAnim]);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
     if (!value) {
-      Animated.timing(floatAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: false,
-      }).start();
+      Animated.parallel([
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(colorAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: false,
+        }),
+      ]).start();
     }
-  }, [floatAnim, value]);
+  }, [floatAnim, colorAnim, value]);
 
-  // Interpolate label position and size (M3: label floats to -8dp above the container top)
-  const labelTop = floatAnim.interpolate({
+  // Interpolate label position and size using transform for native performance
+  const labelTranslateY = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [17, -10], // resting: centered at ~17dp; floating: -10dp (above container edge)
+    outputRange: [0, -27], // 17dp (centered) -> -10dp (above edge)
   });
-  const labelFontSize = floatAnim.interpolate({
+  const labelScale = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [15, 12], // bodyLarge → bodySmall
+    outputRange: [1, 0.8], // 15sp -> 12sp (12/15 = 0.8)
+  });
+  const labelPadding = floatAnim.interpolate({
+    inputRange: [0, 0.1, 1],
+    outputRange: [0, 4, 4],
   });
 
   const hasError = !!error;
   const strokeColor = hasError ? COLORS.destructive : isFocused ? COLORS.primary : COLORS.border;
   const strokeWidth = isFocused || hasError ? 2 : 1;
-  const labelColor = floatAnim.interpolate({
+  const labelColor = colorAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
       COLORS.mutedForeground,
@@ -109,12 +128,13 @@ export function OutlinedField({
           style={[
             styles.label,
             {
-              top: labelTop,
-              fontSize: labelFontSize,
+              top: 17,
+              transform: [{ translateY: labelTranslateY }, { scale: labelScale }],
+              transformOrigin: 'left top',
               color: labelColor,
               // Mask the border behind the label when floating
               backgroundColor: isFloating ? COLORS.background : 'transparent',
-              paddingHorizontal: isFloating ? 4 : 0,
+              paddingHorizontal: labelPadding,
             },
           ]}
           numberOfLines={1}

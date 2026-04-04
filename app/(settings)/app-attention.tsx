@@ -312,9 +312,9 @@ export default function AppAttentionScreen() {
                   return (
                     <View key={app.packageName} style={styles.listItem}>
                       {/* Leading element — app icon */}
-                      {app.iconBase64 ? (
+                      {app.iconUri ? (
                         <Image
-                          source={{ uri: `data:image/png;base64,${app.iconBase64}` }}
+                          source={{ uri: app.iconUri }}
                           style={styles.appIconImage}
                           accessibilityLabel={`${app.appName} icon`}
                         />

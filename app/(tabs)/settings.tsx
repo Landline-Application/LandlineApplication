@@ -202,7 +202,7 @@ export default function SettingsScreen() {
         {
           text: 'OK',
           onPress: () => {
-            router.replace('/onboarding' as any);
+            router.replace('/onboarding');
           },
         },
       ]);
@@ -304,7 +304,7 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
-                router.push('/core-permissions' as any);
+                router.push('/core-permissions');
               }}
               activeOpacity={0.7}
             >
@@ -315,27 +315,6 @@ export default function SettingsScreen() {
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuItemTitle}>Permissions</Text>
                   <Text style={styles.menuItemSubtitle}>Review and grant app access</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.itemDivider} />
-
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                router.push('/app-selection' as any);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
-                  <MaterialIcons name="apps" size={22} color={COLORS.primary} />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Bypass List</Text>
-                  <Text style={styles.menuItemSubtitle}>Choose apps that can ignore silencing</Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -358,7 +337,7 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
-                router.push('/(tabs)/landline' as any);
+                router.push('/debug/landline');
               }}
               activeOpacity={0.7}
             >
@@ -379,7 +358,28 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
-                router.push('/(tabs)/debug-tools' as any);
+                router.push('/debug/bypass-list');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="apps" size={22} color={COLORS.secondary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Bypass List</Text>
+                  <Text style={styles.menuItemSubtitle}>Choose apps that can ignore silencing</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/debug/tools');
               }}
               activeOpacity={0.7}
             >

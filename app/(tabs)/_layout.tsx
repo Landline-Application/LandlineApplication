@@ -41,18 +41,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="settings" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="landline"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="debug-tools"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
