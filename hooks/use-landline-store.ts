@@ -8,6 +8,8 @@ import NotificationApiManager, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
+import { persistLandlineModePreference } from '@/utils/firebase/persist-preferences-remote';
+
 const SESSION_START_KEY = 'landline_session_start_time';
 const SESSION_MODE_KEY = 'landline_session_mode';
 const SESSION_END_TIME_KEY = 'landline_session_end_time';
@@ -178,6 +180,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       if (actualActive) {
         get().startAutoRefresh();
         await get().refreshNotifications();
+        persistLandlineModePreference(true);
       } else {
         throw new Error('Failed to activate Landline Mode');
       }
@@ -240,6 +243,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
 
       // Final refresh to get latest notifications
       await get().refreshNotifications();
+      persistLandlineModePreference(actualActive);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to deactivate';
       set({ error: errorMessage });

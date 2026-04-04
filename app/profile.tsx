@@ -21,7 +21,6 @@ import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
-import { mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -101,7 +100,6 @@ export default function ProfileScreen() {
       } else {
         await deactivateLandlineMode();
       }
-      await mergeUserPreferences(user.uid, { landlineModeOn: next });
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {
@@ -125,7 +123,6 @@ export default function ProfileScreen() {
       } else {
         await disableAutoReply();
       }
-      await mergeUserPreferences(user.uid, { autoReplyEnabled: next });
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {
