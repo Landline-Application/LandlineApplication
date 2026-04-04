@@ -658,7 +658,10 @@ export default function DebugToolsScreen() {
               >
                 Current Message:
               </Text>
-              <Text selectable style={{ fontSize: 14, color: COLORS.dark.text.primary, lineHeight: 20 }}>
+              <Text
+                selectable
+                style={{ fontSize: 14, color: COLORS.dark.text.primary, lineHeight: 20 }}
+              >
                 {autoReplyMessage}
               </Text>
             </View>
@@ -963,7 +966,9 @@ export default function DebugToolsScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text.primary }}>
+                    <Text
+                      style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text.primary }}
+                    >
                       {row.name || 'Unknown'}
                     </Text>
                     <Text
@@ -1202,7 +1207,9 @@ export default function DebugToolsScreen() {
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text.primary }}>
+                    <Text
+                      style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text.primary }}
+                    >
                       {item.name ?? 'Unknown'}
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.dark.text.secondary, marginTop: 2 }}>
