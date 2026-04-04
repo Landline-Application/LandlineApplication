@@ -34,28 +34,28 @@ interface BlobProps {
 
 const BLOB_SHAPES = [
   {
-    borderTopLeftRadius: '50%',
-    borderTopRightRadius: '50%',
-    borderBottomLeftRadius: '50%',
-    borderBottomRightRadius: '50%',
+    borderTopLeftRadius: '60%',
+    borderTopRightRadius: '40%',
+    borderBottomLeftRadius: '45%',
+    borderBottomRightRadius: '55%',
   },
   {
-    borderTopLeftRadius: '50%',
-    borderTopRightRadius: '50%',
-    borderBottomLeftRadius: '50%',
-    borderBottomRightRadius: '50%',
+    borderTopLeftRadius: '40%',
+    borderTopRightRadius: '60%',
+    borderBottomLeftRadius: '55%',
+    borderBottomRightRadius: '45%',
   },
   {
-    borderTopLeftRadius: '50%',
-    borderTopRightRadius: '50%',
-    borderBottomLeftRadius: '50%',
-    borderBottomRightRadius: '50%',
+    borderTopLeftRadius: '55%',
+    borderTopRightRadius: '45%',
+    borderBottomLeftRadius: '60%',
+    borderBottomRightRadius: '40%',
   },
   {
-    borderTopLeftRadius: '50%',
-    borderTopRightRadius: '50%',
-    borderBottomLeftRadius: '50%',
-    borderBottomRightRadius: '50%',
+    borderTopLeftRadius: '45%',
+    borderTopRightRadius: '55%',
+    borderBottomLeftRadius: '40%',
+    borderBottomRightRadius: '60%',
   },
 ];
 

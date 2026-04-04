@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import {
   Alert,
@@ -76,7 +76,6 @@ export default function HomeScreen() {
   const [selectedMode, setSelectedMode] = useState<SessionMode>('indefinite');
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [timeDisplay, setTimeDisplay] = useState('0:00');
-  const alertShownRef = useRef(false);
 
   // Initialize store on mount (FIXED: no broken dependencies)
   useEffect(() => {
@@ -87,55 +86,28 @@ export default function HomeScreen() {
   // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
 
-  // Reset alert flag when session starts
+  // Display-only timer — store handles actual timer expiration
   useEffect(() => {
-    if (isActive) {
-      alertShownRef.current = false;
+    if (!isActive || !sessionStartTime) {
+      setTimeDisplay('0:00');
+      return;
     }
-  }, [isActive]);
 
-  // Timer for session duration / countdown
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isActive && sessionStartTime) {
-      interval = setInterval(() => {
-        const now = new Date();
-        if (sessionMode === 'timer' && sessionEndTime) {
-          // Countdown mode
-          const remaining = Math.max(
-            0,
-            Math.floor((sessionEndTime.getTime() - now.getTime()) / 1000),
-          );
-          setTimeDisplay(formatDuration(remaining));
-          if (remaining === 0 && !alertShownRef.current) {
-            // Timer complete - could auto-deactivate here
-            alertShownRef.current = true;
-            clearInterval(interval);
-            Alert.alert(
-              'Focus Time Complete',
-              'Your Landline session has ended. You can stay in Landline mode or deactivate now.',
-              [
-                {
-                  text: 'Stay Active',
-                  style: 'cancel',
-                  onPress: () => {
-                    // Switch to indefinite mode to keep session alive (count-up from now)
-                    activateLandlineMode('indefinite');
-                  },
-                },
-                { text: 'Deactivate', onPress: () => deactivateLandlineMode() },
-              ],
-            );
-          }
-        } else {
-          // Indefinite mode - count up
-          const diff = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
-          setTimeDisplay(formatDuration(diff));
-        }
-      }, 1000);
-    }
+    const interval = setInterval(() => {
+      const now = new Date();
+      if (sessionMode === 'timer' && sessionEndTime) {
+        const remaining = Math.max(
+          0,
+          Math.floor((sessionEndTime.getTime() - now.getTime()) / 1000),
+        );
+        setTimeDisplay(formatDuration(remaining));
+      } else {
+        const diff = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
+        setTimeDisplay(formatDuration(diff));
+      }
+    }, 1000);
+
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, sessionStartTime, sessionMode, sessionEndTime]);
 
   const handleRequestPermission = async () => {
@@ -204,21 +176,19 @@ export default function HomeScreen() {
     router.push('/(tabs)/notifications');
   };
 
-  const getNotificationSummary = (): NotificationSummary => {
-    const summary = { total: notifications.length, apps: 0, messages: 0, calls: 0 };
+  const summary = useMemo((): NotificationSummary => {
+    const s = { total: notifications.length, apps: 0, messages: 0, calls: 0 };
     notifications.forEach((n) => {
       if (n.category === 'message' || n.appName?.toLowerCase().includes('message')) {
-        summary.messages++;
+        s.messages++;
       } else if (n.category === 'call' || n.appName?.toLowerCase().includes('phone')) {
-        summary.calls++;
+        s.calls++;
       } else {
-        summary.apps++;
+        s.apps++;
       }
     });
-    return summary;
-  };
-
-  const summary = getNotificationSummary();
+    return s;
+  }, [notifications]);
 
   // Web fallback with mock UI
   if (Platform.OS === 'web') {
@@ -482,7 +452,7 @@ export default function HomeScreen() {
               >
                 <Text style={styles.durationLabel}>Duration</Text>
                 <View style={styles.durationOptions}>
-                  {[0.1666, 15, 30, 60, 120].map((mins) => (
+                  {[15, 30, 60, 120].map((mins) => (
                     <TouchableOpacity
                       key={mins}
                       style={[
@@ -500,7 +470,7 @@ export default function HomeScreen() {
                           selectedDuration === mins && styles.durationOptionTextSelected,
                         ]}
                       >
-                        {mins < 1 ? '10s' : mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                        {mins < 60 ? `${mins}m` : `${mins / 60}h`}
                       </Text>
                     </TouchableOpacity>
                   ))}
