@@ -43,57 +43,41 @@ export function OutlinedField({
   ...rest
 }: OutlinedFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const floatAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
-  const colorAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
+  // Use a single value for all animations to ensure synchronization and avoid driver conflicts
+  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    Animated.parallel([
-      Animated.timing(floatAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(colorAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [floatAnim, colorAnim]);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: false, // Must be false to animate colors and background
+    }).start();
+  }, [anim]);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
     if (!value) {
-      Animated.parallel([
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(colorAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: false,
-        }),
-      ]).start();
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: false,
+      }).start();
     }
-  }, [floatAnim, colorAnim, value]);
+  }, [anim, value]);
 
-  // Interpolate label position and size using transform for native performance
-  const labelTranslateY = floatAnim.interpolate({
+  // Interpolate label position and size
+  const labelTranslateY = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -27], // 17dp (centered) -> -10dp (above edge)
+    outputRange: [0, -27],
   });
-  const labelScale = floatAnim.interpolate({
+  const labelScale = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.8], // 15sp -> 12sp (12/15 = 0.8)
+    outputRange: [1, 0.8],
   });
-  // Precisely compensate for scale shift to keep text at 16dp
-  // Resting: left 12 + padding 4 = 16
-  // Floating: left 12 + (padding 4 * 0.8) + 0.8 = 16
-  const labelTranslateX = floatAnim.interpolate({
+  // Compensate for scale shift to keep text perfectly aligned at 16dp from left
+  const labelTranslateX = anim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 0.8],
   });
@@ -101,15 +85,15 @@ export function OutlinedField({
   const hasError = !!error;
   const strokeColor = hasError ? COLORS.destructive : isFocused ? COLORS.primary : COLORS.border;
   const strokeWidth = isFocused || hasError ? 2 : 1;
-  const labelColor = colorAnim.interpolate({
+  const labelColor = anim.interpolate({
     inputRange: [0, 1],
     outputRange: [
       COLORS.mutedForeground,
       hasError ? COLORS.destructive : isFocused ? COLORS.primary : COLORS.mutedForeground,
     ],
   });
-  // Only show background when floating to avoid covering the cursor
-  const labelBgColor = floatAnim.interpolate({
+  // Show background only when floating to prevent covering the cursor
+  const labelBgColor = anim.interpolate({
     inputRange: [0, 0.9, 1],
     outputRange: ['transparent', 'transparent', COLORS.background],
   });
@@ -129,7 +113,21 @@ export function OutlinedField({
         ]}
         accessible={false}
       >
-        {/* Floating label — sits in the gap of the outline, M3-style */}
+        <TextInput
+          ref={inputRef}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          editable={editable}
+          style={[styles.input, { zIndex: 2 }]}
+          placeholderTextColor={COLORS.mutedForeground}
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: !editable }}
+          {...rest}
+        />
+
+        {/* Floating label */}
         <Animated.Text
           style={[
             styles.label,
@@ -144,6 +142,7 @@ export function OutlinedField({
               color: labelColor,
               backgroundColor: labelBgColor,
               paddingHorizontal: 4,
+              zIndex: 1,
             },
           ]}
           numberOfLines={1}
@@ -152,21 +151,7 @@ export function OutlinedField({
           {label}
         </Animated.Text>
 
-        <TextInput
-          ref={inputRef}
-          value={value}
-          onChangeText={onChangeText}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          editable={editable}
-          style={styles.input}
-          placeholderTextColor={COLORS.mutedForeground}
-          accessibilityLabel={label}
-          accessibilityState={{ disabled: !editable }}
-          {...rest}
-        />
-
-        {trailingIcon != null && <View style={styles.trailingIcon}>{trailingIcon}</View>}
+        {trailingIcon != null && <View style={[styles.trailingIcon, { zIndex: 3 }]}>{trailingIcon}</View>}
       </Pressable>
 
       {/* Supporting text — error or helper (M3: bodySmall, colorError / colorOnSurfaceVariant) */}
