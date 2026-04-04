@@ -140,6 +140,11 @@ The resulting `.aab` file can be downloaded from the [Expo dashboard](https://ex
 Runs the build on your machine using your local Android SDK. Requires `ANDROID_HOME` to be set correctly in your environment.
 
 ```bash
+# If you need a new build, you will need to update the version number as such.
+# The CLI will tell you the current version, so all you need to do is increment by one.
+# If you need a different environment change -e
+eas build:version:set -p android -e production
+
 eas build --platform android --profile production --local
 ```
 
