@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GuidedEmergencyStep } from '@/components/guided-setup/GuidedEmergencyStep';
 import { GuidedNotificationStep } from '@/components/guided-setup/GuidedNotificationStep';
 import { useAppSelection } from '@/components/app-selection/use-app-selection';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
@@ -25,8 +26,9 @@ const STEP_CONTENT: { title: string; body: string }[] = [
       'Turn on notification filtering if you want it, then choose which apps can still notify you during Landline Mode. You’ll add emergency contacts in the next step. Tap Save when you’re ready, then Next.',
   },
   {
-    title: 'Emergency contact',
-    body: 'Placeholder — refine this step or merge with app selection in a later pass.',
+    title: 'Emergency numbers',
+    body:
+      'Add numbers that should still break through notification filtering when their digits appear in an alert (for example a text from that number). This is optional if you turned filtering off. Tap Save when you’re ready, then Next.',
   },
   {
     title: 'Review',
@@ -119,6 +121,8 @@ export default function GuidedSetup() {
   }
 
   const showAndroidStep1 = step === 1 && Platform.OS === 'android';
+  const showAndroidStep2 = step === 2 && Platform.OS === 'android';
+  const showSaveInFooter = showAndroidStep1 || showAndroidStep2;
 
   return (
     <View
@@ -153,6 +157,25 @@ export default function GuidedSetup() {
         </Text>
       )}
 
+      {showAndroidStep2 &&
+        (appListLoading ? (
+          <View style={styles.stepBody}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingHint}>Loading…</Text>
+          </View>
+        ) : (
+          <View style={styles.stepBody}>
+            <GuidedEmergencyStep model={appSelection} />
+          </View>
+        ))}
+
+      {step === 2 && Platform.OS !== 'android' && (
+        <Text style={styles.hint}>
+          Emergency numbers for notification filtering are available on Android. Use Next to
+          continue.
+        </Text>
+      )}
+
       <View style={styles.row}>
         <TouchableOpacity
           style={[styles.button, styles.buttonSecondary, isFirst && styles.buttonDisabled]}
@@ -165,7 +188,7 @@ export default function GuidedSetup() {
           </Text>
         </TouchableOpacity>
 
-        {showAndroidStep1 && (
+        {showSaveInFooter && (
           <TouchableOpacity
             style={[
               styles.button,
