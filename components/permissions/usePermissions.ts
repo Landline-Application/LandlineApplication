@@ -9,8 +9,10 @@ import * as DndManager from '@/modules/dnd-manager';
 import {
   hasNotificationListenerPermission,
   hasPostPermission,
+  hasSmsPermission,
   requestNotificationListenerPermission,
   requestPostPermission,
+  requestSmsNotificationPermission,
 } from '@/modules/notification-api-manager';
 import UsageStatsManager from '@/modules/usage-stats-manager';
 
@@ -74,7 +76,7 @@ export function usePermissions(options?: UsePermissionsOptions) {
           'Allows Landline to alert you when someone on your emergency contact list tries to reach you.',
         icon: 'message',
         status: 'unknown',
-        isRequired: true,
+        isRequired: false,
         checkPermission: () => {
           try {
             return hasPostPermission();
@@ -85,6 +87,31 @@ export function usePermissions(options?: UsePermissionsOptions) {
         requestPermission: async () => {
           try {
             return await requestPostPermission();
+          } catch {
+            return false;
+          }
+        },
+      },
+      {
+        id: 'sms_notification_content',
+        name: 'SMS Notification Content',
+        description: 'View text message content in your device settings',
+        whyNeeded:
+          'To display the actual text of incoming messages, your SMS app must be set to show content on notifications. Without this, Landline will only see "Sensitive notification content hidden". Auto-reply may also not work without this setting.',
+        icon: 'sms',
+        status: 'unknown',
+        isRequired: false,
+        checkPermission: () => {
+          try {
+            return hasSmsPermission();
+          } catch {
+            return false;
+          }
+        },
+        requestPermission: async () => {
+          try {
+            await requestSmsNotificationPermission();
+            return false;
           } catch {
             return false;
           }

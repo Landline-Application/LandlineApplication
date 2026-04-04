@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Landline',
   slug: 'landline',
-  version: '0.1.0',
+  version: '0.6.1',
   orientation: 'portrait',
   icon: './assets/landline-icon.png',
   scheme: 'landlineapplication',
