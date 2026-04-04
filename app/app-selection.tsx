@@ -1,6 +1,6 @@
 /**
  * Full-screen notification permissions / app bypass (Android).
- * Guided setup reuses the same logic via `useAppSelection` + `AppSelectionBody` on that screen.
+ * Guided setup uses the same backend via `useAppSelection` with wizard-specific screens.
  */
 import { AppSelectionForm } from '@/components/app-selection/AppSelectionForm';
 
