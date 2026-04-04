@@ -37,7 +37,7 @@ export function EmailPasswordInput({
           onChangeText={onEmailChange}
           onBlur={onEmailBlur}
           placeholder="your@email.com"
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={COLORS.mutedForeground}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -60,7 +60,7 @@ export function EmailPasswordInput({
           onChangeText={onPasswordChange}
           onBlur={onPasswordBlur}
           placeholder="Enter your password"
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={COLORS.mutedForeground}
           secureTextEntry={true}
           autoCapitalize="none"
           autoCorrect={false}
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: COLORS.surface.card,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 16,

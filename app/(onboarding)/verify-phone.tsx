@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: COLORS.surface.border,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: COLORS.surface.card,
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   codeInputFilled: {
-    borderColor: COLORS.activeBorder,
+    borderColor: COLORS.primary,
   },
   resendContainer: {
     alignItems: 'center',
