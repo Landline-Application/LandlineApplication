@@ -7,7 +7,7 @@ import * as DndManager from '@/modules/dnd-manager';
 import type { AppInfo } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 
-export function normalizeDigits(input: string): string {
+function normalizeDigits(input: string): string {
   return input.replace(/\D/g, '');
 }
 
@@ -267,7 +267,6 @@ export function useAppSelection(options: UseAppSelectionOptions = {}) {
     hasChanges,
     filteredApps,
     filteredContacts,
-    contactList,
     togglePackage,
     addEmergency,
     removeEmergency,
@@ -275,7 +274,6 @@ export function useAppSelection(options: UseAppSelectionOptions = {}) {
     onPickContact,
     addBypassPreset,
     persist,
-    load,
   };
 }
 

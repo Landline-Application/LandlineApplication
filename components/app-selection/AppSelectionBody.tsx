@@ -8,8 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from 'react-native';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
@@ -21,15 +19,8 @@ import {
   type AppSelectionModel,
 } from '@/components/app-selection/use-app-selection';
 
-export type AppSelectionBodyProps = {
-  model: AppSelectionModel;
-  /** Use `flex: 1` when the list should fill remaining space (e.g. guided setup). */
-  flatListStyle?: StyleProp<ViewStyle>;
-};
-
-export function AppSelectionBody({ model, flatListStyle }: AppSelectionBodyProps) {
+export function AppSelectionBody({ model }: { model: AppSelectionModel }) {
   const {
-    saving,
     filterEnabled,
     setFilterEnabled,
     allowedPackages,
@@ -42,7 +33,6 @@ export function AppSelectionBody({ model, flatListStyle }: AppSelectionBodyProps
     setContactPickerVisible,
     contactSearch,
     setContactSearch,
-    hasChanges,
     filteredApps,
     filteredContacts,
     togglePackage,
@@ -51,13 +41,11 @@ export function AppSelectionBody({ model, flatListStyle }: AppSelectionBodyProps
     openContactPicker,
     onPickContact,
     addBypassPreset,
-    persist,
   } = model;
 
   return (
     <>
       <FlatList
-        style={flatListStyle}
         data={filteredApps}
         keyExtractor={(item) => item.packageName}
         keyboardShouldPersistTaps="handled"
