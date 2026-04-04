@@ -111,7 +111,7 @@ export function Button({
 }: ButtonProps) {
   // CVA works a bit differently with React Native styles since we can't just concatenate strings
   // We use the variant config to pick the right style objects
-  const config = buttonVariants({ variant, size, disabled: disabled || loading });
+  const config = buttonVariants({ variant, size, disabled: disabled || loading }) as any;
 
   const handlePress = () => {
     haptics.light();

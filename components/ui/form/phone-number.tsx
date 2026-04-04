@@ -34,7 +34,7 @@ export function PhoneInput({
           value={value}
           onChangeText={onChangeText}
           placeholder="2133734253"
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={COLORS.mutedForeground}
           keyboardType="phone-pad"
           autoComplete="tel"
           editable={!isLoading}
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: COLORS.surface.card,
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: COLORS.surface.border,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     height: 54,
   },
   wrapperActive: {
-    borderColor: COLORS.activeBorder,
+    borderColor: COLORS.primary,
   },
   flag: {
     fontSize: 18,

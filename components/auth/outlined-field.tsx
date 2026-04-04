@@ -92,7 +92,7 @@ export function OutlinedField({
     inputRange: [0, 1],
     outputRange: [1, 0.8], // 15sp -> 12sp (12/15 = 0.8)
   });
-  const labelPadding = floatAnim.interpolate({
+  const labelPadding = colorAnim.interpolate({
     inputRange: [0, 0.1, 1],
     outputRange: [0, 4, 4],
   });

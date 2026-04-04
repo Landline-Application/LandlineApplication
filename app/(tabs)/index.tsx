@@ -115,7 +115,14 @@ export default function HomeScreen() {
               'Focus Time Complete',
               'Your Landline session has ended. You can stay in Landline mode or deactivate now.',
               [
-                { text: 'Stay Active', style: 'cancel' },
+                {
+                  text: 'Stay Active',
+                  style: 'cancel',
+                  onPress: () => {
+                    // Switch to indefinite mode to keep session alive (count-up from now)
+                    activateLandlineMode('indefinite');
+                  },
+                },
                 { text: 'Deactivate', onPress: () => deactivateLandlineMode() },
               ],
             );
@@ -475,7 +482,7 @@ export default function HomeScreen() {
               >
                 <Text style={styles.durationLabel}>Duration</Text>
                 <View style={styles.durationOptions}>
-                  {[15, 30, 60, 120].map((mins) => (
+                  {[0.1666, 15, 30, 60, 120].map((mins) => (
                     <TouchableOpacity
                       key={mins}
                       style={[
@@ -493,7 +500,7 @@ export default function HomeScreen() {
                           selectedDuration === mins && styles.durationOptionTextSelected,
                         ]}
                       >
-                        {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                        {mins < 1 ? '10s' : mins < 60 ? `${mins}m` : `${mins / 60}h`}
                       </Text>
                     </TouchableOpacity>
                   ))}

@@ -8,7 +8,7 @@ import { NavigationBar } from '@/components/ui/navigation-bar';
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <NavigationBar {...props} />}
+      tabBar={(props: any) => <NavigationBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}
