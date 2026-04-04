@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuidedEmergencyStep } from '@/components/guided-setup/GuidedEmergencyStep';
 import { GuidedNotificationStep } from '@/components/guided-setup/GuidedNotificationStep';
+import { GuidedReviewStep } from '@/components/guided-setup/GuidedReviewStep';
 import { useAppSelection } from '@/components/app-selection/use-app-selection';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 
@@ -32,7 +33,8 @@ const STEP_CONTENT: { title: string; body: string }[] = [
   },
   {
     title: 'Review',
-    body: 'Placeholder — show a summary of choices before finishing.',
+    body:
+      'Here’s what you chose. Go back if you want to change anything. Tap Finish when you’re ready.',
   },
 ];
 
@@ -122,7 +124,11 @@ export default function GuidedSetup() {
 
   const showAndroidStep1 = step === 1 && Platform.OS === 'android';
   const showAndroidStep2 = step === 2 && Platform.OS === 'android';
-  const showSaveInFooter = showAndroidStep1 || showAndroidStep2;
+  const showStep3 = step === 3;
+  const showSaveInFooter =
+    showAndroidStep1 ||
+    showAndroidStep2 ||
+    (showStep3 && Platform.OS === 'android' && hasChanges);
 
   return (
     <View
@@ -175,6 +181,18 @@ export default function GuidedSetup() {
           continue.
         </Text>
       )}
+
+      {showStep3 &&
+        (appListLoading && Platform.OS === 'android' ? (
+          <View style={styles.stepBody}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingHint}>Loading…</Text>
+          </View>
+        ) : (
+          <View style={styles.stepBody}>
+            <GuidedReviewStep model={appSelection} />
+          </View>
+        ))}
 
       <View style={styles.row}>
         <TouchableOpacity
