@@ -362,7 +362,7 @@ interface DNDModeState {
 - [ ] Emergency contacts list (manual entry, no photos)
 - [ ] AsyncStorage persistence
 - [ ] Integration with Landline activation
-- [ ] Basic testing in debug-tools
+- [ ] Basic testing in /debug/tools
 
 **User Value:** Users can pick from 3 modes and add emergency contacts without leaving the app.
 

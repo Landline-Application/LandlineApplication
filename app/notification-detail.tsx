@@ -5,6 +5,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { MaterialIconName, MaterialIcons } from '@/components/ui/icon-symbol';
+import { haptics } from '@/services/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Notification {
@@ -111,7 +112,14 @@ export default function NotificationDetailScreen() {
           { borderBottomColor: getCategoryColor(category), paddingTop: insets.top + 20 },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        {' '}
+        <TouchableOpacity
+          onPress={() => {
+            haptics.light();
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -131,7 +139,10 @@ export default function NotificationDetailScreen() {
       </View>
 
       {/* Notifications List */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 20 + insets.bottom }]}
+      >
         {notifications.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialIcons name="check-circle" size={64} color="#4CAF50" style={styles.emptyIcon} />
@@ -152,7 +163,10 @@ export default function NotificationDetailScreen() {
                     </View>
                   </View>
                   <TouchableOpacity
-                    onPress={() => handleDismiss(index)}
+                    onPress={() => {
+                      haptics.light();
+                      handleDismiss(index);
+                    }}
                     style={styles.dismissButton}
                   >
                     <Text style={styles.dismissButtonText}>✕</Text>
@@ -172,7 +186,13 @@ export default function NotificationDetailScreen() {
 
             {/* Dismiss All Button */}
             {notifications.length > 1 && (
-              <TouchableOpacity style={styles.dismissAllButton} onPress={handleDismissAll}>
+              <TouchableOpacity
+                style={styles.dismissAllButton}
+                onPress={() => {
+                  haptics.soft();
+                  handleDismissAll();
+                }}
+              >
                 <Text style={styles.dismissAllButtonText}>Dismiss All {category}</Text>
               </TouchableOpacity>
             )}

@@ -70,7 +70,10 @@ class NotificationApiManagerModule : Module() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 if (nm.getNotificationChannel(id) == null) {
-                    nm.createNotificationChannel(NotificationChannel(id, name, importance))
+                    val channel = NotificationChannel(id, name, importance).apply {
+                        lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                    }
+                    nm.createNotificationChannel(channel)
                 }
             }
             true
@@ -95,6 +98,7 @@ class NotificationApiManagerModule : Module() {
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
             NotificationManagerCompat.from(ctx).notify(notificationId, builder.build())
             true
@@ -487,20 +491,17 @@ class NotificationApiManagerModule : Module() {
          * Get list of active notifications (from the listener service)
          */
         Function("getActiveNotifications") {
-            val serviceInstance = LandlineNotificationListenerService::class.java
-                .getDeclaredField("serviceInstance")
-                .get(null) as? LandlineNotificationListenerService
+            val serviceInstance = LandlineNotificationListenerService.getInstance()
             
             val notifications = serviceInstance?.getActiveNotificationsList() ?: emptyArray()
             
             notifications.map { sbn ->
                 val notification = sbn.notification
-                val extras = notification.extras
                 
                 mapOf(
                     "packageName" to sbn.packageName,
-                    "title" to extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
-                    "text" to extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                    "title" to LandlineNotificationListenerService.extractNotificationTitle(notification),
+                    "text" to LandlineNotificationListenerService.extractNotificationText(notification),
                     "timestamp" to sbn.postTime,
                     "hasReplyAction" to (notification.actions?.any { action ->
                         action.remoteInputs?.any { it.allowFreeFormInput } == true

@@ -124,7 +124,6 @@ export function filterNotificationLogsForExport(
   return out;
 }
 
-
 export function sortNotificationLogsByLoggedAt(
   rows: LoggedNotificationRow[],
   order: NotificationLogSortOrder,
