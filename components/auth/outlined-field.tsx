@@ -47,8 +47,6 @@ export function OutlinedField({
   const colorAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
 
-  const isFloating = isFocused || !!value;
-
   const handleFocus = useCallback(() => {
     setIsFocused(true);
     Animated.parallel([
@@ -92,9 +90,12 @@ export function OutlinedField({
     inputRange: [0, 1],
     outputRange: [1, 0.8], // 15sp -> 12sp (12/15 = 0.8)
   });
-  const labelPadding = colorAnim.interpolate({
-    inputRange: [0, 0.1, 1],
-    outputRange: [0, 4, 4],
+  // Precisely compensate for scale shift to keep text at 16dp
+  // Resting: left 12 + padding 4 = 16
+  // Floating: left 12 + (padding 4 * 0.8) + 0.8 = 16
+  const labelTranslateX = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.8],
   });
 
   const hasError = !!error;
@@ -106,6 +107,11 @@ export function OutlinedField({
       COLORS.mutedForeground,
       hasError ? COLORS.destructive : isFocused ? COLORS.primary : COLORS.mutedForeground,
     ],
+  });
+  // Only show background when floating to avoid covering the cursor
+  const labelBgColor = floatAnim.interpolate({
+    inputRange: [0, 0.9, 1],
+    outputRange: ['transparent', 'transparent', COLORS.background],
   });
 
   return (
@@ -129,12 +135,15 @@ export function OutlinedField({
             styles.label,
             {
               top: 17,
-              transform: [{ translateY: labelTranslateY }, { scale: labelScale }],
+              transform: [
+                { translateY: labelTranslateY },
+                { scale: labelScale },
+                { translateX: labelTranslateX },
+              ],
               transformOrigin: 'left top',
               color: labelColor,
-              // Mask the border behind the label when floating
-              backgroundColor: isFloating ? COLORS.background : 'transparent',
-              paddingHorizontal: labelPadding,
+              backgroundColor: labelBgColor,
+              paddingHorizontal: 4,
             },
           ]}
           numberOfLines={1}

@@ -226,14 +226,14 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### Hidden / Debug Pages
 
-| Route                | Purpose               | Exposure                   |
-| -------------------- | --------------------- | -------------------------- |
+| Route                | Purpose               | Exposure                       |
+| -------------------- | --------------------- | ------------------------------ |
 | `/debug/landline`    | Landline mode control | Settings → Tools & Diagnostics |
 | `/debug/tools`       | System diagnostics    | Settings → Tools & Diagnostics |
 | `/debug/bypass-list` | Notification bypass   | Settings → Tools & Diagnostics |
-| `/auto-reply-test`   | Auto-reply testing    | Linked from home           |
-| `/dnd-test`          | DND testing           | Linked from home           |
-| `/modal`             | Template modal        | Unused placeholder         |
+| `/auto-reply-test`   | Auto-reply testing    | Linked from home               |
+| `/dnd-test`          | DND testing           | Linked from home               |
+| `/modal`             | Template modal        | Unused placeholder             |
 
 ---
 
