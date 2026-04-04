@@ -151,7 +151,9 @@ export function OutlinedField({
           {label}
         </Animated.Text>
 
-        {trailingIcon != null && <View style={[styles.trailingIcon, { zIndex: 3 }]}>{trailingIcon}</View>}
+        {trailingIcon != null && (
+          <View style={[styles.trailingIcon, { zIndex: 3 }]}>{trailingIcon}</View>
+        )}
       </Pressable>
 
       {/* Supporting text — error or helper (M3: bodySmall, colorError / colorOnSurfaceVariant) */}

@@ -281,14 +281,14 @@ export default function SettingsScreen() {
               <View style={styles.unauthButtons}>
                 <Button
                   label="Create Account"
-                  onPress={() => router.push('/(settings)/create-account')}
+                  onPress={() => router.push('/auth/create-account')}
                   fullWidth
                   variant="primary"
                   style={{ marginBottom: Spacing.md }}
                 />
                 <Button
                   label="Sign In"
-                  onPress={() => router.push('/(settings)/sign-in')}
+                  onPress={() => router.push('/auth/sign-in')}
                   fullWidth
                   variant="secondary"
                 />

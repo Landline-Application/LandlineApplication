@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { useFocusEffect } from 'expo-router';
 
+import { useLandlineStore } from './use-landline-store';
+
 /**
  * Custom hook that enables fast polling when screen is focused and condition is met.
  *
@@ -32,8 +34,7 @@ export function useActiveRefresh(
   useEffect(() => {
     if (isActive) {
       try {
-        const { refreshInterval } =
-          require('@/hooks/use-landline-store').useLandlineStore.getState();
+        const { refreshInterval } = useLandlineStore.getState();
         hasStoreAutoRefreshRef.current = refreshInterval != null;
       } catch {
         hasStoreAutoRefreshRef.current = false;

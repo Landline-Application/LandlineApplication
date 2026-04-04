@@ -199,7 +199,6 @@ export function usePermissions(options?: UsePermissionsOptions) {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
-        // Use multiple checks to ensure latest state is captured
         setTimeout(() => checkAllPermissions(), 500);
         setTimeout(() => checkAllPermissions(), 1200);
       }
@@ -208,14 +207,6 @@ export function usePermissions(options?: UsePermissionsOptions) {
     return () => {
       subscription.remove();
     };
-  }, [checkAllPermissions]);
-
-  // Reactive to dependency changes
-  useEffect(() => {
-    const refetch = async () => {
-      await checkAllPermissions();
-    };
-    refetch();
   }, [checkAllPermissions]);
 
   return {

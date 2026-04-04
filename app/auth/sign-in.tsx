@@ -9,12 +9,11 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function SettingsSignInPage() {
+export default function AuthSignInPage() {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.root, { backgroundColor: COLORS.background }]}>
-      {/* Top bar with back button — no skip, no onboarding chrome */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <Pressable
           onPress={() => router.back()}
@@ -26,7 +25,6 @@ export default function SettingsSignInPage() {
           <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
         </Pressable>
         <Text style={styles.topBarTitle}>Sign In</Text>
-        {/* Spacer to center the title */}
         <View style={styles.topBarSpacer} />
       </View>
 
@@ -45,7 +43,7 @@ export default function SettingsSignInPage() {
         <SignInForm
           onSuccess={() => router.back()}
           onForgotPassword={() => router.push('/auth/forgot-password')}
-          onCreateAccount={() => router.replace('/(settings)/create-account')}
+          onCreateAccount={() => router.replace('/auth/create-account')}
         />
       </ScrollView>
     </View>
@@ -79,7 +77,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   topBarSpacer: {
-    // Same width as back button to keep title centered
     width: 40,
   },
   scroll: {

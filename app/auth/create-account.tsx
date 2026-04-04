@@ -9,12 +9,11 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function SettingsCreateAccountPage() {
+export default function AuthCreateAccountPage() {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.root, { backgroundColor: COLORS.background }]}>
-      {/* Top bar with back button — no skip, no onboarding chrome */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <Pressable
           onPress={() => router.back()}
@@ -45,7 +44,7 @@ export default function SettingsCreateAccountPage() {
 
         <CreateAccountForm
           onSuccess={() => router.back()}
-          onSignIn={() => router.replace('/(settings)/sign-in')}
+          onSignIn={() => router.replace('/auth/sign-in')}
         />
       </ScrollView>
     </View>
