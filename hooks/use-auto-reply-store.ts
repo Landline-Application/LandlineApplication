@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import * as AutoReplyManager from '@/modules/auto-reply-manager';
+import { persistAutoReplyEnabledPreference } from '@/utils/firebase/persist-preferences-remote';
 import { create } from 'zustand';
 
 interface AutoReplyState {
@@ -70,6 +71,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
       if (result.success) {
         set({ isEnabled: true });
+        persistAutoReplyEnabledPreference(true);
       } else {
         throw new Error(result.message || 'Failed to enable auto-reply');
       }
@@ -93,6 +95,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
       if (result.success) {
         set({ isEnabled: false });
+        persistAutoReplyEnabledPreference(false);
       } else {
         throw new Error(result.message || 'Failed to disable auto-reply');
       }
