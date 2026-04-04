@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import {
   Alert,
@@ -32,13 +32,16 @@ const formatDuration = (diffSeconds: number): string => {
   const days = Math.floor(diffSeconds / 86400);
   const hours = Math.floor((diffSeconds % 86400) / 3600);
   const minutes = Math.floor((diffSeconds % 3600) / 60);
+  const seconds = Math.floor(diffSeconds % 60);
 
   if (days > 0) {
     return `${days}d ${hours}h`;
   } else if (hours > 0) {
     return `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
   } else {
-    return `${minutes}m`;
+    return `${seconds}s`;
   }
 };
 
@@ -73,6 +76,7 @@ export default function HomeScreen() {
   const [selectedMode, setSelectedMode] = useState<SessionMode>('indefinite');
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [timeDisplay, setTimeDisplay] = useState('0:00');
+  const alertShownRef = useRef(false);
 
   // Initialize store on mount (FIXED: no broken dependencies)
   useEffect(() => {
@@ -82,6 +86,13 @@ export default function HomeScreen() {
 
   // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
+
+  // Reset alert flag when session starts
+  useEffect(() => {
+    if (isActive) {
+      alertShownRef.current = false;
+    }
+  }, [isActive]);
 
   // Timer for session duration / countdown
   useEffect(() => {
@@ -96,8 +107,10 @@ export default function HomeScreen() {
             Math.floor((sessionEndTime.getTime() - now.getTime()) / 1000),
           );
           setTimeDisplay(formatDuration(remaining));
-          if (remaining === 0) {
+          if (remaining === 0 && !alertShownRef.current) {
             // Timer complete - could auto-deactivate here
+            alertShownRef.current = true;
+            clearInterval(interval);
             Alert.alert(
               'Focus Time Complete',
               'Your Landline session has ended. You can stay in Landline mode or deactivate now.',

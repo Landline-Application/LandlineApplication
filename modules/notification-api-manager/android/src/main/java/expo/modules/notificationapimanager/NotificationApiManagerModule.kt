@@ -491,9 +491,7 @@ class NotificationApiManagerModule : Module() {
          * Get list of active notifications (from the listener service)
          */
         Function("getActiveNotifications") {
-            val serviceInstance = LandlineNotificationListenerService::class.java
-                .getDeclaredField("serviceInstance")
-                .get(null) as? LandlineNotificationListenerService
+            val serviceInstance = LandlineNotificationListenerService.getInstance()
             
             val notifications = serviceInstance?.getActiveNotificationsList() ?: emptyArray()
             

@@ -160,7 +160,7 @@ export default function DebugToolsScreen() {
             style={{
               fontSize: 28,
               fontWeight: '800',
-              color: COLORS.dark.text,
+              color: COLORS.dark.text.primary,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
             }}
@@ -185,7 +185,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             📱 System Status
           </Text>
 
@@ -207,7 +207,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🔔 Notification System
           </Text>
 
@@ -335,7 +335,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             📞 Landline Mode
           </Text>
 
@@ -445,7 +445,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🚫 Do Not Disturb
           </Text>
 
@@ -564,7 +564,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             💬 Auto-Reply
           </Text>
 
@@ -658,7 +658,7 @@ export default function DebugToolsScreen() {
               >
                 Current Message:
               </Text>
-              <Text selectable style={{ fontSize: 14, color: COLORS.dark.text, lineHeight: 20 }}>
+              <Text selectable style={{ fontSize: 14, color: COLORS.dark.text.primary, lineHeight: 20 }}>
                 {autoReplyMessage}
               </Text>
             </View>
@@ -824,7 +824,7 @@ export default function DebugToolsScreen() {
                 borderColor: COLORS.dark.border,
                 borderRadius: 8,
                 padding: 12,
-                color: COLORS.dark.text,
+                color: COLORS.dark.text.primary,
                 fontSize: 14,
                 minHeight: 80,
                 textAlignVertical: 'top',
@@ -931,7 +931,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🆘 Emergency contacts
           </Text>
 
@@ -963,7 +963,7 @@ export default function DebugToolsScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text.primary }}>
                       {row.name || 'Unknown'}
                     </Text>
                     <Text
@@ -1028,7 +1028,7 @@ export default function DebugToolsScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
             🏠 Home Screen Widget
           </Text>
 
@@ -1117,7 +1117,7 @@ export default function DebugToolsScreen() {
                 marginBottom: 12,
               }}
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: COLORS.dark.text }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: COLORS.dark.text.primary }}>
                 Add emergency contact
               </Text>
               <TouchableOpacity onPress={() => setContactPickerVisible(false)} activeOpacity={0.7}>
@@ -1137,7 +1137,7 @@ export default function DebugToolsScreen() {
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
-                  color: COLORS.dark.text,
+                  color: COLORS.dark.text.primary,
                   fontSize: 14,
                 }}
                 placeholder="Search contacts..."
@@ -1202,7 +1202,7 @@ export default function DebugToolsScreen() {
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text.primary }}>
                       {item.name ?? 'Unknown'}
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.dark.text.secondary, marginTop: 2 }}>

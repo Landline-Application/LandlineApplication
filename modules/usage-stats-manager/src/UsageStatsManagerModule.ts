@@ -6,8 +6,8 @@ export type AppUsageSummary = {
   packageName: string;
   appName: string;
   totalTimeMs: number;
-  /** Base64-encoded PNG of the app icon, if available */
-  iconBase64?: string;
+  /** File URI of the app icon, if available */
+  iconUri?: string;
 };
 
 type UsageStatsNativeModule = {

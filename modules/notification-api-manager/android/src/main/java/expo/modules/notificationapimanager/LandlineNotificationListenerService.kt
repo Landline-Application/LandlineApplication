@@ -58,9 +58,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         const val KEY_TIMESTAMP = "timestamp"
         const val KEY_ID = "id"
         
-        private var serviceInstance: LandlineNotificationListenerService? = null
+        @JvmStatic
+        internal var serviceInstance: LandlineNotificationListenerService? = null
         
+        @JvmStatic
         fun isServiceRunning(): Boolean = serviceInstance != null
+
+        @JvmStatic
+        fun getInstance(): LandlineNotificationListenerService? = serviceInstance
 
         /**
          * Robustly extract text from a notification, trying multiple sources
@@ -171,6 +176,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     
     private val repliedNotifications = mutableSetOf<String>()
     private val emergencyAlertedNotifications = mutableSetOf<String>()
+    
+    private var rebindAttemptCount = 0
+    private val rebindHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     @Volatile private var cachedEmergencyContacts: List<EmergencyContactEntry>? = null
     private val emergencyContactsPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -191,6 +199,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         super.onDestroy()
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
+        rebindHandler.removeCallbacksAndMessages(null)
         serviceInstance = null
         Log.d(TAG, "LandlineNotificationListenerService destroyed")
     }
@@ -198,6 +207,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.d(TAG, "NotificationListener connected")
+        rebindAttemptCount = 0
+        rebindHandler.removeCallbacksAndMessages(null)
     }
 
     override fun onListenerDisconnected() {
@@ -206,7 +217,17 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         
         // Request reconnection if Android automatically disconnected us
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            requestRebind(android.content.ComponentName(this, this::class.java))
+            val delayMs = Math.min(Math.pow(2.0, rebindAttemptCount.toDouble()).toLong() * 1000L, 60000L)
+            Log.d(TAG, "Requesting rebind in ${delayMs}ms (attempt $rebindAttemptCount)")
+            
+            rebindHandler.postDelayed({
+                try {
+                    requestRebind(android.content.ComponentName(this, this::class.java))
+                    rebindAttemptCount++
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to request rebind", e)
+                }
+            }, delayMs)
         }
     }
 

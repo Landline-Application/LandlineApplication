@@ -43,7 +43,7 @@ const BYPASS_PRESET_CALLS = [
   'com.samsung.android.dialer',
 ] as const;
 
-export default function AppSelectionScreen() {
+export default function BypassListScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   unsupportedTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
     marginBottom: 8,
   },
   unsupportedText: {
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   listContent: {
     paddingHorizontal: 20,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   descriptionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
     marginBottom: 8,
   },
   descriptionText: {
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   toggleSub: {
     fontSize: 12,
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 16,
     fontWeight: '600',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
     flex: 1,
   },
   appsCount: {
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   },
   emergencyDigits: {
     fontSize: 16,
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
     letterSpacing: 0.5,
   },
   addRow: {
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   addButton: {
     backgroundColor: LandlineColors.dark.primary,
@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   appItem: {
     flexDirection: 'row',
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 15,
     fontWeight: '600',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   appPackage: {
     fontSize: 11,
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
   presetChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   modalOverlay: {
     flex: 1,
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   modalCancel: {
     fontSize: 15,
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
     fontSize: 14,
   },
   modalList: {
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   modalName: {
     fontSize: 15,
     fontWeight: '600',
-    color: LandlineColors.dark.text,
+    color: LandlineColors.dark.text.primary,
   },
   modalPhone: {
     fontSize: 12,
