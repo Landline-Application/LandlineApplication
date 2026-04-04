@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { COLORS } from '@/constants/theme';
-import { AuthProvider } from '@/contexts/auth-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { useAppState } from '@/hooks/use-app-state';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
@@ -89,12 +89,6 @@ export default function RootLayout() {
     ...MaterialIcons.font,
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -117,6 +111,7 @@ export default function RootLayout() {
 // the app, so sign-out never triggers a redirect here.
 function NavigationGate() {
   const [isReady, setIsReady] = useState(false);
+  const { isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const appState = useAppState();
@@ -127,10 +122,15 @@ function NavigationGate() {
 
   useEffect(() => {
     async function initialize() {
-      await migrateFromOldAcceptance();
-      const { checkStatus } = useLandlineStore.getState();
-      await checkStatus();
-      setIsReady(true);
+      try {
+        await migrateFromOldAcceptance();
+        const { checkStatus } = useLandlineStore.getState();
+        await checkStatus();
+      } catch (error) {
+        console.error('Initialization failed:', error);
+      } finally {
+        setIsReady(true);
+      }
     }
     initialize();
   }, []);
@@ -141,9 +141,16 @@ function NavigationGate() {
     }
   }, [appState, isReady]);
 
-  // Runs once after isReady — decides where to start and then never runs again.
+  // Hide splash screen only when everything is ready
   useEffect(() => {
-    if (!isReady || initialRouteDone.current) return;
+    if (isReady && !isAuthLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady, isAuthLoading]);
+
+  // Runs once after isReady and isAuthLoading — decides where to start and then never runs again.
+  useEffect(() => {
+    if (!isReady || isAuthLoading || initialRouteDone.current) return;
 
     async function routeOnStartup() {
       initialRouteDone.current = true;
@@ -159,9 +166,9 @@ function NavigationGate() {
     }
 
     routeOnStartup();
-  }, [isReady, segments, router]);
+  }, [isReady, isAuthLoading, segments, router]);
 
-  if (!isReady) {
+  if (!isReady || isAuthLoading) {
     return null;
   }
 
@@ -175,3 +182,4 @@ function NavigationGate() {
     </Stack>
   );
 }
+
