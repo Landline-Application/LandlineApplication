@@ -17,6 +17,7 @@
  *      • hasPendingSync === false → remote wins when present; apply and mark synced
  *      • remote is null/empty    → keep local, push local state up (first install)
  */
+import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { auth } from '@/utils/firebase/auth';
 import { getUserPreferences, mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { UserPreferences } from '@/utils/firebase/user-service';
@@ -121,6 +122,18 @@ export const usePreferencesStore = create<PreferencesState>()(
           }
 
           set({ ...update, hasPendingSync: false, lastSyncedAt: Date.now() });
+
+          // Drive the native auto-reply module when the remote value differs from
+          // the current native state. useAutoReplyStore.isEnabled reflects the native
+          // layer, so we compare against it (not the stale local preference value).
+          if (remote.autoReplyEnabled !== undefined) {
+            const autoReply = useAutoReplyStore.getState();
+            if (remote.autoReplyEnabled && !autoReply.isEnabled) {
+              autoReply.enable().catch((e) => console.warn('onAuthReady: enable auto-reply:', e));
+            } else if (!remote.autoReplyEnabled && autoReply.isEnabled) {
+              autoReply.disable().catch((e) => console.warn('onAuthReady: disable auto-reply:', e));
+            }
+          }
         } catch (e) {
           // Network error — keep local state, mark pending so we retry next time.
           console.warn('usePreferencesStore.onAuthReady: failed to fetch remote prefs', e);

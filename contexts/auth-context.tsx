@@ -15,9 +15,14 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
 } from '@/utils/firebase/auth';
-import { signInWithGoogle as firebaseSignInWithGoogle } from '@/utils/firebase/google-auth';
+import { getGoogleCredential } from '@/utils/firebase/google-auth';
 import { upsertUserDocument } from '@/utils/firebase/user-service';
-import { EmailAuthProvider, getIdToken, reload } from '@react-native-firebase/auth';
+import {
+  EmailAuthProvider,
+  getIdToken,
+  reload,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
 
 interface AuthContextType {
   user: FirebaseAuthTypes.User | null;
@@ -169,12 +174,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (linkError: unknown) {
         const code = (linkError as { code?: string })?.code;
         if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
-          // Credential already tied to a real account — fall back to a normal sign-in.
-          const result = await signInWithEmailAndPassword(auth, email, password);
-          linkedUser = result.user;
-        } else {
-          throw linkError;
+          // An account with this email already exists — surface the error so the
+          // sign-up screen can direct the user to sign in instead.
+          const error = new Error(
+            'An account with this email already exists. Please sign in instead.',
+          ) as Error & { code: string };
+          error.code = 'auth/email-already-in-use';
+          throw error;
         }
+        throw linkError;
       }
     } else {
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -235,8 +243,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const credential = await firebaseSignInWithGoogle();
-    upsertUserDocument(credential.user).catch((e) => console.warn('upsertUserDocument failed:', e));
+    const googleCredential = await getGoogleCredential();
+    const currentUser = auth.currentUser;
+
+    let result: FirebaseAuthTypes.UserCredential;
+
+    if (currentUser?.isAnonymous) {
+      try {
+        result = await linkWithCredential(currentUser, googleCredential);
+      } catch (linkError: unknown) {
+        const code = (linkError as { code?: string })?.code;
+        if (code === 'auth/credential-already-in-use') {
+          // This Google account is already tied to a real account — sign in normally.
+          result = await signInWithCredential(auth, googleCredential);
+        } else {
+          throw linkError;
+        }
+      }
+    } else {
+      result = await signInWithCredential(auth, googleCredential);
+    }
+
+    upsertUserDocument(result.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const resetPassword = async (email: string) => {
