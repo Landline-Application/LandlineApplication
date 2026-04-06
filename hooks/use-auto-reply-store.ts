@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import * as AutoReplyManager from '@/modules/auto-reply-manager';
+import * as NotificationApiManager from '@/modules/notification-api-manager';
 import { create } from 'zustand';
 
 interface AutoReplyState {
@@ -46,7 +47,8 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
     try {
       const enabled = AutoReplyManager.isAutoReplyEnabled();
       const permission = AutoReplyManager.isListenerEnabled();
-      const serviceRunning = AutoReplyManager.isServiceRunning();
+      // Use NotificationApiManager for service status (no API 35 gate, reflects actual listener service)
+      const serviceRunning = NotificationApiManager.isServiceRunning();
       const msg = AutoReplyManager.getReplyMessage();
       const apps = AutoReplyManager.getAllowedApps();
 
@@ -155,12 +157,8 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   requestPermission: async () => {
     try {
       await AutoReplyManager.requestListenerPermission();
-
-      // Re-check permission status after user grants/denies
-      setTimeout(() => {
-        const permission = AutoReplyManager.isListenerEnabled();
-        set({ hasPermission: permission, error: null });
-      }, 1000);
+      // Note: _layout.tsx calls checkStatus() when app returns to foreground,
+      // so permission state will be refreshed automatically.
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Permission request failed';
       set({ error: errorMessage });
