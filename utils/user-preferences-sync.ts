@@ -2,7 +2,6 @@ import { Platform } from 'react-native';
 
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
-import { type RetentionDays, setRetentionPeriod } from '@/services/notification-retention';
 import { type UserPreferences, getUserPreferences } from '@/utils/firebase/user-service';
 
 /**
@@ -45,13 +44,9 @@ export async function applyUserPreferencesToDevice(prefs: UserPreferences): Prom
     console.warn('applyUserPreferencesToDevice auto-reply:', e);
   }
 
-  try {
-    if (prefs.notificationRetentionDays !== undefined) {
-      await setRetentionPeriod(prefs.notificationRetentionDays as RetentionDays);
-    }
-  } catch (e) {
-    console.warn('applyUserPreferencesToDevice retention:', e);
-  }
+  // Note: notificationRetentionDays is stored in Firebase and read directly
+  // from there when needed. No need to apply to device - it's not a native
+  // setting like landline mode or auto-reply.
 
   landline.checkStatus();
   autoReply.checkStatus();

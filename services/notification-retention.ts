@@ -1,6 +1,10 @@
 import NotificationApiManager from '@/modules/notification-api-manager';
-import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
-import { StorageManager } from '@/utils/storage/storage-manager';
+import { auth } from '@/utils/firebase/auth';
+import {
+  type UserPreferences,
+  getUserPreferences,
+  mergeUserPreferences,
+} from '@/utils/firebase/user-service';
 
 /**
  * Retention period options for notification cleanup
@@ -17,32 +21,58 @@ export type RetentionDays = (typeof RETENTION_OPTIONS)[number]['value'];
 
 export const DEFAULT_RETENTION_DAYS: RetentionDays = 30;
 
+// In-memory cache for last cleanup timestamp (device-specific, not synced)
+let cachedLastCleanup: Date | null = null;
+
 /**
- * Get the current retention period setting
+ * Get the current user's UID or null if not logged in
+ */
+function getCurrentUserId(): string | null {
+  return auth.currentUser?.uid ?? null;
+}
+
+/**
+ * Get the current retention period setting from Firebase
+ * Falls back to default if not set or user not logged in
  * @returns Retention period in days (0 = keep forever, default = 30)
  */
 export async function getRetentionPeriod(): Promise<RetentionDays> {
   try {
-    const value = await StorageManager.getItem<number>(STORAGE_KEYS.NOTIFICATION_RETENTION_DAYS);
+    const uid = getCurrentUserId();
+    if (!uid) {
+      return DEFAULT_RETENTION_DAYS;
+    }
+
+    const prefs = await getUserPreferences(uid);
+    const value = prefs?.notificationRetentionDays;
+
     // Check if it's a valid retention option
-    if (value !== null && RETENTION_OPTIONS.some((opt) => opt.value === value)) {
+    if (value !== undefined && RETENTION_OPTIONS.some((opt) => opt.value === value)) {
       return value as RetentionDays;
     }
     return DEFAULT_RETENTION_DAYS;
-  } catch {
+  } catch (error) {
+    console.error('Error getting retention period from Firebase:', error);
     return DEFAULT_RETENTION_DAYS;
   }
 }
 
 /**
- * Set the retention period and reset last cleanup timestamp
- * This gives the user a full grace period before any cleanup occurs
+ * Set the retention period in Firebase
+ * Also updates the last cleanup timestamp locally
  */
 export async function setRetentionPeriod(days: RetentionDays): Promise<void> {
   try {
-    await StorageManager.setItem(STORAGE_KEYS.NOTIFICATION_RETENTION_DAYS, days);
+    const uid = getCurrentUserId();
+    if (!uid) {
+      throw new Error('User not logged in');
+    }
+
+    // Update Firebase
+    await mergeUserPreferences(uid, { notificationRetentionDays: days });
+
     // Reset last cleanup to now so user gets the full period
-    await StorageManager.setItem(STORAGE_KEYS.NOTIFICATION_LAST_CLEANUP, Date.now());
+    cachedLastCleanup = new Date();
   } catch (error) {
     console.error('Error setting retention period:', error);
     throw error;
@@ -51,48 +81,26 @@ export async function setRetentionPeriod(days: RetentionDays): Promise<void> {
 
 /**
  * Initialize retention settings for a fresh install
- * Sets default retention (30 days) and lastCleanup to now
+ * Only sets the last cleanup timestamp locally (device-specific)
+ * Does NOT write default to Firebase - defaults are handled in code
  */
 export async function initializeRetentionSettings(): Promise<void> {
-  try {
-    const existing = await StorageManager.getItem<number>(STORAGE_KEYS.NOTIFICATION_RETENTION_DAYS);
-    if (existing === null) {
-      // Fresh install - set defaults
-      await StorageManager.setItem(
-        STORAGE_KEYS.NOTIFICATION_RETENTION_DAYS,
-        DEFAULT_RETENTION_DAYS,
-      );
-      await StorageManager.setItem(STORAGE_KEYS.NOTIFICATION_LAST_CLEANUP, Date.now());
-    }
-  } catch (error) {
-    console.error('Error initializing retention settings:', error);
-  }
+  // Initialize last cleanup to now (device-specific, not synced)
+  cachedLastCleanup = new Date();
 }
 
 /**
- * Get the timestamp of the last successful cleanup
+ * Get the timestamp of the last successful cleanup (device-specific, not synced)
  */
 export async function getLastCleanupTimestamp(): Promise<Date | null> {
-  try {
-    const timestamp = await StorageManager.getItem<number>(STORAGE_KEYS.NOTIFICATION_LAST_CLEANUP);
-    if (timestamp) {
-      return new Date(timestamp);
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  return cachedLastCleanup;
 }
 
 /**
- * Update the last cleanup timestamp to now
+ * Update the last cleanup timestamp to now (device-specific, not synced)
  */
 export async function updateLastCleanupTimestamp(): Promise<void> {
-  try {
-    await StorageManager.setItem(STORAGE_KEYS.NOTIFICATION_LAST_CLEANUP, Date.now());
-  } catch (error) {
-    console.error('Error updating last cleanup timestamp:', error);
-  }
+  cachedLastCleanup = new Date();
 }
 
 /**
@@ -228,12 +236,26 @@ export async function runCleanupIfNeeded(): Promise<{
     const retentionDays = await getRetentionPeriod();
     const deletedCount = await cleanupExpiredNotifications(retentionDays);
 
-    // Update last cleanup timestamp
+    // Update last cleanup timestamp (device-specific)
     await updateLastCleanupTimestamp();
 
     return { cleaned: true, deletedCount };
   } catch (error) {
     console.error('Error running cleanup:', error);
     return { cleaned: false, deletedCount: 0 };
+  }
+}
+
+/**
+ * Sync retention preference from Firestore to local state
+ * Called when user signs in or when preferences are updated remotely
+ */
+export async function syncRetentionFromRemote(prefs: UserPreferences): Promise<void> {
+  if (prefs.notificationRetentionDays !== undefined) {
+    // The retention period is now stored in Firebase, so we just validate it
+    const value = prefs.notificationRetentionDays;
+    if (!RETENTION_OPTIONS.some((opt) => opt.value === value)) {
+      console.warn('Invalid retention period from remote:', value);
+    }
   }
 }
