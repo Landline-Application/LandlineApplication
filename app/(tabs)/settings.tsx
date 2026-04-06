@@ -55,6 +55,8 @@ export default function SettingsScreen() {
   const [displayNameDraft, setDisplayNameDraft] = useState(
     () => usePreferencesStore.getState().localDisplayName,
   );
+  const [editNameModalVisible, setEditNameModalVisible] = useState(false);
+  const [editNameDraft, setEditNameDraft] = useState('');
 
   // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -326,28 +328,69 @@ export default function SettingsScreen() {
           ) : (
             <Card variant="elevated" padding="lg" style={styles.card}>
               {/* Display name — available to everyone, even before sign-up */}
-              <View style={styles.localNameSection}>
-                <Text style={styles.localNameLabel}>What should we call you?</Text>
-                <TextInput
-                  style={styles.localNameInput}
-                  value={displayNameDraft}
-                  onChangeText={setDisplayNameDraft}
-                  onBlur={() => {
-                    const trimmed = displayNameDraft.trim();
-                    setLocalDisplayName(trimmed);
-                    setDisplayNameDraft(trimmed);
-                  }}
-                  placeholder="Your name"
-                  placeholderTextColor={COLORS.text.muted}
-                  maxLength={80}
-                  returnKeyType="done"
-                />
-                {localDisplayName.trim().length > 0 && (
+              {localDisplayName.trim().length > 0 ? (
+                <View style={styles.localNameGreeting}>
+                  <View style={styles.localNameGreetingRow}>
+                    <View style={styles.localNameGreetingText}>
+                      <Text style={styles.localNameGreetingHi}>Hi,</Text>
+                      <Text style={styles.localNameGreetingName} numberOfLines={1}>
+                        {localDisplayName}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditNameDraft(localDisplayName);
+                        setEditNameModalVisible(true);
+                        haptics.light();
+                      }}
+                      style={styles.localNameEditButton}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit name"
+                    >
+                      <MaterialIcons name="edit" size={18} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.localNameHint}>
-                    Saved on this device. Create an account to sync it across devices.
+                    Saved on this device. Create an account to sync across devices.
                   </Text>
-                )}
-              </View>
+                </View>
+              ) : (
+                <View style={styles.localNameSection}>
+                  <Text style={styles.localNameLabel}>What should we call you?</Text>
+                  <TextInput
+                    style={styles.localNameInput}
+                    value={displayNameDraft}
+                    onChangeText={setDisplayNameDraft}
+                    placeholder="Your name"
+                    placeholderTextColor={COLORS.text.muted}
+                    maxLength={80}
+                    returnKeyType="done"
+                    onSubmitEditing={() => {
+                      const trimmed = displayNameDraft.trim();
+                      if (trimmed) {
+                        setLocalDisplayName(trimmed);
+                        setDisplayNameDraft(trimmed);
+                        haptics.success();
+                      }
+                    }}
+                  />
+                  <Button
+                    label="Save"
+                    onPress={() => {
+                      const trimmed = displayNameDraft.trim();
+                      if (!trimmed) return;
+                      setLocalDisplayName(trimmed);
+                      setDisplayNameDraft(trimmed);
+                      haptics.success();
+                    }}
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    style={{ marginTop: Spacing.md }}
+                    disabled={!displayNameDraft.trim()}
+                  />
+                </View>
+              )}
 
               <View style={styles.localNameDivider} />
 
@@ -612,6 +655,63 @@ export default function SettingsScreen() {
           <Text style={styles.copyrightText}>© 2026 Landline Application</Text>
         </View>
       </ScrollView>
+
+      {/* Edit Local Display Name Modal */}
+      <Modal
+        visible={editNameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditNameModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change your name</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              value={editNameDraft}
+              onChangeText={setEditNameDraft}
+              placeholder="Your name"
+              placeholderTextColor={COLORS.text.muted}
+              maxLength={80}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                const trimmed = editNameDraft.trim();
+                if (trimmed) {
+                  setLocalDisplayName(trimmed);
+                  setDisplayNameDraft(trimmed);
+                  setEditNameModalVisible(false);
+                  haptics.success();
+                }
+              }}
+            />
+            <View style={styles.modalButtons}>
+              <Button
+                label="Cancel"
+                onPress={() => setEditNameModalVisible(false)}
+                variant="secondary"
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label="Save"
+                onPress={() => {
+                  const trimmed = editNameDraft.trim();
+                  if (!trimmed) return;
+                  setLocalDisplayName(trimmed);
+                  setDisplayNameDraft(trimmed);
+                  setEditNameModalVisible(false);
+                  haptics.success();
+                }}
+                variant="primary"
+                size="md"
+                disabled={!editNameDraft.trim()}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
 
       {/* Delete Data Modal */}
       <Modal
@@ -1120,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   // Local display name (anonymous users)
   localNameSection: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   localNameLabel: {
     fontSize: 15,
@@ -1151,6 +1251,53 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.surface.border,
     marginVertical: Spacing.xl,
+  },
+  localNameGreeting: {
+    marginBottom: Spacing.sm,
+  },
+  localNameGreetingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  localNameGreetingText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  localNameGreetingHi: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  localNameGreetingName: {
+    fontSize: 22,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.xs,
+  },
+  localNameEditButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(93, 112, 82, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.md,
+  },
+  modalTextInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+    marginBottom: Spacing.xl,
   },
   // Unauth
   unauthTitle: {
