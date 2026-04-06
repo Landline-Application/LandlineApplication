@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import * as AutoReplyManager from '@/modules/auto-reply-manager';
-import { persistAutoReplyEnabledPreference } from '@/utils/firebase/persist-preferences-remote';
+import * as NotificationApiManager from '@/modules/notification-api-manager';
 import { create } from 'zustand';
 
 interface AutoReplyState {
@@ -11,7 +12,8 @@ interface AutoReplyState {
   isServiceRunning: boolean;
   message: string;
   allowedApps: string[];
-  isLoading: boolean;
+  isLoading: boolean; // toggle enable/disable only
+  isSaving: boolean; // message / allowedApps writes
   error: string | null;
 
   // Actions
@@ -32,6 +34,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   message: '',
   allowedApps: [],
   isLoading: false,
+  isSaving: false,
   error: null,
 
   // Action: Check current status from native
@@ -44,7 +47,8 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
     try {
       const enabled = AutoReplyManager.isAutoReplyEnabled();
       const permission = AutoReplyManager.isListenerEnabled();
-      const serviceRunning = AutoReplyManager.isServiceRunning();
+      // Use NotificationApiManager for service status (no API 35 gate, reflects actual listener service)
+      const serviceRunning = NotificationApiManager.isServiceRunning();
       const msg = AutoReplyManager.getReplyMessage();
       const apps = AutoReplyManager.getAllowedApps();
 
@@ -71,19 +75,17 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
       if (result.success) {
         set({ isEnabled: true });
-        persistAutoReplyEnabledPreference(true);
+        usePreferencesStore.getState().setAutoReplyEnabled(true);
       } else {
         throw new Error(result.message || 'Failed to enable auto-reply');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to enable';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isEnabled: false });
       console.error('enable error:', err);
       throw err;
     } finally {
       set({ isLoading: false });
-      // Refresh status to get latest service state
-      get().checkStatus();
     }
   },
 
@@ -95,25 +97,23 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
       if (result.success) {
         set({ isEnabled: false });
-        persistAutoReplyEnabledPreference(false);
+        usePreferencesStore.getState().setAutoReplyEnabled(false);
       } else {
         throw new Error(result.message || 'Failed to disable auto-reply');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to disable';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isEnabled: true });
       console.error('disable error:', err);
       throw err;
     } finally {
       set({ isLoading: false });
-      // Refresh status to get latest service state
-      get().checkStatus();
     }
   },
 
   // Action: Set reply message
   setMessage: async (message: string) => {
-    set({ isLoading: true, error: null });
+    set({ isSaving: true, error: null });
     try {
       const result = await AutoReplyManager.setReplyMessage(message);
 
@@ -128,13 +128,13 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       console.error('setMessage error:', err);
       throw err;
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
   // Action: Set allowed apps
   setAllowedApps: async (apps: string[]) => {
-    set({ isLoading: true, error: null });
+    set({ isSaving: true, error: null });
     try {
       const result = await AutoReplyManager.setAllowedApps(apps);
 
@@ -149,7 +149,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       console.error('setAllowedApps error:', err);
       throw err;
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
@@ -157,12 +157,8 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   requestPermission: async () => {
     try {
       await AutoReplyManager.requestListenerPermission();
-
-      // Re-check permission status after user grants/denies
-      setTimeout(() => {
-        const permission = AutoReplyManager.isListenerEnabled();
-        set({ hasPermission: permission, error: null });
-      }, 1000);
+      // Note: _layout.tsx calls checkStatus() when app returns to foreground,
+      // so permission state will be refreshed automatically.
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Permission request failed';
       set({ error: errorMessage });
@@ -174,3 +170,27 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   // Action: Clear errors
   clearError: () => set({ error: null }),
 }));
+
+// ---------------------------------------------------------------------------
+// Preference sync subscription
+//
+// When onAuthReady() in use-preferences-store applies a remote autoReplyEnabled
+// value, this subscription detects the change and reconciles the native layer.
+// This keeps use-preferences-store free of any knowledge of this store — the
+// data flows one way: preferences → auto-reply, never the reverse at module level.
+// ---------------------------------------------------------------------------
+let _lastKnownPrefEnabled = usePreferencesStore.getState().autoReplyEnabled;
+
+usePreferencesStore.subscribe((state) => {
+  if (state.autoReplyEnabled === _lastKnownPrefEnabled) return;
+  _lastKnownPrefEnabled = state.autoReplyEnabled;
+
+  if (Platform.OS !== 'android') return;
+
+  const { isEnabled, enable, disable } = useAutoReplyStore.getState();
+  if (state.autoReplyEnabled && !isEnabled) {
+    enable().catch((e: unknown) => console.warn('autoReplyStore subscription: enable failed', e));
+  } else if (!state.autoReplyEnabled && isEnabled) {
+    disable().catch((e: unknown) => console.warn('autoReplyStore subscription: disable failed', e));
+  }
+});

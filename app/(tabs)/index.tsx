@@ -77,12 +77,6 @@ export default function HomeScreen() {
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [timeDisplay, setTimeDisplay] = useState('0:00');
 
-  // Initialize store on mount (FIXED: no broken dependencies)
-  useEffect(() => {
-    checkStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
 

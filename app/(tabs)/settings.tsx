@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 import { Button } from '@/components/core/button';
 import { Card } from '@/components/core/card';
@@ -23,6 +23,7 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
 import {
@@ -50,6 +51,12 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
   const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
+  const { localDisplayName, setLocalDisplayName } = usePreferencesStore();
+  const [displayNameDraft, setDisplayNameDraft] = useState(
+    () => usePreferencesStore.getState().localDisplayName,
+  );
+  const [editNameModalVisible, setEditNameModalVisible] = useState(false);
+  const [editNameDraft, setEditNameDraft] = useState('');
 
   // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -75,11 +82,17 @@ export default function SettingsScreen() {
   const [exportLogLoading, setExportLogLoading] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
 
-  // Retention settings state
-  const [retentionDays, setRetentionDays] = useState<RetentionDays>(30);
-  const [nextCleanupText, setNextCleanupText] = useState<string>('');
+  // Retention settings — initialized synchronously from the preferences store
+  const [retentionDays, setRetentionDays] = useState<RetentionDays>(() => getRetentionPeriod());
   const [retentionModalVisible, setRetentionModalVisible] = useState(false);
-  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(30);
+  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(() =>
+    getRetentionPeriod(),
+  );
+  // Derived — recomputes whenever retentionDays changes, no state needed
+  const nextCleanupText = useMemo(
+    () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
+    [retentionDays],
+  );
 
   const matchingExportCount = useMemo(() => {
     if (!exportLogRows) return 0;
@@ -90,28 +103,17 @@ export default function SettingsScreen() {
     }).length;
   }, [exportLogRows, exportLogPreset, exportLogSort, exportLogAppName]);
 
-  // Load storage info and retention settings on mount
-  React.useEffect(() => {
-    loadStorageInfo();
-    loadRetentionSettings();
-  }, []);
-
-  async function loadStorageInfo() {
+  // Refresh storage info every time the tab comes into focus (tabs stay mounted in memory)
+  const loadStorageInfo = useCallback(async () => {
     const info = await StorageManager.getStorageSummary();
     setStorageInfo(info);
-  }
+  }, []);
 
-  async function loadRetentionSettings() {
-    try {
-      const days = await getRetentionPeriod();
-      const lastCleanup = await getLastCleanupTimestamp();
-      setRetentionDays(days);
-      setSelectedRetentionOption(days);
-      setNextCleanupText(formatNextCleanupRelative(days, lastCleanup));
-    } catch (error) {
-      console.error('Error loading retention settings:', error);
-    }
-  }
+  useFocusEffect(
+    useCallback(() => {
+      loadStorageInfo();
+    }, [loadStorageInfo]),
+  );
 
   function openRetentionModal() {
     setSelectedRetentionOption(retentionDays);
@@ -122,12 +124,10 @@ export default function SettingsScreen() {
     setRetentionModalVisible(false);
   }
 
-  async function handleSaveRetention() {
+  function handleSaveRetention() {
     try {
-      await setRetentionPeriod(selectedRetentionOption);
+      setRetentionPeriod(selectedRetentionOption);
       setRetentionDays(selectedRetentionOption);
-      const lastCleanup = await getLastCleanupTimestamp();
-      setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
       closeRetentionModal();
       haptics.light();
     } catch (error) {
@@ -327,6 +327,73 @@ export default function SettingsScreen() {
             </Card>
           ) : (
             <Card variant="elevated" padding="lg" style={styles.card}>
+              {/* Display name — available to everyone, even before sign-up */}
+              {localDisplayName.trim().length > 0 ? (
+                <View style={styles.localNameGreeting}>
+                  <View style={styles.localNameGreetingRow}>
+                    <View style={styles.localNameGreetingText}>
+                      <Text style={styles.localNameGreetingHi}>Hi,</Text>
+                      <Text style={styles.localNameGreetingName} numberOfLines={1}>
+                        {localDisplayName}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditNameDraft(localDisplayName);
+                        setEditNameModalVisible(true);
+                        haptics.light();
+                      }}
+                      style={styles.localNameEditButton}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit name"
+                    >
+                      <MaterialIcons name="edit" size={18} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.localNameHint}>
+                    Saved on this device. Create an account to sync across devices.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.localNameSection}>
+                  <Text style={styles.localNameLabel}>What should we call you?</Text>
+                  <TextInput
+                    style={styles.localNameInput}
+                    value={displayNameDraft}
+                    onChangeText={setDisplayNameDraft}
+                    placeholder="Your name"
+                    placeholderTextColor={COLORS.text.muted}
+                    maxLength={80}
+                    returnKeyType="done"
+                    onSubmitEditing={() => {
+                      const trimmed = displayNameDraft.trim();
+                      if (trimmed) {
+                        setLocalDisplayName(trimmed);
+                        setDisplayNameDraft(trimmed);
+                        haptics.success();
+                      }
+                    }}
+                  />
+                  <Button
+                    label="Save"
+                    onPress={() => {
+                      const trimmed = displayNameDraft.trim();
+                      if (!trimmed) return;
+                      setLocalDisplayName(trimmed);
+                      setDisplayNameDraft(trimmed);
+                      haptics.success();
+                    }}
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    style={{ marginTop: Spacing.md }}
+                    disabled={!displayNameDraft.trim()}
+                  />
+                </View>
+              )}
+
+              <View style={styles.localNameDivider} />
+
               <Text style={styles.unauthTitle}>Join Landline</Text>
               <Text style={styles.unauthSubtitle}>
                 Create an account to sync your settings and access features across devices.
@@ -348,6 +415,61 @@ export default function SettingsScreen() {
               </View>
             </Card>
           )}
+        </View>
+
+        {/* Preferences Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Preferences</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/preferences');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="tune" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>General settings</Text>
+                  <Text style={styles.menuItemSubtitle}>Notification retention and more</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/auto-reply');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="reply" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Auto-Reply</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    {autoReplyEnabled
+                      ? 'Enabled — auto-replying to messages'
+                      : 'Set up automatic replies while focused'}
+                  </Text>
+                </View>
+                {autoReplyEnabled && (
+                  <View style={styles.activeIndicator}>
+                    <View style={styles.activeIndicatorDot} />
+                  </View>
+                )}
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
         </View>
 
         {/* App Permissions Section */}
@@ -382,40 +504,6 @@ export default function SettingsScreen() {
             <AppAttentionCard limit={5} showViewMore />
           </View>
         )}
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Preferences</Text>
-          <Card variant="elevated" padding="none" style={styles.card}>
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                router.push('/auto-reply');
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
-                  <MaterialIcons name="reply" size={22} color={COLORS.primary} />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Auto-Reply</Text>
-                  <Text style={styles.menuItemSubtitle}>
-                    {autoReplyEnabled
-                      ? 'Enabled — auto-replying to messages'
-                      : 'Set up automatic replies while focused'}
-                  </Text>
-                </View>
-                {autoReplyEnabled && (
-                  <View style={styles.activeIndicator}>
-                    <View style={styles.activeIndicatorDot} />
-                  </View>
-                )}
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
 
         {/* Tools Section */}
         <View style={styles.section}>
@@ -567,6 +655,63 @@ export default function SettingsScreen() {
           <Text style={styles.copyrightText}>© 2026 Landline Application</Text>
         </View>
       </ScrollView>
+
+      {/* Edit Local Display Name Modal */}
+      <Modal
+        visible={editNameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditNameModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change your name</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              value={editNameDraft}
+              onChangeText={setEditNameDraft}
+              placeholder="Your name"
+              placeholderTextColor={COLORS.text.muted}
+              maxLength={80}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                const trimmed = editNameDraft.trim();
+                if (trimmed) {
+                  setLocalDisplayName(trimmed);
+                  setDisplayNameDraft(trimmed);
+                  setEditNameModalVisible(false);
+                  haptics.success();
+                }
+              }}
+            />
+            <View style={styles.modalButtons}>
+              <Button
+                label="Cancel"
+                onPress={() => setEditNameModalVisible(false)}
+                variant="secondary"
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label="Save"
+                onPress={() => {
+                  const trimmed = editNameDraft.trim();
+                  if (!trimmed) return;
+                  setLocalDisplayName(trimmed);
+                  setDisplayNameDraft(trimmed);
+                  setEditNameModalVisible(false);
+                  haptics.success();
+                }}
+                variant="primary"
+                size="md"
+                disabled={!editNameDraft.trim()}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
 
       {/* Delete Data Modal */}
       <Modal
@@ -1072,6 +1217,87 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontFamily: 'Nunito_400Regular',
     lineHeight: 18,
+  },
+  // Local display name (anonymous users)
+  localNameSection: {
+    marginBottom: Spacing.sm,
+  },
+  localNameLabel: {
+    fontSize: 15,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
+    marginBottom: Spacing.sm,
+  },
+  localNameInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+  },
+  localNameHint: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    marginTop: Spacing.sm,
+    lineHeight: 17,
+  },
+  localNameDivider: {
+    height: 1,
+    backgroundColor: COLORS.surface.border,
+    marginVertical: Spacing.xl,
+  },
+  localNameGreeting: {
+    marginBottom: Spacing.sm,
+  },
+  localNameGreetingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  localNameGreetingText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  localNameGreetingHi: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  localNameGreetingName: {
+    fontSize: 22,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.xs,
+  },
+  localNameEditButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(93, 112, 82, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.md,
+  },
+  modalTextInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+    marginBottom: Spacing.xl,
   },
   // Unauth
   unauthTitle: {

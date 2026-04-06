@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 
 import * as Contacts from 'expo-contacts';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { LandlineColors } from '@/constants/theme';
@@ -48,50 +48,58 @@ export default function BypassListScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [installedApps, setInstalledApps] = useState<AppInfo[]>([]);
-  const [filterEnabled, setFilterEnabled] = useState(false);
-  const [allowedPackages, setAllowedPackages] = useState<Set<string>>(new Set());
-  const [initialAllowed, setInitialAllowed] = useState<Set<string>>(new Set());
-  const [initialFilterEnabled, setInitialFilterEnabled] = useState(false);
-  const [emergencyNumbers, setEmergencyNumbers] = useState<string[]>([]);
-  const [initialEmergency, setInitialEmergency] = useState<string[]>([]);
+
+  // Synchronous native reads — initialized immediately via lazy useState
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(() =>
+    Platform.OS === 'android' ? NotificationApiManager.isNotificationFilterEnabled() : false,
+  );
+  const [allowedPackages, setAllowedPackages] = useState<Set<string>>(() => {
+    if (Platform.OS !== 'android') return new Set();
+    return new Set(NotificationApiManager.getAllowedNotificationPackages());
+  });
+  const [initialAllowed, setInitialAllowed] = useState<Set<string>>(() => {
+    if (Platform.OS !== 'android') return new Set();
+    return new Set(NotificationApiManager.getAllowedNotificationPackages());
+  });
+  const [initialFilterEnabled, setInitialFilterEnabled] = useState<boolean>(() =>
+    Platform.OS === 'android' ? NotificationApiManager.isNotificationFilterEnabled() : false,
+  );
+  const [emergencyNumbers, setEmergencyNumbers] = useState<string[]>(() =>
+    Platform.OS === 'android' ? NotificationApiManager.getEmergencyPhoneNumbers() : [],
+  );
+  const [initialEmergency, setInitialEmergency] = useState<string[]>(() =>
+    Platform.OS === 'android' ? [...NotificationApiManager.getEmergencyPhoneNumbers()] : [],
+  );
+
   const [newPhone, setNewPhone] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
   const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
   const [contactSearch, setContactSearch] = useState('');
 
-  const load = useCallback(async () => {
+  // Only getAllInstalledApps is genuinely async — load it on every focus
+  const loadInstalledApps = useCallback(async () => {
     if (Platform.OS !== 'android') {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const [apps, enabled, packages, emergency] = await Promise.all([
-        DndManager.getAllInstalledApps(false),
-        Promise.resolve(NotificationApiManager.isNotificationFilterEnabled()),
-        Promise.resolve(NotificationApiManager.getAllowedNotificationPackages()),
-        Promise.resolve(NotificationApiManager.getEmergencyPhoneNumbers()),
-      ]);
+      const apps = await DndManager.getAllInstalledApps(false);
       setInstalledApps(apps);
-      setFilterEnabled(enabled);
-      setInitialFilterEnabled(enabled);
-      const pkgSet = new Set(packages);
-      setAllowedPackages(pkgSet);
-      setInitialAllowed(new Set(packages));
-      setEmergencyNumbers(emergency);
-      setInitialEmergency([...emergency]);
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not load notification settings.');
+      Alert.alert('Error', 'Could not load installed apps.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      loadInstalledApps();
+    }, [loadInstalledApps]),
+  );
 
   const hasChanges = useMemo(() => {
     if (filterEnabled !== initialFilterEnabled) return true;
