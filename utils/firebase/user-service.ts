@@ -13,6 +13,7 @@ import {
 export interface UserPreferences {
   landlineModeOn?: boolean;
   autoReplyEnabled?: boolean;
+  notificationRetentionDays?: number;
 }
 
 export interface UserDocument {
@@ -102,8 +103,7 @@ export async function mergeUserPreferences(
   const existing = snap.exists()
     ? (snap.data() as Partial<UserDocument> | undefined)?.preferences
     : undefined;
-  const prev =
-    existing && typeof existing === 'object' ? (existing as UserPreferences) : {};
+  const prev = existing && typeof existing === 'object' ? (existing as UserPreferences) : {};
   const next: UserPreferences = { ...prev, ...partial };
   await setDoc(
     ref,
