@@ -214,6 +214,7 @@ function NavigationGate() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
       <Stack.Screen name="(settings)" options={{ headerShown: false }} />
+      <Stack.Screen name="(settings)/preferences" options={{ headerShown: false }} />
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="notification-detail" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
