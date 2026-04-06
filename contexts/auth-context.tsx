@@ -255,6 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const code = (linkError as { code?: string })?.code;
         if (code === 'auth/credential-already-in-use') {
           // This Google account is already tied to a real account — sign in normally.
+          // Google has no separate sign-up/sign-in distinction so this is always correct.
           result = await signInWithCredential(auth, googleCredential);
         } else {
           throw linkError;
