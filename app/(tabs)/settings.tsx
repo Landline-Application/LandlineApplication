@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 import { Button } from '@/components/core/button';
 import { Card } from '@/components/core/card';
@@ -75,11 +75,17 @@ export default function SettingsScreen() {
   const [exportLogLoading, setExportLogLoading] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
 
-  // Retention settings state
-  const [retentionDays, setRetentionDays] = useState<RetentionDays>(30);
-  const [nextCleanupText, setNextCleanupText] = useState<string>('');
+  // Retention settings — initialized synchronously from the preferences store
+  const [retentionDays, setRetentionDays] = useState<RetentionDays>(() => getRetentionPeriod());
   const [retentionModalVisible, setRetentionModalVisible] = useState(false);
-  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(30);
+  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(() =>
+    getRetentionPeriod(),
+  );
+  // Derived — recomputes whenever retentionDays changes, no state needed
+  const nextCleanupText = useMemo(
+    () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
+    [retentionDays],
+  );
 
   const matchingExportCount = useMemo(() => {
     if (!exportLogRows) return 0;
@@ -90,28 +96,17 @@ export default function SettingsScreen() {
     }).length;
   }, [exportLogRows, exportLogPreset, exportLogSort, exportLogAppName]);
 
-  // Load storage info and retention settings on mount
-  React.useEffect(() => {
-    loadStorageInfo();
-    loadRetentionSettings();
-  }, []);
-
-  async function loadStorageInfo() {
+  // Refresh storage info every time the tab comes into focus (tabs stay mounted in memory)
+  const loadStorageInfo = useCallback(async () => {
     const info = await StorageManager.getStorageSummary();
     setStorageInfo(info);
-  }
+  }, []);
 
-  async function loadRetentionSettings() {
-    try {
-      const days = getRetentionPeriod();
-      const lastCleanup = await getLastCleanupTimestamp();
-      setRetentionDays(days);
-      setSelectedRetentionOption(days);
-      setNextCleanupText(formatNextCleanupRelative(days, lastCleanup));
-    } catch (error) {
-      console.error('Error loading retention settings:', error);
-    }
-  }
+  useFocusEffect(
+    useCallback(() => {
+      loadStorageInfo();
+    }, [loadStorageInfo]),
+  );
 
   function openRetentionModal() {
     setSelectedRetentionOption(retentionDays);
@@ -122,12 +117,10 @@ export default function SettingsScreen() {
     setRetentionModalVisible(false);
   }
 
-  async function handleSaveRetention() {
+  function handleSaveRetention() {
     try {
       setRetentionPeriod(selectedRetentionOption);
       setRetentionDays(selectedRetentionOption);
-      const lastCleanup = await getLastCleanupTimestamp();
-      setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
       closeRetentionModal();
       haptics.light();
     } catch (error) {

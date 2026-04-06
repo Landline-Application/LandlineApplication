@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { LogBox, Text } from 'react-native';
+import { LogBox, Platform, Text } from 'react-native';
 
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { useAppState } from '@/hooks/use-app-state';
+import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
@@ -132,6 +133,11 @@ function NavigationGate() {
         const { checkStatus } = useLandlineStore.getState();
         await checkStatus();
 
+        // Centralized auto-reply status check (Android only) — eliminates per-screen checks
+        if (Platform.OS === 'android') {
+          useAutoReplyStore.getState().checkStatus();
+        }
+
         // Run notification cleanup if needed (after checkStatus so notifications are loaded)
         const result = await runCleanupIfNeeded();
         if (result.cleaned) {
@@ -153,6 +159,11 @@ function NavigationGate() {
   useEffect(() => {
     if (appState === 'active' && isReady) {
       useLandlineStore.getState().checkStatus();
+
+      // Centralized auto-reply status refresh on foreground (Android only)
+      if (Platform.OS === 'android') {
+        useAutoReplyStore.getState().checkStatus();
+      }
 
       // Check for notification cleanup when app comes to foreground
       // This handles the case where the retention period passed while app was in background

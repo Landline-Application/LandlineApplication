@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -74,11 +74,17 @@ export default function ProfileScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
-  // Retention settings
-  const [retentionDays, setRetentionDays] = useState<RetentionDays>(30);
-  const [nextCleanupText, setNextCleanupText] = useState<string>('');
+  // Retention settings — initialized synchronously from the preferences store
+  const [retentionDays, setRetentionDays] = useState<RetentionDays>(() => getRetentionPeriod());
   const [retentionModalVisible, setRetentionModalVisible] = useState(false);
-  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(30);
+  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(() =>
+    getRetentionPeriod(),
+  );
+  // Derived — no state needed; recomputes whenever retentionDays changes
+  const nextCleanupText = useMemo(
+    () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
+    [retentionDays],
+  );
 
   const isEmailUser = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
 
@@ -90,28 +96,6 @@ export default function ProfileScreen() {
     checkStatus: checkAutoReply,
   } = useAutoReplyStore();
 
-  React.useEffect(() => {
-    if (Platform.OS === 'android') {
-      checkAutoReply();
-    }
-  }, [checkAutoReply]);
-
-  // Load retention settings on mount
-  React.useEffect(() => {
-    async function loadRetentionSettings() {
-      try {
-        const days = getRetentionPeriod();
-        const lastCleanup = await getLastCleanupTimestamp();
-        setRetentionDays(days);
-        setSelectedRetentionOption(days);
-        setNextCleanupText(formatNextCleanupRelative(days, lastCleanup));
-      } catch (error) {
-        console.error('Error loading retention settings:', error);
-      }
-    }
-    loadRetentionSettings();
-  }, []);
-
   function openRetentionModal() {
     setSelectedRetentionOption(retentionDays);
     setRetentionModalVisible(true);
@@ -121,12 +105,10 @@ export default function ProfileScreen() {
     setRetentionModalVisible(false);
   }
 
-  async function handleSaveRetention() {
+  function handleSaveRetention() {
     try {
       setRetentionPeriod(selectedRetentionOption);
       setRetentionDays(selectedRetentionOption);
-      const lastCleanup = await getLastCleanupTimestamp();
-      setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
       closeRetentionModal();
       haptics.light();
     } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
   Alert,
@@ -83,7 +83,6 @@ export default function AutoReplyScreen() {
     message,
     allowedApps,
     isLoading,
-    checkStatus,
     enable,
     disable,
     setMessage,
@@ -93,10 +92,6 @@ export default function AutoReplyScreen() {
 
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
-
-  useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
 
   // ── Toggle auto-reply on/off ────────────────────────────────────────────────
 
