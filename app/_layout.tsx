@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { useAppState } from '@/hooks/use-app-state';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
 import { hasCompletedOnboarding, migrateFromOldAcceptance } from '@/utils/onboarding-storage';
 import {
   Fraunces_600SemiBold,
@@ -124,8 +125,22 @@ function NavigationGate() {
     async function initialize() {
       try {
         await migrateFromOldAcceptance();
+
+        // Initialize retention settings (sets defaults for fresh installs)
+        await initializeRetentionSettings();
+
         const { checkStatus } = useLandlineStore.getState();
         await checkStatus();
+
+        // Run notification cleanup if needed (after checkStatus so notifications are loaded)
+        const result = await runCleanupIfNeeded();
+        if (result.cleaned) {
+          console.log(
+            `Notification cleanup completed: ${result.deletedCount} notifications deleted`,
+          );
+          // Refresh notifications to reflect cleanup
+          await useLandlineStore.getState().refreshNotifications();
+        }
       } catch (error) {
         console.error('Initialization failed:', error);
       } finally {
@@ -138,6 +153,17 @@ function NavigationGate() {
   useEffect(() => {
     if (appState === 'active' && isReady) {
       useLandlineStore.getState().checkStatus();
+
+      // Check for notification cleanup when app comes to foreground
+      // This handles the case where the retention period passed while app was in background
+      runCleanupIfNeeded().then((result) => {
+        if (result.cleaned) {
+          console.log(
+            `Notification cleanup on resume: ${result.deletedCount} notifications deleted`,
+          );
+          useLandlineStore.getState().refreshNotifications();
+        }
+      });
     }
   }, [appState, isReady]);
 
