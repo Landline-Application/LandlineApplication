@@ -17,7 +17,6 @@
  *      • hasPendingSync === false → remote wins when present; apply and mark synced
  *      • remote is null/empty    → keep local, push local state up (first install)
  */
-import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { auth } from '@/utils/firebase/auth';
 import { getUserPreferences, mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { UserPreferences } from '@/utils/firebase/user-service';
@@ -124,14 +123,20 @@ export const usePreferencesStore = create<PreferencesState>()(
           set({ ...update, hasPendingSync: false, lastSyncedAt: Date.now() });
 
           // Drive the native auto-reply module when the remote value differs from
-          // the current native state. useAutoReplyStore.isEnabled reflects the native
-          // layer, so we compare against it (not the stale local preference value).
+          // the current native state. Imported lazily to avoid a circular module
+          // dependency (use-auto-reply-store also imports use-preferences-store).
           if (remote.autoReplyEnabled !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { useAutoReplyStore } = require('@/hooks/use-auto-reply-store');
             const autoReply = useAutoReplyStore.getState();
             if (remote.autoReplyEnabled && !autoReply.isEnabled) {
-              autoReply.enable().catch((e) => console.warn('onAuthReady: enable auto-reply:', e));
+              autoReply
+                .enable()
+                .catch((e: unknown) => console.warn('onAuthReady: enable auto-reply:', e));
             } else if (!remote.autoReplyEnabled && autoReply.isEnabled) {
-              autoReply.disable().catch((e) => console.warn('onAuthReady: disable auto-reply:', e));
+              autoReply
+                .disable()
+                .catch((e: unknown) => console.warn('onAuthReady: disable auto-reply:', e));
             }
           }
         } catch (e) {
