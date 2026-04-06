@@ -23,6 +23,16 @@ async function getGoogleIdToken(): Promise<string> {
   return idToken;
 }
 
+/**
+ * Returns a Firebase AuthCredential for the current Google sign-in.
+ * Use this when you need to call linkWithCredential or signInWithCredential
+ * manually (e.g. to upgrade an anonymous account).
+ */
+export async function getGoogleCredential(): Promise<FirebaseAuthTypes.AuthCredential> {
+  const idToken = await getGoogleIdToken();
+  return GoogleAuthProvider.credential(idToken);
+}
+
 export async function signInWithGoogle(): Promise<FirebaseAuthTypes.UserCredential> {
   const idToken = await getGoogleIdToken();
   const credential = GoogleAuthProvider.credential(idToken);
