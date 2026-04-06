@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -83,7 +84,6 @@ export default function AutoReplyScreen() {
     message,
     allowedApps,
     isLoading,
-    checkStatus,
     enable,
     disable,
     setMessage,
@@ -93,10 +93,6 @@ export default function AutoReplyScreen() {
 
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
-
-  useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
 
   // ── Toggle auto-reply on/off ────────────────────────────────────────────────
 
@@ -248,19 +244,25 @@ export default function AutoReplyScreen() {
                 <Text style={styles.toggleLabel}>Enable Auto-Reply</Text>
                 <Text style={styles.toggleSubtitle}>
                   {isEnabled
-                    ? isServiceRunning
-                      ? 'Active — replying to incoming messages'
-                      : 'Enabled but service is starting…'
+                    ? 'Will auto-reply when Landline Mode is on'
                     : 'Disabled — no replies will be sent'}
                 </Text>
               </View>
-              <Switch
-                value={isEnabled}
-                onValueChange={handleToggle}
-                disabled={isLoading || (!hasPermission && !isEnabled)}
-                trackColor={{ false: COLORS.accent, true: `${COLORS.primary}80` }}
-                thumbColor={isEnabled ? COLORS.primary : COLORS.text.muted}
-              />
+              {isLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.primary}
+                  style={styles.toggleLoader}
+                />
+              ) : (
+                <Switch
+                  value={isEnabled}
+                  onValueChange={handleToggle}
+                  disabled={!hasPermission && !isEnabled}
+                  trackColor={{ false: COLORS.accent, true: `${COLORS.primary}80` }}
+                  thumbColor={isEnabled ? COLORS.primary : COLORS.text.muted}
+                />
+              )}
             </View>
 
             {/* Status indicators */}
@@ -539,6 +541,12 @@ const styles = StyleSheet.create({
   },
   toggleRowContent: {
     flex: 1,
+  },
+  toggleLoader: {
+    width: 51,
+    height: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toggleLabel: {
     fontSize: 16,

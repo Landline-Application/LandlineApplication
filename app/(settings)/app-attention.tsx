@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 import { Card } from '@/components/core/card';
 import { StatusIndicator } from '@/components/core/status-indicator';
@@ -103,11 +103,14 @@ export default function AppAttentionScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      loadUsageData(usageWindow);
-    }
-  }, [loadUsageData, usageWindow]);
+  // Refresh usage data every time this screen is focused (not just on mount)
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        loadUsageData(usageWindow);
+      }
+    }, [loadUsageData, usageWindow]),
+  );
 
   const handleRequestUsagePermission = useCallback(async () => {
     await UsageStatsManager.openUsageStatsSettings();

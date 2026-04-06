@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 
 import {
   ActivityIndicator,
@@ -30,13 +30,6 @@ export default function LandlineScreen() {
     activateLandlineMode,
     deactivateLandlineMode,
   } = useLandlineStore();
-
-  const [initialLoading, setInitialLoading] = useState(true);
-
-  useEffect(() => {
-    checkStatus().finally(() => setInitialLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleRequestPermission = useCallback(async () => {
     try {
@@ -84,15 +77,6 @@ export default function LandlineScreen() {
         <MaterialIcons name="phone-in-talk" size={48} color={COLORS.text.muted} />
         <Text style={styles.centerTitle}>Landline Mode</Text>
         <Text style={styles.centerBody}>Landline Mode is only available on Android devices.</Text>
-      </View>
-    );
-  }
-
-  if (initialLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.centerBody}>Checking status…</Text>
       </View>
     );
   }
