@@ -2,7 +2,6 @@ import { Platform } from 'react-native';
 
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
-import { type RetentionDays, setRetentionPeriod } from '@/services/notification-retention';
 import { type UserPreferences, getUserPreferences } from '@/utils/firebase/user-service';
 
 /**
@@ -43,14 +42,6 @@ export async function applyUserPreferencesToDevice(prefs: UserPreferences): Prom
     }
   } catch (e) {
     console.warn('applyUserPreferencesToDevice auto-reply:', e);
-  }
-
-  try {
-    if (prefs.notificationRetentionDays !== undefined) {
-      await setRetentionPeriod(prefs.notificationRetentionDays as RetentionDays);
-    }
-  } catch (e) {
-    console.warn('applyUserPreferencesToDevice retention:', e);
   }
 
   landline.checkStatus();

@@ -367,56 +367,6 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
-        /**
-         * Delete notifications older than the specified cutoff timestamp
-         * Returns the number of deleted notifications
-         * Used for automatic retention cleanup
-         */
-        AsyncFunction("deleteNotificationsOlderThan") { cutoffTimestamp: Long ->
-            val ctx = appContext.reactContext ?: return@AsyncFunction 0
-            
-            try {
-                val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
-                val logsString = prefs.getString("notification_logs", "") ?: ""
-                
-                if (logsString.isEmpty()) {
-                    return@AsyncFunction 0
-                }
-
-                // Parse and filter log entries
-                val lines = logsString.split("\n")
-                val validLines = mutableListOf<String>()
-                var deletedCount = 0
-                
-                for (line in lines) {
-                    if (line.isEmpty()) continue
-                    
-                    val parts = line.split("|")
-                    if (parts.size >= 7) {
-                        val postTime = parts[5].toLongOrNull() ?: 0L
-                        if (postTime >= cutoffTimestamp) {
-                            validLines.add(line)
-                        } else {
-                            deletedCount++
-                        }
-                    } else {
-                        // Keep malformed entries (can't determine age)
-                        validLines.add(line)
-                    }
-                }
-                
-                // Save back only valid notifications
-                val updatedLogs = validLines.joinToString("\n")
-                prefs.edit().putString("notification_logs", updatedLogs).apply()
-                
-                android.util.Log.d("NotificationApiManager", "Deleted $deletedCount old notifications")
-                deletedCount
-            } catch (e: Exception) {
-                android.util.Log.e("NotificationApiManager", "Error deleting old notifications: ${e.message}", e)
-                0
-            }
-        }
-
         // ============================================================
         // AUTO-REPLY FUNCTIONALITY
         // ============================================================
