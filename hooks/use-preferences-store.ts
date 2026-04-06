@@ -41,6 +41,11 @@ interface PreferencesState {
   autoReplyEnabled: boolean;
   notificationRetentionDays: number;
 
+  // Local-only display name for anonymous users.
+  // Stored on-device only; never synced to Firestore.
+  // Cleared once the user creates a real account (Firebase displayName takes over).
+  localDisplayName: string;
+
   // Sync metadata (not meaningful to UI beyond showing a pending badge)
   isSyncing: boolean;
   lastSyncedAt: number | null; // ms timestamp
@@ -49,6 +54,7 @@ interface PreferencesState {
   // Public setters — called by other stores and UI components
   setAutoReplyEnabled: (val: boolean) => void;
   setRetentionDays: (days: number) => void;
+  setLocalDisplayName: (name: string) => void;
 
   // Called by AuthContext after every auth state change (anonymous or real user)
   onAuthReady: (uid: string) => Promise<void>;
@@ -69,6 +75,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       // -----------------------------------------------------------------------
       autoReplyEnabled: DEFAULT_AUTO_REPLY_ENABLED,
       notificationRetentionDays: DEFAULT_RETENTION_DAYS,
+      localDisplayName: '',
       isSyncing: false,
       lastSyncedAt: null,
       hasPendingSync: false,
@@ -85,6 +92,10 @@ export const usePreferencesStore = create<PreferencesState>()(
       setRetentionDays: (days: number) => {
         set({ notificationRetentionDays: days, hasPendingSync: true });
         get()._syncToFirestore();
+      },
+
+      setLocalDisplayName: (name: string) => {
+        set({ localDisplayName: name });
       },
 
       // -----------------------------------------------------------------------
@@ -164,6 +175,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       partialize: (state) => ({
         autoReplyEnabled: state.autoReplyEnabled,
         notificationRetentionDays: state.notificationRetentionDays,
+        localDisplayName: state.localDisplayName,
         lastSyncedAt: state.lastSyncedAt,
         hasPendingSync: state.hasPendingSync,
       }),
