@@ -24,6 +24,15 @@ import { useAuth } from '@/contexts/auth-context';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
+import {
+  RETENTION_OPTIONS,
+  type RetentionDays,
+  formatNextCleanupRelative,
+  getLastCleanupTimestamp,
+  getRetentionLabel,
+  getRetentionPeriod,
+  setRetentionPeriod,
+} from '@/services/notification-retention';
 import { clearAcceptance } from '@/utils/acceptance-storage';
 import {
   type LoggedNotificationRow,
@@ -64,6 +73,12 @@ export default function SettingsScreen() {
   const [exportLogLoading, setExportLogLoading] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
 
+  // Retention settings state
+  const [retentionDays, setRetentionDays] = useState<RetentionDays>(30);
+  const [nextCleanupText, setNextCleanupText] = useState<string>('');
+  const [retentionModalVisible, setRetentionModalVisible] = useState(false);
+  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(30);
+
   const matchingExportCount = useMemo(() => {
     if (!exportLogRows) return 0;
     return prepareNotificationLogsForExport(exportLogRows, {
@@ -73,14 +88,50 @@ export default function SettingsScreen() {
     }).length;
   }, [exportLogRows, exportLogPreset, exportLogSort, exportLogAppName]);
 
-  // Load storage info on mount
+  // Load storage info and retention settings on mount
   React.useEffect(() => {
     loadStorageInfo();
+    loadRetentionSettings();
   }, []);
 
   async function loadStorageInfo() {
     const info = await StorageManager.getStorageSummary();
     setStorageInfo(info);
+  }
+
+  async function loadRetentionSettings() {
+    try {
+      const days = await getRetentionPeriod();
+      const lastCleanup = await getLastCleanupTimestamp();
+      setRetentionDays(days);
+      setSelectedRetentionOption(days);
+      setNextCleanupText(formatNextCleanupRelative(days, lastCleanup));
+    } catch (error) {
+      console.error('Error loading retention settings:', error);
+    }
+  }
+
+  function openRetentionModal() {
+    setSelectedRetentionOption(retentionDays);
+    setRetentionModalVisible(true);
+  }
+
+  function closeRetentionModal() {
+    setRetentionModalVisible(false);
+  }
+
+  async function handleSaveRetention() {
+    try {
+      await setRetentionPeriod(selectedRetentionOption);
+      setRetentionDays(selectedRetentionOption);
+      const lastCleanup = await getLastCleanupTimestamp();
+      setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
+      closeRetentionModal();
+      haptics.light();
+    } catch (error) {
+      console.error('Error saving retention period:', error);
+      Alert.alert('Error', 'Failed to save retention settings');
+    }
   }
 
   async function openExportLogModal() {
@@ -400,6 +451,28 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Data Management</Text>
           <Card variant="elevated" padding="lg" style={styles.card}>
+            {/* Retention Period Row */}
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                openRetentionModal();
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.retentionRow}>
+                <View style={styles.retentionRowContent}>
+                  <Text style={styles.retentionLabel}>Retention Period</Text>
+                  <Text style={styles.retentionNextCleanup}>{nextCleanupText}</Text>
+                </View>
+                <View style={styles.retentionValueContainer}>
+                  <Text style={styles.retentionValue}>{getRetentionLabel(retentionDays)}</Text>
+                  <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
             <View style={styles.storageSummary}>
               <View style={styles.storageItem}>
                 <Text style={styles.storageValue}>{storageInfo?.landlineKeys ?? 0}</Text>
@@ -672,6 +745,84 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Retention Period Modal */}
+      <Modal
+        visible={retentionModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeRetentionModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.retentionModalContent}>
+            <Text style={styles.modalTitle}>Notification Retention</Text>
+            <Text style={styles.modalBody}>
+              Choose how long to keep logged notifications before they are automatically deleted.
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {RETENTION_OPTIONS.map((option) => {
+                const isSelected = selectedRetentionOption === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.retentionOption, isSelected && styles.retentionOptionSelected]}
+                    onPress={() => {
+                      haptics.light();
+                      setSelectedRetentionOption(option.value);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.retentionOptionRadio,
+                        isSelected && styles.retentionOptionRadioSelected,
+                      ]}
+                    >
+                      {isSelected && <View style={styles.retentionOptionRadioInner} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.retentionOptionText,
+                        isSelected && styles.retentionOptionTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.retentionModalFooter}>
+              <Text style={styles.retentionPreviewText}>
+                Next cleanup would be:{' '}
+                {(() => {
+                  const lastCleanup = new Date();
+                  return formatNextCleanupRelative(selectedRetentionOption, lastCleanup);
+                })()}
+              </Text>
+
+              <View style={styles.modalButtons}>
+                <Button
+                  label="Cancel"
+                  onPress={closeRetentionModal}
+                  variant="secondary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Save"
+                  onPress={handleSaveRetention}
+                  variant="primary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </View>
+          </Card>
         </View>
       </Modal>
     </View>
@@ -1093,5 +1244,98 @@ const styles = StyleSheet.create({
     color: COLORS.text.muted,
     fontFamily: 'Nunito_400Regular',
     marginTop: 4,
+  },
+  // Retention period styles
+  retentionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  retentionRowContent: {
+    flex: 1,
+  },
+  retentionLabel: {
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  retentionNextCleanup: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    marginTop: 2,
+  },
+  retentionValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  retentionValue: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    marginRight: Spacing.xs,
+  },
+  retentionModalContent: {
+    width: '100%',
+    maxWidth: 380,
+    maxHeight: '80%',
+    ...Shadows.xl,
+  },
+  retentionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+  },
+  retentionOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: `${COLORS.primary}10`,
+  },
+  retentionOptionRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.accent,
+    marginRight: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retentionOptionRadioSelected: {
+    borderColor: COLORS.primary,
+  },
+  retentionOptionRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
+  },
+  retentionOptionText: {
+    fontSize: 15,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+    flex: 1,
+  },
+  retentionOptionTextSelected: {
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.primary,
+  },
+  retentionModalFooter: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.accent,
+  },
+  retentionPreviewText: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    textAlign: 'center',
+    marginBottom: Spacing.md,
   },
 });
