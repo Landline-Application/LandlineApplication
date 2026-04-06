@@ -1,17 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -19,7 +8,6 @@ import { Button } from '@/components/core/button';
 import { Card } from '@/components/core/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
-import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { haptics } from '@/services/haptics';
 import {
   RETENTION_OPTIONS,
@@ -32,20 +20,8 @@ import {
 } from '@/services/notification-retention';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const SWITCH_TRACK_OFF = '#d4c5a0';
-const SWITCH_TRACK_ON = '#a89968';
-
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
-
-  const {
-    isEnabled: autoReplyOn,
-    isLoading: autoReplyLoading,
-    enable: enableAutoReply,
-    disable: disableAutoReply,
-  } = useAutoReplyStore();
-
-  const [savingAutoReply, setSavingAutoReply] = useState(false);
 
   // Retention — lazy init, nextCleanupText is derived
   const [retentionDays, setRetentionDays] = useState<RetentionDays>(() => getRetentionPeriod());
@@ -57,23 +33,6 @@ export default function PreferencesScreen() {
     () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
     [retentionDays],
   );
-
-  async function handleAutoReplyToggle(value: boolean) {
-    setSavingAutoReply(true);
-    try {
-      if (value) {
-        await enableAutoReply();
-      } else {
-        await disableAutoReply();
-      }
-      haptics.success();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not update auto-reply.';
-      Alert.alert('Auto-reply', msg);
-    } finally {
-      setSavingAutoReply(false);
-    }
-  }
 
   function openRetentionModal() {
     setSelectedRetentionOption(retentionDays);
@@ -96,9 +55,6 @@ export default function PreferencesScreen() {
     }
   }
 
-  const android = Platform.OS === 'android';
-  const autoReplySwitchDisabled = savingAutoReply || autoReplyLoading;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -117,7 +73,7 @@ export default function PreferencesScreen() {
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          Preferences
+          General settings
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -128,41 +84,7 @@ export default function PreferencesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>App Behaviour</Text>
-
-          {/* Auto-reply */}
-          {android ? (
-            <Card variant="elevated" padding="md" style={styles.prefCard}>
-              <View style={styles.prefRow}>
-                <View style={styles.prefTextBlock}>
-                  <Text style={styles.prefTitle}>Auto-reply</Text>
-                  <Text style={styles.prefSubtitle}>
-                    Automatically reply to incoming messages while Landline Mode is active.
-                  </Text>
-                </View>
-                <View style={styles.toggleContainer}>
-                  {autoReplyLoading || savingAutoReply ? (
-                    <ActivityIndicator color={COLORS.primary} style={styles.toggleLoader} />
-                  ) : (
-                    <Switch
-                      value={autoReplyOn}
-                      onValueChange={(v) => void handleAutoReplyToggle(v)}
-                      disabled={autoReplySwitchDisabled}
-                      trackColor={{ false: SWITCH_TRACK_OFF, true: SWITCH_TRACK_ON }}
-                      thumbColor={autoReplyOn ? COLORS.primary : '#f4f3f4'}
-                      accessibilityLabel="Auto-reply"
-                      accessibilityHint="When on, automatic replies are sent while Landline Mode is active"
-                    />
-                  )}
-                </View>
-              </View>
-            </Card>
-          ) : (
-            <Text style={styles.platformHint}>
-              Auto-reply is available on Android. Your saved preference syncs and applies when you
-              use the app on an Android device.
-            </Text>
-          )}
+          <Text style={styles.sectionHeader}>Data</Text>
 
           {/* Notification Retention */}
           <TouchableOpacity
@@ -171,7 +93,6 @@ export default function PreferencesScreen() {
               openRetentionModal();
             }}
             activeOpacity={0.7}
-            style={{ marginTop: Spacing.md }}
           >
             <Card variant="elevated" padding="md" style={styles.prefCard}>
               <View style={styles.prefRow}>
@@ -348,23 +269,6 @@ const styles = StyleSheet.create({
   nextCleanup: {
     color: COLORS.text.secondary,
     fontFamily: 'Nunito_600SemiBold',
-  },
-  toggleContainer: {
-    width: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleLoader: {
-    width: 28,
-    height: 28,
-  },
-  platformHint: {
-    fontSize: 14,
-    color: COLORS.text.secondary,
-    lineHeight: 21,
-    marginBottom: Spacing.lg,
-    fontFamily: 'Nunito_400Regular',
-    marginLeft: Spacing.xs,
   },
   retentionValueContainer: {
     flexDirection: 'row',
