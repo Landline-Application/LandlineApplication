@@ -36,7 +36,6 @@ import {
 } from '@/services/notification-retention';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
 import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
-import { persistRetentionPreference } from '@/utils/firebase/persist-preferences-remote';
 import { updateUserDisplayName } from '@/utils/firebase/user-service';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,8 +127,6 @@ export default function ProfileScreen() {
       setRetentionDays(selectedRetentionOption);
       const lastCleanup = await getLastCleanupTimestamp();
       setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
-      // Sync to Firebase for cross-device sync
-      persistRetentionPreference(selectedRetentionOption);
       closeRetentionModal();
       haptics.light();
     } catch (error) {
