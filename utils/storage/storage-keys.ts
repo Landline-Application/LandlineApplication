@@ -12,6 +12,10 @@ export const STORAGE_KEYS = {
   // User Legal & Compliance
   TERMS_ACCEPTANCE: '@landline_terms_acceptance',
 
+  // Notification Retention Settings
+  NOTIFICATION_RETENTION_DAYS: '@landline_notification_retention_days',
+  NOTIFICATION_LAST_CLEANUP: '@landline_notification_last_cleanup',
+
   // Future keys can be added here as the app grows:
   // USER_PREFERENCES: '@landline_user_preferences',
   // NOTIFICATION_SETTINGS: '@landline_notification_settings',
