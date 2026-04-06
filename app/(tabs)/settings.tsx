@@ -393,6 +393,31 @@ export default function SettingsScreen() {
                   <Text style={styles.menuItemTitle}>General settings</Text>
                   <Text style={styles.menuItemSubtitle}>Notification retention and more</Text>
                 </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/auto-reply');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="reply" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Auto-Reply</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    {autoReplyEnabled
+                      ? 'Enabled — auto-replying to messages'
+                      : 'Set up automatic replies while focused'}
+                  </Text>
+                </View>
                 {autoReplyEnabled && (
                   <View style={styles.activeIndicator}>
                     <View style={styles.activeIndicatorDot} />
