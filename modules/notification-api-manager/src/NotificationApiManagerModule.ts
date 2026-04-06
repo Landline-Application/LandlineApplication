@@ -62,8 +62,6 @@ type NotificationApiNativeModule = {
   getEmergencyContactsJson(): string;
   // Data Management
   clearAllData(): Promise<boolean>;
-  // Notification Retention - delete notifications older than cutoff timestamp
-  deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number>;
 };
 
 // Stale dev clients may omit newer native methods; avoid crashing until `expo run:android` picks up Kotlin.
@@ -253,16 +251,6 @@ export function clearAllData() {
   return Native.clearAllData();
 }
 
-export function deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number> {
-  const fn = Native.deleteNotificationsOlderThan;
-  if (typeof fn === 'function') {
-    return fn.call(Native, cutoffTimestamp);
-  }
-  // Fallback: return 0 if native method not available (stale dev client)
-  console.warn('deleteNotificationsOlderThan native method not available');
-  return Promise.resolve(0);
-}
-
 export default {
   hasPostPermission,
   requestPostPermission,
@@ -298,5 +286,4 @@ export default {
   getEmergencyContactsJson,
   parseEmergencyContactsJson,
   clearAllData,
-  deleteNotificationsOlderThan,
 };

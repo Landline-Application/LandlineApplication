@@ -25,12 +25,3 @@ export function persistAutoReplyEnabledPreference(enabled: boolean): void {
     console.warn('persistAutoReplyEnabledPreference:', e),
   );
 }
-
-export function persistRetentionPreference(days: number): void {
-  if (Platform.OS !== 'android') return;
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-  mergeUserPreferences(uid, { notificationRetentionDays: days }).catch((e) =>
-    console.warn('persistRetentionPreference:', e),
-  );
-}
