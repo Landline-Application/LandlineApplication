@@ -5,7 +5,6 @@ import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
 } from '@/modules/notification-api-manager';
-import { persistLandlineModePreference } from '@/utils/firebase/persist-preferences-remote';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
@@ -179,7 +178,6 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       if (actualActive) {
         get().startAutoRefresh();
         await get().refreshNotifications();
-        persistLandlineModePreference(true);
       } else {
         throw new Error('Failed to activate Landline Mode');
       }
@@ -242,7 +240,6 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
 
       // Final refresh to get latest notifications
       await get().refreshNotifications();
-      persistLandlineModePreference(actualActive);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to deactivate';
       set({ error: errorMessage });

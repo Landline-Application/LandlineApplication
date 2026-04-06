@@ -1,10 +1,5 @@
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
-import { auth } from '@/utils/firebase/auth';
-import {
-  type UserPreferences,
-  getUserPreferences,
-  mergeUserPreferences,
-} from '@/utils/firebase/user-service';
 
 /**
  * Retention period options for notification cleanup
@@ -25,67 +20,32 @@ export const DEFAULT_RETENTION_DAYS: RetentionDays = 30;
 let cachedLastCleanup: Date | null = null;
 
 /**
- * Get the current user's UID or null if not logged in
+ * Get the current retention period setting.
+ * Reads directly from the preferences store — instant and offline-safe.
  */
-function getCurrentUserId(): string | null {
-  return auth.currentUser?.uid ?? null;
-}
-
-/**
- * Get the current retention period setting from Firebase
- * Falls back to default if not set or user not logged in
- * @returns Retention period in days (0 = keep forever, default = 30)
- */
-export async function getRetentionPeriod(): Promise<RetentionDays> {
-  try {
-    const uid = getCurrentUserId();
-    if (!uid) {
-      return DEFAULT_RETENTION_DAYS;
-    }
-
-    const prefs = await getUserPreferences(uid);
-    const value = prefs?.notificationRetentionDays;
-
-    // Check if it's a valid retention option
-    if (value !== undefined && RETENTION_OPTIONS.some((opt) => opt.value === value)) {
-      return value as RetentionDays;
-    }
-    return DEFAULT_RETENTION_DAYS;
-  } catch (error) {
-    console.error('Error getting retention period from Firebase:', error);
-    return DEFAULT_RETENTION_DAYS;
+export function getRetentionPeriod(): RetentionDays {
+  const days = usePreferencesStore.getState().notificationRetentionDays;
+  if (RETENTION_OPTIONS.some((opt) => opt.value === days)) {
+    return days as RetentionDays;
   }
+  return DEFAULT_RETENTION_DAYS;
 }
 
 /**
- * Set the retention period in Firebase
- * Also updates the last cleanup timestamp locally
+ * Set the retention period.
+ * Updates the preferences store (which persists locally and syncs to Firestore).
  */
-export async function setRetentionPeriod(days: RetentionDays): Promise<void> {
-  try {
-    const uid = getCurrentUserId();
-    if (!uid) {
-      throw new Error('User not logged in');
-    }
-
-    // Update Firebase
-    await mergeUserPreferences(uid, { notificationRetentionDays: days });
-
-    // Reset last cleanup to now so user gets the full period
-    cachedLastCleanup = new Date();
-  } catch (error) {
-    console.error('Error setting retention period:', error);
-    throw error;
-  }
+export function setRetentionPeriod(days: RetentionDays): void {
+  usePreferencesStore.getState().setRetentionDays(days);
+  // Reset last cleanup to now so the user gets the full new period
+  cachedLastCleanup = new Date();
 }
 
 /**
- * Initialize retention settings for a fresh install
- * Only sets the last cleanup timestamp locally (device-specific)
- * Does NOT write default to Firebase - defaults are handled in code
+ * Initialize retention settings for a fresh install.
+ * Only sets the last cleanup timestamp locally (device-specific).
  */
 export async function initializeRetentionSettings(): Promise<void> {
-  // Initialize last cleanup to now (device-specific, not synced)
   cachedLastCleanup = new Date();
 }
 
@@ -108,16 +68,14 @@ export async function updateLastCleanupTimestamp(): Promise<void> {
  */
 export async function shouldRunCleanup(): Promise<boolean> {
   try {
-    const retentionDays = await getRetentionPeriod();
+    const retentionDays = getRetentionPeriod();
 
-    // If set to keep forever, never run cleanup
     if (retentionDays === 0) {
       return false;
     }
 
     const lastCleanup = await getLastCleanupTimestamp();
 
-    // If never cleaned before, run cleanup
     if (!lastCleanup) {
       return true;
     }
@@ -189,20 +147,14 @@ export function getRetentionLabel(days: RetentionDays): string {
 /**
  * Clean up notifications older than the retention period
  * Returns the number of deleted notifications
- *
- * Uses the native deleteNotificationsOlderThan method for efficient cleanup
  */
 export async function cleanupExpiredNotifications(retentionDays: RetentionDays): Promise<number> {
   try {
-    // If set to keep forever, don't delete anything
     if (retentionDays === 0) {
       return 0;
     }
 
-    // Calculate cutoff timestamp
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-
-    // Use native method to delete notifications older than cutoff
     const deletedCount = await NotificationApiManager.deleteNotificationsOlderThan(cutoffTime);
 
     if (deletedCount > 0) {
@@ -220,7 +172,6 @@ export async function cleanupExpiredNotifications(retentionDays: RetentionDays):
 
 /**
  * Run cleanup if needed based on retention settings
- * Returns result with whether cleanup ran and how many were deleted
  */
 export async function runCleanupIfNeeded(): Promise<{
   cleaned: boolean;
@@ -233,29 +184,14 @@ export async function runCleanupIfNeeded(): Promise<{
       return { cleaned: false, deletedCount: 0 };
     }
 
-    const retentionDays = await getRetentionPeriod();
+    const retentionDays = getRetentionPeriod();
     const deletedCount = await cleanupExpiredNotifications(retentionDays);
 
-    // Update last cleanup timestamp (device-specific)
     await updateLastCleanupTimestamp();
 
     return { cleaned: true, deletedCount };
   } catch (error) {
     console.error('Error running cleanup:', error);
     return { cleaned: false, deletedCount: 0 };
-  }
-}
-
-/**
- * Sync retention preference from Firestore to local state
- * Called when user signs in or when preferences are updated remotely
- */
-export async function syncRetentionFromRemote(prefs: UserPreferences): Promise<void> {
-  if (prefs.notificationRetentionDays !== undefined) {
-    // The retention period is now stored in Firebase, so we just validate it
-    const value = prefs.notificationRetentionDays;
-    if (!RETENTION_OPTIONS.some((opt) => opt.value === value)) {
-      console.warn('Invalid retention period from remote:', value);
-    }
   }
 }

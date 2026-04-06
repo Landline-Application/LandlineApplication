@@ -12,8 +12,10 @@ export const STORAGE_KEYS = {
   // User Legal & Compliance
   TERMS_ACCEPTANCE: '@landline_terms_acceptance',
 
+  // User preferences — persisted locally and synced to Firestore when authenticated
+  USER_PREFERENCES: '@landline_user_preferences',
+
   // Future keys can be added here as the app grows:
-  // USER_PREFERENCES: '@landline_user_preferences',
   // NOTIFICATION_SETTINGS: '@landline_notification_settings',
   // THEME_PREFERENCE: '@landline_theme',
   // LAST_SYNC_TIME: '@landline_last_sync',

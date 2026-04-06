@@ -11,7 +11,6 @@ import {
 
 /** Stored under `users/{uid}.preferences` — merged on update. */
 export interface UserPreferences {
-  landlineModeOn?: boolean;
   autoReplyEnabled?: boolean;
   notificationRetentionDays?: number;
 }
@@ -92,23 +91,19 @@ export async function getUserPreferences(uid: string): Promise<UserPreferences |
 }
 
 /**
- * Deep-merge into `preferences` so partial updates do not wipe other keys.
+ * Writes the full preferences object to Firestore.
+ * The caller (usePreferencesStore) owns the complete local state so no
+ * server-side read-then-write is needed — Firestore merge handles the rest.
  */
 export async function mergeUserPreferences(
   uid: string,
-  partial: Partial<UserPreferences>,
+  preferences: UserPreferences,
 ): Promise<void> {
   const ref = doc(usersCollection, uid);
-  const snap = await getDoc(ref);
-  const existing = snap.exists()
-    ? (snap.data() as Partial<UserDocument> | undefined)?.preferences
-    : undefined;
-  const prev = existing && typeof existing === 'object' ? (existing as UserPreferences) : {};
-  const next: UserPreferences = { ...prev, ...partial };
   await setDoc(
     ref,
     {
-      preferences: next,
+      preferences,
       updatedAt: serverTimestamp(),
     },
     { merge: true },
