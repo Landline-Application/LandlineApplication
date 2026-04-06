@@ -11,7 +11,8 @@ interface AutoReplyState {
   isServiceRunning: boolean;
   message: string;
   allowedApps: string[];
-  isLoading: boolean;
+  isLoading: boolean; // toggle enable/disable only
+  isSaving: boolean; // message / allowedApps writes
   error: string | null;
 
   // Actions
@@ -32,6 +33,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   message: '',
   allowedApps: [],
   isLoading: false,
+  isSaving: false,
   error: null,
 
   // Action: Check current status from native
@@ -77,13 +79,11 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to enable';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isEnabled: false });
       console.error('enable error:', err);
       throw err;
     } finally {
       set({ isLoading: false });
-      // Refresh status to get latest service state
-      get().checkStatus();
     }
   },
 
@@ -101,19 +101,17 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to disable';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isEnabled: true });
       console.error('disable error:', err);
       throw err;
     } finally {
       set({ isLoading: false });
-      // Refresh status to get latest service state
-      get().checkStatus();
     }
   },
 
   // Action: Set reply message
   setMessage: async (message: string) => {
-    set({ isLoading: true, error: null });
+    set({ isSaving: true, error: null });
     try {
       const result = await AutoReplyManager.setReplyMessage(message);
 
@@ -128,13 +126,13 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       console.error('setMessage error:', err);
       throw err;
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
   // Action: Set allowed apps
   setAllowedApps: async (apps: string[]) => {
-    set({ isLoading: true, error: null });
+    set({ isSaving: true, error: null });
     try {
       const result = await AutoReplyManager.setAllowedApps(apps);
 
@@ -149,7 +147,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
       console.error('setAllowedApps error:', err);
       throw err;
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 

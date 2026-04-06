@@ -424,7 +424,7 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
-                router.push('/(settings)/preferences');
+                router.push('/preferences');
               }}
               activeOpacity={0.7}
             >
