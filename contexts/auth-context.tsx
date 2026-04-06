@@ -127,7 +127,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Account was deleted from the console — bootstrap a fresh anonymous session.
               console.warn('User deleted from console, signing in anonymously.');
               setUser(null);
-              await signInAnonymously(auth);
+              try {
+                await signInAnonymously(auth);
+              } catch (anonError: unknown) {
+                const anonCode = (anonError as { code?: string })?.code;
+                if (anonCode === 'auth/admin-restricted-operation') {
+                  console.warn(
+                    'Anonymous sign-in is disabled in the Firebase console. ' +
+                      'Enable it under Authentication → Sign-in providers → Anonymous.',
+                  );
+                } else {
+                  console.warn('Anonymous sign-in failed after user-not-found:', anonError);
+                }
+              }
             } else {
               // Network error or timeout — stay logged in with the cached session.
               console.log('Token refresh failed (likely offline), proceeding with cached user.');
@@ -144,8 +156,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             await signInAnonymously(auth);
             // onAuthStateChanged will fire again with the new anonymous user.
-          } catch (e) {
-            console.warn('Anonymous sign-in failed:', e);
+          } catch (e: unknown) {
+            const code = (e as { code?: string })?.code;
+            if (code === 'auth/admin-restricted-operation') {
+              // Anonymous auth is disabled in the Firebase console.
+              // App continues in an unauthenticated state — Firestore sync will
+              // be skipped but the core Landline features remain fully functional.
+              console.warn(
+                'Anonymous sign-in is disabled in the Firebase console. ' +
+                  'Enable it under Authentication → Sign-in providers → Anonymous.',
+              );
+            } else {
+              console.warn('Anonymous sign-in failed:', e);
+            }
             setUser(null);
           }
         }
