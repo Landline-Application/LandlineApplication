@@ -315,7 +315,9 @@ class NotificationApiManagerModule : Module() {
                         "title" to (parts[3] as Any),
                         "text" to (parts[4] as Any),
                         "postTime" to (parts[5].toLongOrNull() as Any?),
-                        "id" to (parts[6].toIntOrNull() as Any?)
+                        "id" to (parts[6].toIntOrNull() as Any?),
+                        // Field added in v2 of log format; older entries default to false
+                        "autoReplied" to ((parts.getOrNull(7) == "1") as Any)
                     )
                     notifications.add(notification)
                 }

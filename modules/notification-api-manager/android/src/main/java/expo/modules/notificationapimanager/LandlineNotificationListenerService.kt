@@ -296,6 +296,13 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 }
             }
 
+            // Determine if this notification will trigger an auto-reply (for log annotation)
+            val willAutoReply = autoReplyEnabled && landlineModeActive &&
+                !isEmergencyContactNotification &&
+                isAppAllowedForAutoReply(packageName) &&
+                hasReplyAction(notification) &&
+                !repliedNotifications.contains(sbn.key)
+
             // Handle notification logging if Landline mode is active
             if (landlineModeActive) {
                 logNotification(
@@ -304,7 +311,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                     title = title,
                     text = text,
                     timestamp = timestamp,
-                    notificationId = notificationId
+                    notificationId = notificationId,
+                    autoReplied = willAutoReply
                 )
                 Log.d(TAG, "Logged notification from $appName: $title")
             }
@@ -435,7 +443,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         title: String,
         text: String,
         timestamp: Long,
-        notificationId: Int
+        notificationId: Int,
+        autoReplied: Boolean = false
     ) {
         val prefs = getSharedPreferences("landline_notifications", MODE_PRIVATE)
         val existingLogs = prefs.getString("notification_logs", "") ?: ""
@@ -455,7 +464,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         val sanitizedText = text.replace("\n", " ").replace("|", " ")
 
         // Convert to simple string format (will be improved with database later)
-        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId"
+        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied
+        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}"
         
         val updatedLogs = if (existingLogs.isEmpty()) {
             logEntry

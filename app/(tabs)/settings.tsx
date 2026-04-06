@@ -21,6 +21,7 @@ import { AppAttentionCard } from '@/components/settings/app-attention-card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
@@ -48,6 +49,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
+  const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
 
   // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -380,6 +382,40 @@ export default function SettingsScreen() {
             <AppAttentionCard limit={5} showViewMore />
           </View>
         )}
+
+        {/* Preferences Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Preferences</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/auto-reply');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="reply" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Auto-Reply</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    {autoReplyEnabled
+                      ? 'Enabled — auto-replying to messages'
+                      : 'Set up automatic replies while focused'}
+                  </Text>
+                </View>
+                {autoReplyEnabled && (
+                  <View style={styles.activeIndicator}>
+                    <View style={styles.activeIndicatorDot} />
+                  </View>
+                )}
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
 
         {/* Tools Section */}
         <View style={styles.section}>
@@ -978,6 +1014,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     marginLeft: 56,
     opacity: 0.3,
+  },
+  activeIndicator: {
+    marginRight: Spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
   },
   // Storage
   storageSummary: {
