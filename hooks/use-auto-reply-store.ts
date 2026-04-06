@@ -174,3 +174,27 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
   // Action: Clear errors
   clearError: () => set({ error: null }),
 }));
+
+// ---------------------------------------------------------------------------
+// Preference sync subscription
+//
+// When onAuthReady() in use-preferences-store applies a remote autoReplyEnabled
+// value, this subscription detects the change and reconciles the native layer.
+// This keeps use-preferences-store free of any knowledge of this store — the
+// data flows one way: preferences → auto-reply, never the reverse at module level.
+// ---------------------------------------------------------------------------
+let _lastKnownPrefEnabled = usePreferencesStore.getState().autoReplyEnabled;
+
+usePreferencesStore.subscribe((state) => {
+  if (state.autoReplyEnabled === _lastKnownPrefEnabled) return;
+  _lastKnownPrefEnabled = state.autoReplyEnabled;
+
+  if (Platform.OS !== 'android') return;
+
+  const { isEnabled, enable, disable } = useAutoReplyStore.getState();
+  if (state.autoReplyEnabled && !isEnabled) {
+    enable().catch((e: unknown) => console.warn('autoReplyStore subscription: enable failed', e));
+  } else if (!state.autoReplyEnabled && isEnabled) {
+    disable().catch((e: unknown) => console.warn('autoReplyStore subscription: disable failed', e));
+  }
+});
