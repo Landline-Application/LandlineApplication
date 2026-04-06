@@ -285,7 +285,7 @@ export default function NotebookLogView({
                           {notif.autoReplied && (
                             <View style={styles.autoRepliedBadge}>
                               <MaterialIcons name="reply" size={11} color={COLORS.primary} />
-                              <Text style={styles.autoRepliedBadgeText}>Auto-replied</Text>
+                              <Text style={styles.autoRepliedBadgeText}>Auto Replied</Text>
                             </View>
                           )}
                         </View>
@@ -295,7 +295,7 @@ export default function NotebookLogView({
                       {!isExpanded && notif.autoReplied && (
                         <View style={styles.autoRepliedPill}>
                           <MaterialIcons name="reply" size={10} color={COLORS.primary} />
-                          <Text style={styles.autoRepliedPillText}>Auto-replied</Text>
+                          <Text style={styles.autoRepliedPillText}>Auto Replied</Text>
                         </View>
                       )}
                     </View>
