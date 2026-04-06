@@ -296,6 +296,13 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 }
             }
 
+            // Attempt auto-reply and capture whether a reply was actually sent.
+            val autoReplied = if (autoReplyEnabled && landlineModeActive && !isEmergencyContactNotification) {
+                handleAutoReplyIfNeeded(sbn, notification, packageName)
+            } else {
+                false
+            }
+
             // Handle notification logging if Landline mode is active
             if (landlineModeActive) {
                 logNotification(
@@ -304,14 +311,10 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                     title = title,
                     text = text,
                     timestamp = timestamp,
-                    notificationId = notificationId
+                    notificationId = notificationId,
+                    autoReplied = autoReplied
                 )
                 Log.d(TAG, "Logged notification from $appName: $title")
-            }
-            
-            // Handle auto-reply only for non-emergency notifications.
-            if (autoReplyEnabled && landlineModeActive && !isEmergencyContactNotification) {
-                handleAutoReplyIfNeeded(sbn, notification, packageName)
             }
 
         } catch (e: Exception) {
@@ -435,7 +438,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         title: String,
         text: String,
         timestamp: Long,
-        notificationId: Int
+        notificationId: Int,
+        autoReplied: Boolean = false
     ) {
         val prefs = getSharedPreferences("landline_notifications", MODE_PRIVATE)
         val existingLogs = prefs.getString("notification_logs", "") ?: ""
@@ -455,7 +459,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         val sanitizedText = text.replace("\n", " ").replace("|", " ")
 
         // Convert to simple string format (will be improved with database later)
-        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId"
+        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied
+        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}"
         
         val updatedLogs = if (existingLogs.isEmpty()) {
             logEntry
@@ -496,35 +501,39 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     }
     
     /**
-     * Handle auto-reply logic for a notification if conditions are met
+     * Handle auto-reply logic for a notification if conditions are met.
+     * Returns true if a reply was successfully sent, false otherwise.
      */
     private fun handleAutoReplyIfNeeded(
         sbn: StatusBarNotification,
         notification: Notification,
         packageName: String
-    ) {
+    ): Boolean {
         // Check if app is allowed for auto-reply
         if (!isAppAllowedForAutoReply(packageName)) {
             Log.d(TAG, "App $packageName not in auto-reply allowed list")
-            return
+            return false
         }
         
         // Check if notification has reply action
         if (!hasReplyAction(notification)) {
             Log.d(TAG, "Notification from $packageName has no reply action")
-            return
+            return false
         }
         
         // Check for deduplication
         val notificationKey = sbn.key
         if (repliedNotifications.contains(notificationKey)) {
             Log.d(TAG, "Already replied to notification with key: $notificationKey, skipping")
-            return
+            return false
         }
         
         Log.d(TAG, "Processing auto-reply for $packageName (Key: $notificationKey)")
-        repliedNotifications.add(notificationKey)
-        handleAutoReply(notification, packageName)
+        val sent = handleAutoReply(notification, packageName)
+        if (sent) {
+            repliedNotifications.add(notificationKey)
+        }
+        return sent
     }
     
     /**
@@ -547,19 +556,22 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     }
     
     /**
-     * Handle sending auto-reply to a notification
+     * Handle sending auto-reply to a notification.
+     * Returns true if the reply was sent successfully, false otherwise.
      */
-    private fun handleAutoReply(notification: Notification, packageName: String) {
-        try {
-            val replyAction = findReplyAction(notification) ?: return
-            val remoteInput = findRemoteInput(replyAction) ?: return
+    private fun handleAutoReply(notification: Notification, packageName: String): Boolean {
+        return try {
+            val replyAction = findReplyAction(notification) ?: return false
+            val remoteInput = findRemoteInput(replyAction) ?: return false
             
             val replyMessage = getReplyMessage()
             sendReply(replyAction, remoteInput, replyMessage)
             
             Log.d(TAG, "Auto-reply sent to $packageName: $replyMessage")
+            true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send auto-reply", e)
+            false
         }
     }
     

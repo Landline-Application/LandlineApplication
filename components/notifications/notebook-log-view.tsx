@@ -24,6 +24,7 @@ export interface NotebookLogEntry {
   packageName: string;
   category?: string;
   timestamp?: number;
+  autoReplied?: boolean;
 }
 
 interface NotebookLogViewProps {
@@ -275,9 +276,27 @@ export default function NotebookLogView({
                         </Text>
                       )}
 
-                      {/* Expanded: full timestamp */}
+                      {/* Expanded: full timestamp + auto-reply badge */}
                       {isExpanded && (
-                        <Text style={styles.entryTimestamp}>{formatTimestamp(notif.postTime)}</Text>
+                        <View style={styles.entryMeta}>
+                          <Text style={styles.entryTimestamp}>
+                            {formatTimestamp(notif.postTime)}
+                          </Text>
+                          {notif.autoReplied && (
+                            <View style={styles.autoRepliedBadge}>
+                              <MaterialIcons name="reply" size={11} color={COLORS.primary} />
+                              <Text style={styles.autoRepliedBadgeText}>Auto-replied</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Collapsed: small auto-reply pill */}
+                      {!isExpanded && notif.autoReplied && (
+                        <View style={styles.autoRepliedPill}>
+                          <MaterialIcons name="reply" size={10} color={COLORS.primary} />
+                          <Text style={styles.autoRepliedPillText}>Auto-replied</Text>
+                        </View>
                       )}
                     </View>
 
@@ -505,6 +524,50 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.text.muted,
     marginTop: Spacing.xs,
+  },
+  // Meta row: timestamp + badges (shown when expanded)
+  entryMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  // Auto-replied badge (shown in expanded state)
+  autoRepliedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: `${COLORS.primary}14`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: `${COLORS.primary}30`,
+  },
+  autoRepliedBadgeText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 10,
+    color: COLORS.primary,
+    letterSpacing: 0.2,
+  },
+  // Auto-replied pill (shown in collapsed state, below body text)
+  autoRepliedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    alignSelf: 'flex-start',
+    backgroundColor: `${COLORS.primary}10`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    marginTop: 3,
+  },
+  autoRepliedPillText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: COLORS.primary,
+    letterSpacing: 0.1,
   },
   // M3 trailing icon
   chevron: {
