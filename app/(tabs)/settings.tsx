@@ -256,8 +256,8 @@ export default function SettingsScreen() {
 
               <View style={styles.accountActions}>
                 <Button
-                  label="Manage Account"
-                  onPress={() => router.push('/(settings)/account')}
+                  label="Profile"
+                  onPress={() => router.push('/profile')}
                   variant="secondary"
                   size="md"
                   fullWidth
