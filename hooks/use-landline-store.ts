@@ -5,10 +5,9 @@ import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
 } from '@/modules/notification-api-manager';
+import { persistLandlineModePreference } from '@/utils/firebase/persist-preferences-remote';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-
-import { persistLandlineModePreference } from '@/utils/firebase/persist-preferences-remote';
 
 const SESSION_START_KEY = 'landline_session_start_time';
 const SESSION_MODE_KEY = 'landline_session_mode';
