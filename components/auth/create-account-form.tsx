@@ -7,6 +7,11 @@ import { OutlinedField } from '@/components/auth/outlined-field';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import {
+  getPasswordRequirements,
+  isSignupPasswordValid,
+  PASSWORD_MIN_LENGTH,
+} from '@/utils/password-requirements';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface CreateAccountFormProps {
@@ -35,8 +40,13 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
+  const passwordRequirements = getPasswordRequirements(password);
+
   const isFormValid =
-    validateEmail(email) && password.length >= 6 && confirmPassword === password && ageVerified;
+    validateEmail(email) &&
+    isSignupPasswordValid(password) &&
+    confirmPassword === password &&
+    ageVerified;
 
   const clearFieldErrors = () => {
     setEmailError('');
@@ -53,8 +63,16 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       setEmailError('Please enter a valid email');
       valid = false;
     }
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    if (!isSignupPasswordValid(password)) {
+      const reqs = getPasswordRequirements(password);
+      const missing = reqs.filter((r) => !r.met);
+      setPasswordError(
+        missing.length === 2
+          ? `Password must be at least ${PASSWORD_MIN_LENGTH} characters and include 1 special character`
+          : missing[0]?.id === 'length'
+            ? `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
+            : 'Password must include at least 1 special character (such as ! @ # $ %)',
+      );
       valid = false;
     }
     if (password !== confirmPassword) {
@@ -80,7 +98,9 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       if (code === 'auth/email-already-in-use') {
         setEmailError('An account with this email already exists');
       } else if (code === 'auth/weak-password') {
-        setPasswordError('Password is too weak');
+        setPasswordError(
+          `Use at least ${PASSWORD_MIN_LENGTH} characters and include 1 special character`,
+        );
       } else if (code === 'auth/invalid-email') {
         setEmailError('Please enter a valid email address');
       } else if (code === 'verification-email-failed' || code === 'auth/too-many-requests') {
@@ -158,6 +178,26 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
           </Pressable>
         }
       />
+
+      <View style={styles.requirementsBlock} accessibilityRole="text">
+        <Text style={styles.requirementsTitle}>Password requirements</Text>
+        {passwordRequirements.map((req) => (
+          <View key={req.id} style={styles.requirementRow}>
+            <MaterialIcons
+              name={req.met ? 'check-circle' : 'radio-button-unchecked'}
+              size={18}
+              color={req.met ? COLORS.success : COLORS.mutedForeground}
+              style={styles.requirementIcon}
+            />
+            <Text
+              style={[styles.requirementLabel, req.met && styles.requirementLabelMet]}
+              accessibilityLabel={`${req.label}${req.met ? ', satisfied' : ', not yet satisfied'}`}
+            >
+              {req.label}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <OutlinedField
         label="Confirm Password"
@@ -349,5 +389,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     textDecorationLine: 'underline',
+  },
+  requirementsBlock: {
+    marginTop: 4,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  requirementsTitle: {
+    fontFamily: Fonts?.sansSemiBold ?? 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: COLORS.foreground,
+    marginBottom: 8,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  requirementIcon: {
+    marginTop: 1,
+  },
+  requirementLabel: {
+    flex: 1,
+    fontFamily: Fonts?.sans ?? 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.mutedForeground,
+    lineHeight: 18,
+  },
+  requirementLabelMet: {
+    color: COLORS.foreground,
   },
 });
