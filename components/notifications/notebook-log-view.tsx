@@ -25,6 +25,7 @@ export interface NotebookLogEntry {
   category?: string;
   timestamp?: number;
   autoReplied?: boolean;
+  replyText?: string; // the message that was auto-replied, if any
 }
 
 interface NotebookLogViewProps {
@@ -288,6 +289,17 @@ export default function NotebookLogView({
                               <Text style={styles.autoRepliedBadgeText}>Auto Replied</Text>
                             </View>
                           )}
+                        </View>
+                      )}
+
+                      {/* Expanded: indented reply sub-row */}
+                      {isExpanded && notif.autoReplied && !!notif.replyText && (
+                        <View style={styles.replySubRow}>
+                          <View style={styles.replySubRowLine} />
+                          <View style={styles.replySubRowContent}>
+                            <Text style={styles.replySubRowLabel}>Replied</Text>
+                            <Text style={styles.replySubRowText}>{notif.replyText}</Text>
+                          </View>
                         </View>
                       )}
 
@@ -573,5 +585,37 @@ const styles = StyleSheet.create({
   chevron: {
     marginTop: 2,
     flexShrink: 0,
+  },
+  // Indented auto-reply sub-row (shown expanded when replyText is present)
+  replySubRow: {
+    flexDirection: 'row',
+    marginTop: Spacing.sm,
+    marginLeft: Spacing.md,
+    gap: Spacing.sm,
+  },
+  replySubRowLine: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: `${COLORS.primary}40`,
+    alignSelf: 'stretch',
+  },
+  replySubRowContent: {
+    flex: 1,
+    paddingLeft: Spacing.xs,
+  },
+  replySubRowLabel: {
+    fontSize: 10,
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  replySubRowText: {
+    fontSize: 13,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.text.secondary,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 });
