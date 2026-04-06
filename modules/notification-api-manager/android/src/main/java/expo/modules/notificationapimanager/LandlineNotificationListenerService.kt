@@ -175,6 +175,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     }
     
     private val repliedNotifications = mutableSetOf<String>()
+    // Maps sbn.key → the message we sent, so we can (a) skip logging the app's
+    // confirmation re-notification and (b) embed the sent text in the original log entry.
+    private val repliedWithMessage = mutableMapOf<String, String>()
     private val emergencyAlertedNotifications = mutableSetOf<String>()
     
     private var rebindAttemptCount = 0
@@ -268,6 +271,15 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 return
             }
 
+            // Skip logging the app's confirmation re-notification after we sent a reply.
+            // When we fire a RemoteInput reply, the target app updates its notification
+            // (same sbn.key) to show the sent message — we don't want that logged as a
+            // new entry; the original entry already carries replyText.
+            if (repliedWithMessage.containsKey(sbn.key)) {
+                Log.d(TAG, "Skipping confirmation re-notification for already-replied key: ${sbn.key}")
+                return
+            }
+
             // Whitelist: only allowed apps + emergency numbers may show notifications (others dismissed)
             if (shouldSuppressByNotificationFilter(packageName, title, text)) {
                 try {
@@ -303,8 +315,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 false
             }
 
-            // Handle notification logging if Landline mode is active
+            // Handle notification logging if Landline mode is active.
+            // replyText is looked up after handleAutoReplyIfNeeded fires below; we log
+            // after the reply so the message text is available in the same entry.
             if (landlineModeActive) {
+                val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
                 logNotification(
                     packageName = packageName,
                     appName = appName,
@@ -312,7 +327,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                     text = text,
                     timestamp = timestamp,
                     notificationId = notificationId,
-                    autoReplied = autoReplied
+                    autoReplied = autoReplied,
+                    replyText = replyText
                 )
                 Log.d(TAG, "Logged notification from $appName: $title")
             }
@@ -326,8 +342,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         super.onNotificationRemoved(sbn)
         Log.d(TAG, "Notification removed: ${sbn.packageName}")
         
-        // Remove from replied set when notification is dismissed
+        // Remove from replied sets when notification is dismissed
         repliedNotifications.remove(sbn.key)
+        repliedWithMessage.remove(sbn.key)
         emergencyAlertedNotifications.remove(sbn.key)
     }
 
@@ -439,7 +456,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         text: String,
         timestamp: Long,
         notificationId: Int,
-        autoReplied: Boolean = false
+        autoReplied: Boolean = false,
+        replyText: String = ""
     ) {
         val prefs = getSharedPreferences("landline_notifications", MODE_PRIVATE)
         val existingLogs = prefs.getString("notification_logs", "") ?: ""
@@ -454,13 +472,13 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             KEY_ID to notificationId
         )
         
-        // Sanitize title and text to avoid breaking the line-based format
+        // Sanitize fields to avoid breaking the line-based format
         val sanitizedTitle = title.replace("\n", " ").replace("|", " ")
         val sanitizedText = text.replace("\n", " ").replace("|", " ")
+        val sanitizedReplyText = replyText.replace("\n", " ").replace("|", " ")
 
-        // Convert to simple string format (will be improved with database later)
-        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied
-        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}"
+        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied|replyText
+        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}|$sanitizedReplyText"
         
         val updatedLogs = if (existingLogs.isEmpty()) {
             logEntry
@@ -529,11 +547,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
         
         Log.d(TAG, "Processing auto-reply for $packageName (Key: $notificationKey)")
-        val sent = handleAutoReply(notification, packageName)
-        if (sent) {
-            repliedNotifications.add(notificationKey)
+        repliedNotifications.add(notificationKey)
+        val sentMessage = handleAutoReply(notification, packageName)
+        if (sentMessage != null) {
+            repliedWithMessage[notificationKey] = sentMessage
         }
-        return sent
+        return sentMessage != null
     }
     
     /**
@@ -557,21 +576,21 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     
     /**
      * Handle sending auto-reply to a notification.
-     * Returns true if the reply was sent successfully, false otherwise.
+     * Returns the message that was sent, or null if the reply was not sent.
      */
-    private fun handleAutoReply(notification: Notification, packageName: String): Boolean {
+    private fun handleAutoReply(notification: Notification, packageName: String): String? {
         return try {
-            val replyAction = findReplyAction(notification) ?: return false
-            val remoteInput = findRemoteInput(replyAction) ?: return false
-            
+            val replyAction = findReplyAction(notification) ?: return null
+            val remoteInput = findRemoteInput(replyAction) ?: return null
+
             val replyMessage = getReplyMessage()
             sendReply(replyAction, remoteInput, replyMessage)
-            
+
             Log.d(TAG, "Auto-reply sent to $packageName: $replyMessage")
-            true
+            replyMessage
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send auto-reply", e)
-            false
+            null
         }
     }
     
