@@ -103,7 +103,7 @@ export default function SettingsScreen() {
 
   async function loadRetentionSettings() {
     try {
-      const days = await getRetentionPeriod();
+      const days = getRetentionPeriod();
       const lastCleanup = await getLastCleanupTimestamp();
       setRetentionDays(days);
       setSelectedRetentionOption(days);
@@ -124,7 +124,7 @@ export default function SettingsScreen() {
 
   async function handleSaveRetention() {
     try {
-      await setRetentionPeriod(selectedRetentionOption);
+      setRetentionPeriod(selectedRetentionOption);
       setRetentionDays(selectedRetentionOption);
       const lastCleanup = await getLastCleanupTimestamp();
       setNextCleanupText(formatNextCleanupRelative(selectedRetentionOption, lastCleanup));
