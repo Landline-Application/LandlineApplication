@@ -23,6 +23,7 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
 import {
@@ -50,6 +51,10 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
   const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
+  const { localDisplayName, setLocalDisplayName } = usePreferencesStore();
+  const [displayNameDraft, setDisplayNameDraft] = useState(
+    () => usePreferencesStore.getState().localDisplayName,
+  );
 
   // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -320,6 +325,32 @@ export default function SettingsScreen() {
             </Card>
           ) : (
             <Card variant="elevated" padding="lg" style={styles.card}>
+              {/* Display name — available to everyone, even before sign-up */}
+              <View style={styles.localNameSection}>
+                <Text style={styles.localNameLabel}>What should we call you?</Text>
+                <TextInput
+                  style={styles.localNameInput}
+                  value={displayNameDraft}
+                  onChangeText={setDisplayNameDraft}
+                  onBlur={() => {
+                    const trimmed = displayNameDraft.trim();
+                    setLocalDisplayName(trimmed);
+                    setDisplayNameDraft(trimmed);
+                  }}
+                  placeholder="Your name"
+                  placeholderTextColor={COLORS.text.muted}
+                  maxLength={80}
+                  returnKeyType="done"
+                />
+                {localDisplayName.trim().length > 0 && (
+                  <Text style={styles.localNameHint}>
+                    Saved on this device. Create an account to sync it across devices.
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.localNameDivider} />
+
               <Text style={styles.unauthTitle}>Join Landline</Text>
               <Text style={styles.unauthSubtitle}>
                 Create an account to sync your settings and access features across devices.
@@ -1061,6 +1092,40 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontFamily: 'Nunito_400Regular',
     lineHeight: 18,
+  },
+  // Local display name (anonymous users)
+  localNameSection: {
+    marginBottom: Spacing.lg,
+  },
+  localNameLabel: {
+    fontSize: 15,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
+    marginBottom: Spacing.sm,
+  },
+  localNameInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+  },
+  localNameHint: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    marginTop: Spacing.sm,
+    lineHeight: 17,
+  },
+  localNameDivider: {
+    height: 1,
+    backgroundColor: COLORS.surface.border,
+    marginVertical: Spacing.xl,
   },
   // Unauth
   unauthTitle: {

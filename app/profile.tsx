@@ -20,6 +20,7 @@ import { Card } from '@/components/core/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
 import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
@@ -46,8 +47,10 @@ export default function ProfileScreen() {
   const { user, isAuthenticated, refreshUser, signOut, resetPassword } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Display name editing
-  const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
+  // Display name editing — seed from localDisplayName if no Firebase name yet
+  const [displayNameInput, setDisplayNameInput] = useState(
+    () => user?.displayName?.trim() || usePreferencesStore.getState().localDisplayName,
+  );
   const [savingDisplayName, setSavingDisplayName] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -75,6 +78,8 @@ export default function ProfileScreen() {
     try {
       await updateUserDisplayName(user, displayNameInput);
       await refreshUser();
+      // Local name is no longer needed — Firebase displayName takes over
+      usePreferencesStore.getState().setLocalDisplayName('');
       setIsEditingName(false);
       haptics.success();
     } catch (error) {
