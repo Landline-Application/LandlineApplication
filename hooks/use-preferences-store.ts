@@ -111,6 +111,8 @@ export const usePreferencesStore = create<PreferencesState>()(
           }
 
           // Remote has values and there are no pending local changes → remote wins.
+          // Applying these values will trigger any external subscribers (e.g. the
+          // auto-reply store) to reconcile native state via their own subscriptions.
           const update: Partial<PreferencesState> = {};
 
           if (remote.autoReplyEnabled !== undefined) {
@@ -121,24 +123,6 @@ export const usePreferencesStore = create<PreferencesState>()(
           }
 
           set({ ...update, hasPendingSync: false, lastSyncedAt: Date.now() });
-
-          // Drive the native auto-reply module when the remote value differs from
-          // the current native state. Imported lazily to avoid a circular module
-          // dependency (use-auto-reply-store also imports use-preferences-store).
-          if (remote.autoReplyEnabled !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { useAutoReplyStore } = require('@/hooks/use-auto-reply-store');
-            const autoReply = useAutoReplyStore.getState();
-            if (remote.autoReplyEnabled && !autoReply.isEnabled) {
-              autoReply
-                .enable()
-                .catch((e: unknown) => console.warn('onAuthReady: enable auto-reply:', e));
-            } else if (!remote.autoReplyEnabled && autoReply.isEnabled) {
-              autoReply
-                .disable()
-                .catch((e: unknown) => console.warn('onAuthReady: disable auto-reply:', e));
-            }
-          }
         } catch (e) {
           // Network error — keep local state, mark pending so we retry next time.
           console.warn('usePreferencesStore.onAuthReady: failed to fetch remote prefs', e);
