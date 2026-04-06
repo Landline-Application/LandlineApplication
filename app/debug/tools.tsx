@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
   Alert,
@@ -67,34 +67,22 @@ export default function DebugToolsScreen() {
   const [notifCount, setNotifCount] = useState(0);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
-  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContactRow[]>([]);
+  // Lazy initializer — getEmergencyContactsJson() is a synchronous native call
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContactRow[]>(() => {
+    try {
+      const json = NotificationApiManager.getEmergencyContactsJson() ?? '[]';
+      return parseEmergencyContactsJson(json).map((c, i) => ({
+        id: normalizePhoneDigits(c.phone) || `ec-${i}`,
+        name: c.name,
+        phone: c.phone,
+      }));
+    } catch {
+      return [];
+    }
+  });
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
   const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
   const [contactSearch, setContactSearch] = useState('');
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      refreshStatus();
-      loadEmergencyContactsFromNative();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadEmergencyContactsFromNative = () => {
-    try {
-      const json = NotificationApiManager.getEmergencyContactsJson() ?? '[]';
-      const parsed = parseEmergencyContactsJson(json);
-      setEmergencyContacts(
-        parsed.map((c, i) => ({
-          id: normalizePhoneDigits(c.phone) || `ec-${i}`,
-          name: c.name,
-          phone: c.phone,
-        })),
-      );
-    } catch (e) {
-      console.warn('Failed to load emergency contacts:', e);
-    }
-  };
 
   const persistEmergencyContacts = (rows: EmergencyContactRow[]) => {
     const payload = rows.map(({ name, phone }) => ({ name, phone }));

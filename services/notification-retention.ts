@@ -50,9 +50,10 @@ export async function initializeRetentionSettings(): Promise<void> {
 }
 
 /**
- * Get the timestamp of the last successful cleanup (device-specific, not synced)
+ * Get the timestamp of the last successful cleanup (device-specific, not synced).
+ * Reads an in-memory variable — synchronous and instant.
  */
-export async function getLastCleanupTimestamp(): Promise<Date | null> {
+export function getLastCleanupTimestamp(): Date | null {
   return cachedLastCleanup;
 }
 
@@ -74,7 +75,7 @@ export async function shouldRunCleanup(): Promise<boolean> {
       return false;
     }
 
-    const lastCleanup = await getLastCleanupTimestamp();
+    const lastCleanup = getLastCleanupTimestamp();
 
     if (!lastCleanup) {
       return true;
