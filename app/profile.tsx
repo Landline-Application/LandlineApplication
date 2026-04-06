@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -10,19 +11,24 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
+import { Button } from '@/components/core/button';
+import { Card } from '@/components/core/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
-import { COLORS } from '@/constants/colors';
+import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
-import { useLandlineStore } from '@/hooks/use-landline-store';
+import { haptics } from '@/services/haptics';
+import { deleteAccountWithEmail } from '@/utils/firebase/auth';
+import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
+import { updateUserDisplayName } from '@/utils/firebase/user-service';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function primaryProviderLabel(user: FirebaseAuthTypes.User): string {
@@ -44,18 +50,22 @@ const SWITCH_TRACK_ON = '#a89968';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated } = useAuth();
-  const [savingLandline, setSavingLandline] = useState(false);
+  const { user, isAuthenticated, refreshUser, signOut, resetPassword } = useAuth();
   const [savingAutoReply, setSavingAutoReply] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const {
-    isActive: landlineActive,
-    isLoading: landlineLoading,
-    activateLandlineMode,
-    deactivateLandlineMode,
-    checkStatus: checkLandline,
-  } = useLandlineStore();
+  // Display name editing
+  const [displayNameInput, setDisplayNameInput] = useState(user?.displayName?.trim() ?? '');
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+
+  // Delete account modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [confirmationText, setConfirmationText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+
+  const isEmailUser = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
 
   const {
     isEnabled: autoReplyOn,
@@ -65,54 +75,27 @@ export default function ProfileScreen() {
     checkStatus: checkAutoReply,
   } = useAutoReplyStore();
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === 'android') {
-        checkLandline();
-        checkAutoReply();
-      }
-    }, [checkLandline, checkAutoReply]),
-  );
+  React.useEffect(() => {
+    if (Platform.OS === 'android') {
+      checkAutoReply();
+    }
+  }, [checkAutoReply]);
 
-  const onRefresh = useCallback(async () => {
+  const onRefresh = React.useCallback(async () => {
     if (Platform.OS !== 'android') {
       setRefreshing(false);
       return;
     }
     setRefreshing(true);
-    checkLandline();
     checkAutoReply();
     requestAnimationFrame(() => {
       setRefreshing(false);
     });
-  }, [checkLandline, checkAutoReply]);
+  }, [checkAutoReply]);
 
   const handleBack = () => {
     router.back();
   };
-
-  async function persistLandline(next: boolean) {
-    if (!user) return;
-    setSavingLandline(true);
-    try {
-      if (next) {
-        await activateLandlineMode();
-      } else {
-        await deactivateLandlineMode();
-      }
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {
-        /* haptics unavailable */
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not update Landline mode.';
-      Alert.alert('Landline mode', msg);
-    } finally {
-      setSavingLandline(false);
-      checkLandline();
-    }
-  }
 
   async function persistAutoReply(next: boolean) {
     if (!user) return;
@@ -123,11 +106,7 @@ export default function ProfileScreen() {
       } else {
         await disableAutoReply();
       }
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {
-        /* haptics unavailable */
-      }
+      haptics.success();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not update auto-reply.';
       Alert.alert('Auto-reply', msg);
@@ -137,12 +116,124 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleSaveDisplayName() {
+    if (!user) return;
+    setSavingDisplayName(true);
+    try {
+      await updateUserDisplayName(user, displayNameInput);
+      await refreshUser();
+      setIsEditingName(false);
+      haptics.success();
+    } catch (error) {
+      console.error('Save display name:', error);
+      Alert.alert(
+        'Error',
+        'Could not save your display name. Check your connection and try again.',
+      );
+    } finally {
+      setSavingDisplayName(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!user?.email) return;
+    try {
+      await resetPassword(user.email);
+      Alert.alert(
+        'Reset email sent',
+        `We've sent a password reset link to ${user.email}. Check your inbox.`,
+        [{ text: 'OK' }],
+      );
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/too-many-requests') {
+        Alert.alert('Too many attempts', 'Please try again later.');
+      } else {
+        Alert.alert(
+          'Error',
+          (error as Error)?.message || 'Could not send reset email. Please try again.',
+        );
+      }
+    }
+  }
+
+  function openDeleteModal() {
+    Alert.alert(
+      'Delete Account',
+      'This is permanent. Your account cannot be recovered once deleted. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, delete it',
+          style: 'destructive',
+          onPress: () => {
+            setDeleteModalVisible(true);
+            setConfirmationText('');
+            setDeletePassword('');
+          },
+        },
+      ],
+    );
+  }
+
+  function closeDeleteModal() {
+    setDeleteModalVisible(false);
+    setConfirmationText('');
+    setDeletePassword('');
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+
+    const providers = user.providerData?.map((p) => p.providerId) ?? [];
+    const isEmailProvider = providers.includes('password');
+    const isGoogleProvider = providers.includes('google.com');
+
+    if (isEmailProvider) {
+      if (confirmationText !== 'DELETE') {
+        Alert.alert('Incorrect Confirmation', 'Please type "DELETE" to confirm.');
+        return;
+      }
+      if (!deletePassword) {
+        Alert.alert('Password Required', 'Please enter your password to confirm deletion.');
+        return;
+      }
+    }
+
+    setIsDeleting(true);
+    try {
+      if (isEmailProvider) {
+        await deleteAccountWithEmail(user, deletePassword);
+      } else if (isGoogleProvider) {
+        await deleteAccountWithGoogle(user);
+      } else {
+        Alert.alert('Unsupported', 'Cannot delete this account type from the app.');
+        setIsDeleting(false);
+        return;
+      }
+
+      await signOut().catch(() => {});
+      closeDeleteModal();
+      router.replace('/onboarding');
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        Alert.alert('Wrong Password', 'The password you entered is incorrect.');
+      } else if (code === 'auth/too-many-requests') {
+        Alert.alert('Too Many Attempts', 'Too many failed attempts. Please try again later.');
+      } else {
+        Alert.alert('Delete Failed', (error as Error)?.message || 'An unexpected error occurred.');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   const android = Platform.OS === 'android';
-  const landlineSwitchDisabled = savingLandline || savingAutoReply || landlineLoading;
-  const autoReplySwitchDisabled = savingAutoReply || savingLandline || autoReplyLoading;
+  const autoReplySwitchDisabled = savingAutoReply || autoReplyLoading;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Pressable
           onPress={handleBack}
@@ -151,59 +242,67 @@ export default function ProfileScreen() {
           accessibilityLabel="Go back"
           hitSlop={12}
         >
-          <MaterialIcons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          Profile & preferences
+          Profile
         </Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.textPrimary}
-            colors={[COLORS.textPrimary]}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
       >
         {!isAuthenticated || !user ? (
           <View style={styles.section}>
-            <View style={styles.unauthCard}>
+            <Card variant="elevated" padding="lg" style={styles.unauthCard}>
               <Text style={styles.unauthTitle}>Sign in required</Text>
               <Text style={styles.unauthSubtitle}>
                 Sign in to view your account and sync preferences across devices.
               </Text>
               <Pressable
-                style={({ pressed }) => [styles.primaryAuthButton, pressed && styles.primaryPressed]}
-                onPress={() => router.push('/create-account')}
+                style={({ pressed }) => [
+                  styles.primaryAuthButton,
+                  pressed && styles.primaryPressed,
+                ]}
+                onPress={() => router.push('/auth/create-account')}
               >
                 <Text style={styles.primaryAuthButtonText}>Create Account</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [styles.secondaryAuthButton, pressed && styles.secondaryPressed]}
-                onPress={() => router.push('/login')}
+                style={({ pressed }) => [
+                  styles.secondaryAuthButton,
+                  pressed && styles.secondaryPressed,
+                ]}
+                onPress={() => router.push('/auth/sign-in')}
               >
                 <Text style={styles.secondaryAuthButtonText}>Sign In</Text>
               </Pressable>
-            </View>
+            </Card>
           </View>
         ) : (
           <>
             <View style={styles.section}>
               <Text style={styles.sectionHeader}>Account</Text>
-              <View style={styles.accountCard}>
+              <Card variant="elevated" padding="lg" style={styles.accountCard}>
                 <View style={styles.accountHeaderRow}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarInitial}>
-                      {(user.displayName?.trim()?.[0] || user.email || user.phoneNumber || '?')[0].toUpperCase()}
+                      {(user.displayName?.trim()?.[0] ||
+                        user.email ||
+                        user.phoneNumber ||
+                        '?')[0].toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.accountInfo}>
@@ -219,21 +318,62 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                 </View>
-                <Pressable
-                  onPress={() => router.push('/(tabs)/settings' as any)}
-                  style={({ pressed }) => [styles.editHintPress, pressed && styles.editHintPressed]}
-                  accessibilityRole="link"
-                  accessibilityLabel="Open Settings to edit display name"
-                >
-                  <MaterialIcons name="edit" size={16} color={COLORS.activeBorder} />
-                  <Text style={styles.accountHint}>Edit display name in Settings</Text>
-                  <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
-                </Pressable>
-              </View>
+
+                {/* Display Name Editing */}
+                {isEditingName ? (
+                  <View style={styles.editNameContainer}>
+                    <Text style={styles.inputLabel}>Display Name</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={displayNameInput}
+                      onChangeText={setDisplayNameInput}
+                      placeholder="e.g. Alex M."
+                      placeholderTextColor={COLORS.text.muted}
+                      editable={!savingDisplayName}
+                      maxLength={80}
+                      autoFocus
+                    />
+                    <View style={styles.editNameButtons}>
+                      <Button
+                        label="Cancel"
+                        onPress={() => {
+                          setIsEditingName(false);
+                          setDisplayNameInput(user?.displayName?.trim() ?? '');
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        label={savingDisplayName ? 'Saving...' : 'Save'}
+                        onPress={handleSaveDisplayName}
+                        disabled={savingDisplayName || !displayNameInput.trim()}
+                        variant="primary"
+                        size="sm"
+                        style={{ flex: 1 }}
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() => setIsEditingName(true)}
+                    style={({ pressed }) => [
+                      styles.editHintPress,
+                      pressed && styles.editHintPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit display name"
+                  >
+                    <MaterialIcons name="edit" size={16} color={COLORS.primary} />
+                    <Text style={styles.accountHint}>Edit display name</Text>
+                    <MaterialIcons name="chevron-right" size={18} color={COLORS.text.muted} />
+                  </Pressable>
+                )}
+              </Card>
 
               {user.email && !user.emailVerified ? (
                 <View style={styles.verifyBanner}>
-                  <MaterialIcons name="info-outline" size={16} color="#996600" />
+                  <MaterialIcons name="info-outline" size={16} color={COLORS.secondary} />
                   <Text style={styles.verifyBannerText}>
                     Verify your email to secure your account. Check your inbox for a link.
                   </Text>
@@ -244,115 +384,185 @@ export default function ProfileScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionHeader}>Preferences</Text>
               <Text style={styles.sectionIntro}>
-                Changes save to your account and apply when you sign in on another device. Pull down to
-                refresh status.
+                Changes save to your account and apply when you sign in on another device. Pull down
+                to refresh status.
               </Text>
 
               {android ? (
-                <>
-                  <View style={styles.prefCard}>
-                    <View style={styles.prefRow}>
-                      <View style={styles.prefTextBlock}>
-                        <Text style={styles.prefTitle}>Landline mode</Text>
-                        <Text style={styles.prefSubtitle}>
-                          Focus mode for notifications. Matches the Landline tab.
-                        </Text>
-                      </View>
-                      {landlineLoading && !savingLandline ? (
-                        <ActivityIndicator color={COLORS.textPrimary} />
-                      ) : savingLandline ? (
-                        <ActivityIndicator color={COLORS.textPrimary} />
-                      ) : (
-                        <Switch
-                          value={landlineActive}
-                          onValueChange={(v) => void persistLandline(v)}
-                          disabled={landlineSwitchDisabled}
-                          trackColor={{ false: SWITCH_TRACK_OFF, true: SWITCH_TRACK_ON }}
-                          thumbColor={landlineActive ? COLORS.activeBorder : '#f4f3f4'}
-                          accessibilityLabel="Landline mode"
-                          accessibilityHint="When on, Landline focus mode is active for notifications"
-                        />
-                      )}
+                <Card variant="elevated" padding="md" style={styles.prefCard}>
+                  <View style={styles.prefRow}>
+                    <View style={styles.prefTextBlock}>
+                      <Text style={styles.prefTitle}>Auto-reply</Text>
+                      <Text style={styles.prefSubtitle}>
+                        Turns automatic replies on or off. You can fine-tune the message in Debug
+                        Tools.
+                      </Text>
                     </View>
-                  </View>
-
-                  <View style={styles.prefCard}>
-                    <View style={styles.prefRow}>
-                      <View style={styles.prefTextBlock}>
-                        <Text style={styles.prefTitle}>Auto-reply</Text>
-                        <Text style={styles.prefSubtitle}>
-                          Turns automatic replies on or off. You can fine-tune the message in Debug Tools.
-                        </Text>
-                      </View>
-                      {autoReplyLoading && !savingAutoReply ? (
-                        <ActivityIndicator color={COLORS.textPrimary} />
-                      ) : savingAutoReply ? (
-                        <ActivityIndicator color={COLORS.textPrimary} />
+                    <View style={styles.toggleContainer}>
+                      {autoReplyLoading || savingAutoReply ? (
+                        <ActivityIndicator color={COLORS.primary} style={styles.toggleLoader} />
                       ) : (
                         <Switch
                           value={autoReplyOn}
                           onValueChange={(v) => void persistAutoReply(v)}
                           disabled={autoReplySwitchDisabled}
                           trackColor={{ false: SWITCH_TRACK_OFF, true: SWITCH_TRACK_ON }}
-                          thumbColor={autoReplyOn ? COLORS.activeBorder : '#f4f3f4'}
+                          thumbColor={autoReplyOn ? COLORS.primary : '#f4f3f4'}
                           accessibilityLabel="Auto-reply"
                           accessibilityHint="When on, automatic replies are enabled where the system allows"
                         />
                       )}
                     </View>
                   </View>
-                </>
+                </Card>
               ) : (
                 <Text style={styles.platformHint}>
-                  Landline mode and auto-reply controls are available on Android. Your saved preferences
-                  still sync and apply when you use the app on an Android device.
+                  Auto-reply controls are available on Android. Your saved preferences still sync
+                  and apply when you use the app on an Android device.
                 </Text>
               )}
+            </View>
 
-              <Pressable
-                style={({ pressed }) => [styles.linkButton, pressed && styles.linkButtonPressed]}
-                onPress={() => router.push('/permissions' as any)}
-                accessibilityRole="button"
-                accessibilityLabel="Notifications and permissions"
-              >
-                <View style={styles.linkIconWrap}>
-                  <MaterialIcons name="tune" size={22} color={COLORS.textPrimary} />
-                </View>
-                <View style={styles.linkButtonTextWrap}>
-                  <Text style={styles.linkButtonTitle}>Notifications & permissions</Text>
-                  <Text style={styles.linkButtonSub}>
-                    Control how Landline can notify you and read notification data.
-                  </Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color={COLORS.textSecondary} />
-              </Pressable>
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>Security</Text>
+              <Card variant="elevated" padding="none" style={styles.securityCard}>
+                {isEmailUser && (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
+                        haptics.light();
+                        handleChangePassword();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItem}>
+                        <View style={styles.menuItemIcon}>
+                          <MaterialIcons name="lock" size={22} color={COLORS.primary} />
+                        </View>
+                        <View style={styles.menuItemContent}>
+                          <Text style={styles.menuItemTitle}>Change Password</Text>
+                          <Text style={styles.menuItemSubtitle}>Update your account password</Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                      </View>
+                    </TouchableOpacity>
+                    <View style={styles.itemDivider} />
+                  </>
+                )}
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    openDeleteModal();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItem}>
+                    <View
+                      style={[styles.menuItemIcon, { backgroundColor: 'rgba(193, 140, 93, 0.08)' }]}
+                    >
+                      <MaterialIcons name="delete-forever" size={22} color={COLORS.error} />
+                    </View>
+                    <View style={styles.menuItemContent}>
+                      <Text style={[styles.menuItemTitle, { color: COLORS.error }]}>
+                        Delete Account
+                      </Text>
+                      <Text style={styles.menuItemSubtitle}>Permanently remove your account</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                  </View>
+                </TouchableOpacity>
+              </Card>
             </View>
           </>
         )}
       </ScrollView>
+
+      {/* Delete Account Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeDeleteModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalBody}>
+              This is permanent. Your account cannot be recovered once deleted.
+            </Text>
+
+            {isEmailUser ? (
+              <View style={styles.confirmBox}>
+                <Text style={styles.confirmLabel}>
+                  Type <Text style={styles.confirmHighlight}>DELETE</Text> to confirm:
+                </Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={confirmationText}
+                  onChangeText={setConfirmationText}
+                  placeholder="DELETE"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                <Text style={styles.confirmLabel}>Password:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  placeholder="Password"
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+            ) : (
+              <Text style={styles.modalTextExtra}>
+                You will be asked to sign in with Google to confirm.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <Button
+                label="Cancel"
+                onPress={closeDeleteModal}
+                variant="secondary"
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label={isDeleting ? 'Deleting...' : 'Delete'}
+                onPress={handleDeleteAccount}
+                variant="danger"
+                size="md"
+                disabled={isDeleting || (isEmailUser && confirmationText !== 'DELETE')}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  container: {
     flex: 1,
-    backgroundColor: '#faf8f4',
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.cardBorder,
-    backgroundColor: '#faf8f4',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surface.border,
+    backgroundColor: COLORS.background,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingRight: 10,
+    paddingVertical: Spacing.sm,
+    paddingRight: Spacing.md,
     gap: 2,
   },
   backButtonPressed: {
@@ -360,78 +570,63 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontFamily: 'Nunito_600SemiBold',
   },
   headerTitle: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    fontSize: 20,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
     textAlign: 'center',
   },
   headerSpacer: {
-    width: 88,
-  },
-  scroll: {
-    flex: 1,
+    width: 60,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Spacing.jumbo,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.cardBorder,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xl,
   },
   sectionHeader: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 10,
-    color: COLORS.textPrimary,
+    fontSize: 18,
+    color: COLORS.primary,
+    fontFamily: 'Fraunces_600SemiBold',
+    marginBottom: Spacing.md,
+    marginLeft: Spacing.xs,
   },
   sectionIntro: {
     fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 16,
+    color: COLORS.text.secondary,
+    marginBottom: Spacing.lg,
     lineHeight: 21,
+    fontFamily: 'Nunito_400Regular',
+    marginLeft: Spacing.xs,
   },
   accountCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-      },
-      android: { elevation: 2 },
-    }),
+    ...Shadows.sm,
   },
   accountHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.activeBorder,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: Spacing.lg,
     borderWidth: 2,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.surface.border,
   },
   avatarInitial: {
-    color: '#F4E4C1',
-    fontSize: 22,
-    fontWeight: '700',
+    color: COLORS.primary,
+    fontSize: 24,
+    fontFamily: 'Fraunces_700Bold',
   },
   accountInfo: {
     flex: 1,
@@ -439,35 +634,37 @@ const styles = StyleSheet.create({
   },
   accountLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
+    color: COLORS.text.muted,
+    marginBottom: Spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+    fontFamily: 'Nunito_600SemiBold',
   },
   accountDisplayName: {
     fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
   },
   accountMeta: {
     fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    marginTop: 4,
+    color: COLORS.text.secondary,
+    marginTop: Spacing.xs,
+    fontFamily: 'Nunito_400Regular',
   },
   accountMetaSmall: {
     fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 6,
+    color: COLORS.text.muted,
+    marginTop: Spacing.sm,
+    fontFamily: 'Nunito_400Regular',
   },
   editHintPress: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.cardBorder,
-    gap: 6,
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surface.border,
+    gap: Spacing.sm,
   },
   editHintPressed: {
     opacity: 0.7,
@@ -475,146 +672,241 @@ const styles = StyleSheet.create({
   accountHint: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.activeBorder,
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.primary,
+  },
+  editNameContainer: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surface.border,
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_600SemiBold',
+    marginBottom: Spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  textInput: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_400Regular',
+    marginBottom: Spacing.md,
+  },
+  editNameButtons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
   },
   verifyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#f5d87e',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: 14,
+    gap: Spacing.md,
+    backgroundColor: 'rgba(193, 140, 93, 0.08)',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.lg,
   },
   verifyBannerText: {
     flex: 1,
-    fontSize: 12,
-    color: '#996600',
-    lineHeight: 17,
+    fontSize: 13,
+    color: COLORS.secondary,
+    lineHeight: 18,
+    fontFamily: 'Nunito_400Regular',
   },
   prefCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    marginBottom: 12,
+    marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   prefRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 12,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.md,
   },
   prefTextBlock: {
     flex: 1,
     minWidth: 0,
   },
-  prefTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  prefSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  platformHint: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 21,
-    marginBottom: 16,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  linkButtonPressed: {
-    opacity: 0.92,
-    backgroundColor: '#f0ebe0',
-  },
-  linkIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#ebe4d4',
+  toggleContainer: {
+    width: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linkButtonTextWrap: {
+  toggleLoader: {
+    width: 28,
+    height: 28,
+  },
+  prefTitle: {
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  prefSubtitle: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    marginTop: Spacing.xs,
+    lineHeight: 18,
+    fontFamily: 'Nunito_400Regular',
+  },
+  platformHint: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    lineHeight: 21,
+    marginBottom: Spacing.lg,
+    fontFamily: 'Nunito_400Regular',
+  },
+  securityCard: {
+    ...Shadows.sm,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+  },
+  menuItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(93, 112, 82, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  menuItemContent: {
     flex: 1,
   },
-  linkButtonTitle: {
+  menuItemTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_600SemiBold',
   },
-  linkButtonSub: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    lineHeight: 17,
+  menuItemSubtitle: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+  },
+  itemDivider: {
+    height: 1,
+    backgroundColor: COLORS.accent,
+    marginLeft: 56,
+    opacity: 0.3,
   },
   unauthCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    ...Shadows.sm,
   },
   unauthTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
+    fontSize: 22,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
   unauthSubtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 18,
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    lineHeight: 22,
+    marginBottom: Spacing.xl,
+    textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
   },
   primaryAuthButton: {
-    backgroundColor: COLORS.activeBorder,
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: Spacing.md,
   },
   primaryPressed: {
     opacity: 0.88,
   },
   primaryAuthButtonText: {
-    color: '#F4E4C1',
+    color: COLORS.primaryForeground,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Nunito_600SemiBold',
   },
   secondaryAuthButton: {
-    paddingVertical: 12,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   secondaryPressed: {
     opacity: 0.7,
   },
   secondaryAuthButtonText: {
-    color: COLORS.activeBorder,
+    color: COLORS.primary,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(44, 44, 36, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    ...Shadows.xl,
+  },
+  modalTitle: {
+    fontSize: 22,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  modalBody: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  confirmBox: {
+    marginBottom: Spacing.xl,
+  },
+  confirmLabel: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_600SemiBold',
+    marginBottom: Spacing.sm,
+  },
+  confirmHighlight: {
+    color: COLORS.error,
+    fontWeight: 'bold',
+  },
+  modalInput: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    fontSize: 16,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.foreground,
+    marginBottom: Spacing.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  modalTextExtra: {
+    fontSize: 14,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_400Regular',
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
   },
 });
