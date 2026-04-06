@@ -8,6 +8,7 @@ import { Button } from '@/components/core/button';
 import { Card } from '@/components/core/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import {
   RETENTION_OPTIONS,
@@ -15,7 +16,6 @@ import {
   formatNextCleanupRelative,
   getLastCleanupTimestamp,
   getRetentionLabel,
-  getRetentionPeriod,
   setRetentionPeriod,
 } from '@/services/notification-retention';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,12 +23,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
 
-  // Retention — lazy init, nextCleanupText is derived
-  const [retentionDays, setRetentionDays] = useState<RetentionDays>(() => getRetentionPeriod());
+  // Retention — read directly from store (reactive to changes)
+  const retentionDays = usePreferencesStore(
+    (state) => state.notificationRetentionDays,
+  ) as RetentionDays;
   const [retentionModalVisible, setRetentionModalVisible] = useState(false);
-  const [selectedRetentionOption, setSelectedRetentionOption] = useState<RetentionDays>(() =>
-    getRetentionPeriod(),
-  );
+  // Modal draft value — initialized when modal opens (store is hydrated by then)
+  const [selectedRetentionOption, setSelectedRetentionOption] =
+    useState<RetentionDays>(retentionDays);
+
   const nextCleanupText = useMemo(
     () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
     [retentionDays],
@@ -46,7 +49,6 @@ export default function PreferencesScreen() {
   function handleSaveRetention() {
     try {
       setRetentionPeriod(selectedRetentionOption);
-      setRetentionDays(selectedRetentionOption);
       closeRetentionModal();
       haptics.light();
     } catch (error) {
