@@ -332,32 +332,6 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Preferences</Text>
-              <Card variant="elevated" padding="none" style={styles.menuCard}>
-                <TouchableOpacity
-                  onPress={() => {
-                    haptics.light();
-                    router.push('/(settings)/preferences');
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuItem}>
-                    <View style={styles.menuItemIcon}>
-                      <MaterialIcons name="tune" size={22} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.menuItemContent}>
-                      <Text style={styles.menuItemTitle}>App Preferences</Text>
-                      <Text style={styles.menuItemSubtitle}>
-                        Auto-reply, notification retention
-                      </Text>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
-                  </View>
-                </TouchableOpacity>
-              </Card>
-            </View>
-
-            <View style={styles.section}>
               <Text style={styles.sectionHeader}>Security</Text>
               <Card variant="elevated" padding="none" style={styles.securityCard}>
                 {isEmailUser && (
@@ -647,9 +621,6 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     lineHeight: 18,
     fontFamily: 'Nunito_400Regular',
-  },
-  menuCard: {
-    ...Shadows.sm,
   },
   securityCard: {
     ...Shadows.sm,

@@ -350,6 +350,27 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
+                router.push('/(settings)/preferences');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="tune" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>App Preferences</Text>
+                  <Text style={styles.menuItemSubtitle}>Auto-reply, notification retention</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
                 router.push('/auto-reply');
               }}
               activeOpacity={0.7}
