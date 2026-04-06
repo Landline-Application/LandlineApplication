@@ -4,9 +4,16 @@ import {
   type FirebaseFirestoreTypes,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   setDoc,
 } from '@react-native-firebase/firestore';
+
+/** Stored under `users/{uid}.preferences` — merged on update. */
+export interface UserPreferences {
+  landlineModeOn?: boolean;
+  autoReplyEnabled?: boolean;
+}
 
 export interface UserDocument {
   uid: string;
@@ -17,6 +24,7 @@ export interface UserDocument {
   updatedAt: FirebaseFirestoreTypes.FieldValue;
   /** Updated on every sign-in. Never touched by profile edits. */
   lastLogin: FirebaseFirestoreTypes.FieldValue;
+  preferences?: UserPreferences;
 }
 
 /**
@@ -71,4 +79,38 @@ export async function updateUserDisplayName(
 export async function deleteUserDocument(uid: string): Promise<void> {
   const ref = doc(usersCollection, uid);
   await deleteDoc(ref);
+}
+
+export async function getUserPreferences(uid: string): Promise<UserPreferences | null> {
+  const snap = await getDoc(doc(usersCollection, uid));
+  if (!snap.exists()) return null;
+  const data = snap.data() as Partial<UserDocument> | undefined;
+  const raw = data?.preferences;
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as UserPreferences;
+}
+
+/**
+ * Deep-merge into `preferences` so partial updates do not wipe other keys.
+ */
+export async function mergeUserPreferences(
+  uid: string,
+  partial: Partial<UserPreferences>,
+): Promise<void> {
+  const ref = doc(usersCollection, uid);
+  const snap = await getDoc(ref);
+  const existing = snap.exists()
+    ? (snap.data() as Partial<UserDocument> | undefined)?.preferences
+    : undefined;
+  const prev =
+    existing && typeof existing === 'object' ? (existing as UserPreferences) : {};
+  const next: UserPreferences = { ...prev, ...partial };
+  await setDoc(
+    ref,
+    {
+      preferences: next,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
