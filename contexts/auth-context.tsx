@@ -159,17 +159,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (e: unknown) {
             const code = (e as { code?: string })?.code;
             if (code === 'auth/admin-restricted-operation') {
-              // Anonymous auth is disabled in the Firebase console.
-              // App continues in an unauthenticated state — Firestore sync will
-              // be skipped but the core Landline features remain fully functional.
+              // Anonymous auth is not yet enabled in the Firebase console, or the
+              // setting change hasn't propagated yet. Retry once after a short delay
+              // to handle the case where it was just enabled.
               console.warn(
-                'Anonymous sign-in is disabled in the Firebase console. ' +
-                  'Enable it under Authentication → Sign-in providers → Anonymous.',
+                'Anonymous sign-in failed (admin-restricted). Retrying in 3 s. ' +
+                  'If this persists, enable Anonymous under Firebase Authentication → Sign-in providers.',
               );
+              setTimeout(async () => {
+                try {
+                  await signInAnonymously(auth);
+                } catch (retryErr: unknown) {
+                  console.warn('Anonymous sign-in retry failed:', retryErr);
+                  setUser(null);
+                }
+              }, 3000);
             } else {
               console.warn('Anonymous sign-in failed:', e);
+              setUser(null);
             }
-            setUser(null);
           }
         }
       } finally {
