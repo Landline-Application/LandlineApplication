@@ -343,39 +343,6 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* App Permissions Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>App Permissions</Text>
-          <Card variant="elevated" padding="none" style={styles.card}>
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                router.push('/core-permissions');
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
-                  <MaterialIcons name="lock" size={22} color={COLORS.primary} />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Permissions</Text>
-                  <Text style={styles.menuItemSubtitle}>Review and grant app access</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
-
-        {/* App Attention Section */}
-        {Platform.OS === 'android' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>App Attention</Text>
-            <AppAttentionCard limit={5} showViewMore />
-          </View>
-        )}
-
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Preferences</Text>
@@ -409,6 +376,39 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </Card>
         </View>
+
+        {/* App Permissions Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>App Permissions</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/core-permissions');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="lock" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Permissions</Text>
+                  <Text style={styles.menuItemSubtitle}>Review and grant app access</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        {/* App Attention Section */}
+        {Platform.OS === 'android' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>App Attention</Text>
+            <AppAttentionCard limit={5} showViewMore />
+          </View>
+        )}
 
         {/* Tools Section */}
         <View style={styles.section}>
