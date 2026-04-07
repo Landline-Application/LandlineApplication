@@ -84,6 +84,14 @@ export default function GuidedSetup() {
     }
   }, []);
 
+  const markCompleted = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.GUIDED_SETUP_COMPLETED, 'true');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const isFirst = step === 1;
   const isLast = step === TOTAL_STEPS;
   const index = step - 1;
@@ -99,6 +107,7 @@ export default function GuidedSetup() {
 
   async function goNext() {
     if (isLast) {
+      await markCompleted();
       await clearProgress();
       router.replace('/(tabs)' as any);
       return;

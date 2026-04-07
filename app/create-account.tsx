@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
 import { FormLayout } from '@/components/ui/form-layout';
@@ -11,6 +12,7 @@ import { EmailPasswordInput } from '@/components/ui/form/email-password-input';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
+import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateAccountPage() {
@@ -25,6 +27,18 @@ export default function CreateAccountPage() {
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
+  };
+
+  const startGuidedSetup = async () => {
+    try {
+      await AsyncStorage.multiSet([
+        [STORAGE_KEYS.GUIDED_SETUP_STEP, '1'],
+        [STORAGE_KEYS.GUIDED_SETUP_COMPLETED, 'false'],
+      ]);
+    } catch {
+      // ignore
+    }
+    router.replace('/guided_setup');
   };
 
   const handleSubmit = async () => {
@@ -51,7 +65,7 @@ export default function CreateAccountPage() {
       Alert.alert(
         'Verify Your Email',
         'A verification link has been sent to your email address. Please check your inbox and verify your email.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+        [{ text: 'OK', onPress: () => void startGuidedSetup() }],
       );
     } catch (error: any) {
       const code = error?.code;
@@ -65,7 +79,7 @@ export default function CreateAccountPage() {
         Alert.alert(
           'Account Created',
           'Your account was created, but we could not send the verification email. Please check your spam folder, or request a new verification link later from Settings.',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }],
+          [{ text: 'OK', onPress: () => void startGuidedSetup() }],
         );
       } else {
         Alert.alert('Sign Up Failed', error?.message || 'An unexpected error occurred.');
@@ -78,7 +92,7 @@ export default function CreateAccountPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      router.replace('/(tabs)');
+      await startGuidedSetup();
     } catch (error: any) {
       if (error?.code !== 'SIGN_IN_CANCELLED') {
         Alert.alert('Google Sign-In Failed', error?.message || 'An unexpected error occurred.');
