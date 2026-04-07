@@ -81,12 +81,16 @@ export default function SettingsScreen() {
     setStorageInfo(info);
   }
 
-  async function handleExportData() {
+  /** Android: notification logs CSV (modal). iOS / web: JSON app data via share or download. */
+  async function handleExportMyData() {
+    if (Platform.OS === 'android') {
+      await openExportLogModal();
+      return;
+    }
     try {
       const exportedData = await StorageManager.exportUserData();
 
       if (Platform.OS === 'web') {
-        // For web, create a download
         const blob = new Blob([exportedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -94,7 +98,6 @@ export default function SettingsScreen() {
         a.download = `landline-data-${new Date().toISOString()}.json`;
         a.click();
       } else {
-        // For mobile, use Share API
         await Share.share({
           message: exportedData,
           title: 'Landline Data Export',
@@ -567,23 +570,6 @@ export default function SettingsScreen() {
           </View>
           <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
         </TouchableOpacity>
-
-        {Platform.OS === 'android' && (
-          <TouchableOpacity style={styles.actionButton} onPress={openExportLogModal}>
-            <View style={styles.actionButtonRow}>
-              <MaterialIcons
-                name="description"
-                size={18}
-                color="#fff"
-                style={styles.actionButtonIcon}
-              />
-              <Text style={styles.actionButtonText}>Export notification logs (CSV)</Text>
-            </View>
-            <Text style={styles.actionButtonSubtext}>
-              Date range, sort order, optional app filter — save to a folder
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Data Management Section — only shown when signed in */}
@@ -591,12 +577,16 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Data Management</Text>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => void handleExportMyData()}>
             <View style={styles.actionButtonRow}>
               <MaterialIcons name="upload" size={18} color="#fff" style={styles.actionButtonIcon} />
               <Text style={styles.actionButtonText}>Export My Data</Text>
             </View>
-            <Text style={styles.actionButtonSubtext}>Download a copy of your data</Text>
+            <Text style={styles.actionButtonSubtext}>
+              {Platform.OS === 'android'
+                ? 'Notification logs as CSV—date range, filters, save to a folder you choose'
+                : 'Download a copy of your stored app data'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -633,7 +623,7 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      {/* Notification log CSV export (Android) */}
+      {/* Export my data: notification log CSV (Android only entry from Data Management) */}
       <Modal
         animationType="fade"
         transparent
@@ -642,11 +632,11 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.exportLogModalContent]}>
-            <Text style={styles.modalTitle}>Export notification logs</Text>
+            <Text style={styles.modalTitle}>Export my data</Text>
             <Text style={[styles.modalText, { marginBottom: 16 }]}>
-              Rows are filtered by logged time. Choose whether message titles and body text are
-              included or redacted. The file is saved with Storage Access Framework to a folder you
-              pick.
+              Notification history is exported as CSV. Rows are filtered by logged time. Choose
+              whether titles and body text are included or redacted. On Android the file is saved
+              with Storage Access Framework to a folder you pick.
             </Text>
 
             <ScrollView
