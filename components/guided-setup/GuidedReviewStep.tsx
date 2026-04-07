@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AppSelectionModel } from '@/components/app-selection/use-app-selection';
+import { G } from '@/components/guided-setup/theme';
 
 type Props = {
   model: AppSelectionModel;
@@ -103,25 +104,25 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#888',
+    fontSize: 12,
+    fontWeight: '800',
+    color: G.muted,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 1,
     marginBottom: 8,
     marginTop: 4,
   },
   card: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: G.well,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   cardBody: {
     fontSize: 15,
-    color: '#444',
+    color: G.text,
     lineHeight: 22,
   },
   summaryRow: {
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111',
+    color: G.text,
     flex: 1,
   },
   summaryValue: {
@@ -141,19 +142,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   on: {
-    color: '#34c759',
+    color: G.success,
   },
   off: {
-    color: '#888',
+    color: G.muted,
   },
   cardFootnote: {
     fontSize: 13,
-    color: '#666',
+    color: G.muted,
     lineHeight: 18,
   },
   muted: {
     fontSize: 15,
-    color: '#666',
+    color: G.muted,
     lineHeight: 22,
   },
   listRow: {
@@ -164,14 +165,14 @@ const styles = StyleSheet.create({
   },
   bullet: {
     fontSize: 15,
-    color: '#007AFF',
+    color: G.bullet,
     marginRight: 8,
     lineHeight: 22,
   },
   listText: {
     flex: 1,
     fontSize: 15,
-    color: '#111',
+    color: G.text,
     lineHeight: 22,
   },
 });
