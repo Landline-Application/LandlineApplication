@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   TERMS_ACCEPTANCE: '@landline_terms_acceptance',
 
   GUIDED_SETUP_STEP: '@landline_guided_setup_step',
+  GUIDED_SETUP_COMPLETED: '@landline_guided_setup_completed',
 
   // Future keys can be added here as the app grows:
   // USER_PREFERENCES: '@landline_user_preferences',
