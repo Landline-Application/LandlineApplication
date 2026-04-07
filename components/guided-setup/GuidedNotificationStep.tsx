@@ -14,6 +14,7 @@ import {
   BYPASS_PRESET_MESSAGING,
   type AppSelectionModel,
 } from '@/components/app-selection/use-app-selection';
+import { G } from '@/components/guided-setup/theme';
 
 type Props = {
   model: AppSelectionModel;
@@ -54,8 +55,8 @@ export function GuidedNotificationStep({ model }: Props) {
               <Switch
                 value={filterEnabled}
                 onValueChange={setFilterEnabled}
-                trackColor={{ false: '#d1d1d6', true: '#34c759' }}
-                thumbColor="#fff"
+                trackColor={{ false: G.switchTrackOff, true: G.switchTrackOn }}
+                thumbColor={G.well}
               />
             </View>
           </View>
@@ -79,11 +80,11 @@ export function GuidedNotificationStep({ model }: Props) {
             </TouchableOpacity>
           </View>
           <View style={styles.searchBox}>
-            <MaterialIcons name="search" size={18} color="#888" style={styles.searchIcon} />
+            <MaterialIcons name="search" size={18} color={G.muted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search apps…"
-              placeholderTextColor="#aaa"
+              placeholderTextColor={G.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -108,8 +109,8 @@ export function GuidedNotificationStep({ model }: Props) {
           <Switch
             value={allowedPackages.has(item.packageName)}
             onValueChange={() => togglePackage(item.packageName)}
-            trackColor={{ false: '#d1d1d6', true: '#34c759' }}
-            thumbColor="#fff"
+            trackColor={{ false: G.switchTrackOff, true: G.switchTrackOn }}
+            thumbColor={G.well}
           />
         </View>
       )}
@@ -127,12 +128,12 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   card: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: G.well,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -146,23 +147,23 @@ const styles = StyleSheet.create({
   labelStrong: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111',
+    color: G.text,
     marginBottom: 4,
   },
   labelMuted: {
     fontSize: 13,
-    color: '#666',
+    color: G.muted,
     lineHeight: 18,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111',
+    color: G.text,
     marginBottom: 6,
   },
   sectionHint: {
     fontSize: 13,
-    color: '#666',
+    color: G.muted,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -173,27 +174,27 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   pill: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: G.secondarySurface,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderWidth: 1,
+    borderColor: G.secondaryBorder,
   },
   pillText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: G.text,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: G.well,
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   searchIcon: {
     marginRight: 8,
@@ -202,31 +203,33 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#111',
+    color: G.text,
   },
   appRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: G.well,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   appAvatar: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#e3f0ff',
+    backgroundColor: G.secondarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: G.secondaryBorder,
   },
   appAvatarText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#007AFF',
+    color: G.primary,
   },
   appMeta: {
     flex: 1,
@@ -235,16 +238,16 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111',
+    color: G.text,
   },
   appPkg: {
     fontSize: 11,
-    color: '#888',
+    color: G.muted,
     marginTop: 2,
   },
   empty: {
     textAlign: 'center',
-    color: '#888',
+    color: G.muted,
     paddingVertical: 20,
     fontSize: 14,
   },

@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GuidedEmergencyStep } from '@/components/guided-setup/GuidedEmergencyStep';
 import { GuidedNotificationStep } from '@/components/guided-setup/GuidedNotificationStep';
 import { GuidedReviewStep } from '@/components/guided-setup/GuidedReviewStep';
+import { G } from '@/components/guided-setup/theme';
 import { useAppSelection } from '@/components/app-selection/use-app-selection';
+import { COLORS } from '@/constants/colors';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 
 const TOTAL_STEPS = 3;
@@ -126,7 +128,7 @@ export default function GuidedSetup() {
           { paddingTop: insets.top, paddingBottom: insets.bottom },
         ]}
       >
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={G.headline} />
       </View>
     );
   }
@@ -156,7 +158,7 @@ export default function GuidedSetup() {
       {showAndroidStep1 &&
         (appListLoading ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={COLORS.textPrimary} />
             <Text style={styles.loadingHint}>Loading your apps…</Text>
           </View>
         ) : (
@@ -175,7 +177,7 @@ export default function GuidedSetup() {
       {showAndroidStep2 &&
         (appListLoading ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={COLORS.textPrimary} />
             <Text style={styles.loadingHint}>Loading…</Text>
           </View>
         ) : (
@@ -194,7 +196,7 @@ export default function GuidedSetup() {
       {showStep3 &&
         (appListLoading && Platform.OS === 'android' ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={COLORS.textPrimary} />
             <Text style={styles.loadingHint}>Loading…</Text>
           </View>
         ) : (
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    backgroundColor: '#fff',
+    backgroundColor: G.screen,
   },
   centered: {
     justifyContent: 'center',
@@ -263,36 +265,50 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     marginBottom: 12,
+    backgroundColor: G.panel,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: G.panelBorder,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
+    overflow: 'hidden',
   },
   loadingHint: {
     marginTop: 12,
     fontSize: 14,
-    color: '#888',
+    color: G.muted,
     textAlign: 'center',
   },
   progress: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#888',
+    fontSize: 12,
+    fontWeight: '800',
+    color: G.progress,
     marginBottom: 16,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     marginBottom: 8,
+    color: G.headline,
+    letterSpacing: 0.5,
+    ...Platform.select({
+      ios: { fontFamily: 'Courier' },
+      default: { fontFamily: 'monospace' },
+    }),
   },
   subtitle: {
     fontSize: 15,
-    color: '#666',
+    color: G.subOnDark,
     lineHeight: 22,
     marginBottom: 12,
   },
   hint: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#888',
+    color: G.subOnDark,
   },
   row: {
     flexDirection: 'row',
@@ -304,46 +320,66 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: G.primary,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   buttonSecondary: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: G.secondarySurface,
+    borderWidth: 1,
+    borderColor: G.secondaryBorder,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   buttonOutline: {
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: G.outlineOnDark,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   buttonDisabled: {
     opacity: 0.45,
   },
   buttonTextPrimary: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: G.onPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   buttonTextSecondary: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '600',
+    color: G.text,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   buttonTextDisabled: {
-    color: '#999',
+    color: G.onPrimary,
   },
   buttonTextOutline: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: G.outlineOnDark,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   buttonTextOutlineMuted: {
-    color: '#007AFF',
+    color: G.outlineOnDark,
   },
   exitLink: {
     fontSize: 15,
-    color: '#007AFF',
+    color: G.headline,
     textAlign: 'center',
+    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
 });

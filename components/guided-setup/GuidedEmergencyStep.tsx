@@ -9,8 +9,9 @@ import {
   View,
 } from 'react-native';
 
-import { MaterialIcons } from '@/components/ui/icon-symbol';
 import type { AppSelectionModel } from '@/components/app-selection/use-app-selection';
+import { G } from '@/components/guided-setup/theme';
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 
 type Props = {
   model: AppSelectionModel;
@@ -55,7 +56,7 @@ export function GuidedEmergencyStep({ model }: Props) {
         <Text style={styles.hint}>Each entry needs at least 7 digits. Duplicates are ignored.</Text>
 
         <TouchableOpacity style={styles.outlineBtn} onPress={openContactPicker} activeOpacity={0.85}>
-          <MaterialIcons name="contact-phone" size={20} color="#007AFF" />
+          <MaterialIcons name="contact-phone" size={20} color={G.primary} />
           <Text style={styles.outlineBtnText}>Add from contacts</Text>
         </TouchableOpacity>
 
@@ -63,7 +64,7 @@ export function GuidedEmergencyStep({ model }: Props) {
           <View key={num} style={styles.chipRow}>
             <Text style={styles.chipText}>{num}</Text>
             <TouchableOpacity onPress={() => removeEmergency(num)} hitSlop={12} accessibilityLabel="Remove">
-              <MaterialIcons name="close" size={20} color="#888" />
+              <MaterialIcons name="close" size={20} color={G.muted} />
             </TouchableOpacity>
           </View>
         ))}
@@ -74,7 +75,7 @@ export function GuidedEmergencyStep({ model }: Props) {
             value={newPhone}
             onChangeText={setNewPhone}
             placeholder="Phone number"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={G.muted}
             keyboardType="phone-pad"
             autoComplete="tel"
           />
@@ -101,7 +102,7 @@ export function GuidedEmergencyStep({ model }: Props) {
             <TextInput
               style={styles.modalSearch}
               placeholder="Search…"
-              placeholderTextColor="#aaa"
+              placeholderTextColor={G.muted}
               value={contactSearch}
               onChangeText={setContactSearch}
               autoCorrect={false}
@@ -147,27 +148,27 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   card: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: G.well,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
+    color: G.text,
     marginBottom: 8,
   },
   cardBody: {
     fontSize: 14,
-    color: '#666',
+    color: G.muted,
     lineHeight: 20,
   },
   hint: {
     fontSize: 13,
-    color: '#666',
+    color: G.muted,
     lineHeight: 18,
     marginBottom: 14,
   },
@@ -179,29 +180,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: G.primary,
     marginBottom: 12,
+    backgroundColor: G.well,
   },
   outlineBtnText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: G.primary,
   },
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fafafa',
+    backgroundColor: G.well,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
   },
   chipText: {
     fontSize: 16,
-    color: '#111',
+    color: G.text,
     letterSpacing: 0.3,
   },
   addInline: {
@@ -212,44 +214,46 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ccc',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fff',
+    color: G.text,
+    backgroundColor: G.well,
   },
   smallPrimary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: G.primary,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 10,
   },
   smallPrimaryText: {
-    color: '#fff',
+    color: G.onPrimary,
     fontWeight: '600',
     fontSize: 15,
   },
   empty: {
     textAlign: 'center',
-    color: '#888',
+    color: G.muted,
     paddingVertical: 20,
     fontSize: 14,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: G.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: '#fff',
+    backgroundColor: G.modalSheet,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingTop: 16,
     paddingHorizontal: 16,
     maxHeight: '78%',
+    borderTopWidth: 1,
+    borderColor: G.panelBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -260,22 +264,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111',
+    color: G.text,
   },
   modalDone: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: G.primary,
   },
   modalSearch: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ccc',
+    borderWidth: 1,
+    borderColor: G.wellBorder,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
     marginBottom: 8,
-    color: '#111',
+    color: G.text,
+    backgroundColor: G.well,
   },
   modalList: {
     maxHeight: 360,
@@ -285,19 +290,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: G.wellBorder,
   },
   modalAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: G.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   modalAvatarTxt: {
-    color: '#fff',
+    color: G.onPrimary,
     fontWeight: '700',
     fontSize: 15,
   },
@@ -308,11 +313,11 @@ const styles = StyleSheet.create({
   modalName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111',
+    color: G.text,
   },
   modalPhone: {
     fontSize: 13,
-    color: '#666',
+    color: G.muted,
     marginTop: 2,
   },
 });
