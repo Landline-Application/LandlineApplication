@@ -568,15 +568,6 @@ export default function SettingsScreen() {
           <Text style={styles.actionButtonSubtext}>System diagnostics and testing</Text>
         </TouchableOpacity>
 
-        {__DEV__ && (
-          <TouchableOpacity
-            style={styles.outlineButton}
-            onPress={() => router.push('/guided_setup' as any)}
-          >
-            <Text style={styles.outlineButtonText}>Open guided setup (dev)</Text>
-          </TouchableOpacity>
-        )}
-
         {Platform.OS === 'android' && (
           <TouchableOpacity style={styles.actionButton} onPress={openExportLogModal}>
             <View style={styles.actionButtonRow}>

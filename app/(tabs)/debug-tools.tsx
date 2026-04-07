@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import * as Contacts from 'expo-contacts';
+import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
@@ -171,6 +172,33 @@ export default function DebugToolsScreen() {
             Testing & System Information
           </Text>
         </View>
+
+        {__DEV__ && (
+          <View
+            style={{
+              backgroundColor: COLORS.dark.surface,
+              marginHorizontal: 16,
+              borderRadius: 12,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: COLORS.dark.border,
+              borderCurve: 'continuous',
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text }}>
+              Guided setup
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.dark.textSecondary }}>
+              Opens the onboarding wizard (same as after sign-up). Dev-only entry.
+            </Text>
+            <Button
+              title="Open guided setup (dev)"
+              onPress={() => router.push('/guided_setup' as any)}
+              color={COLORS.dark.primary}
+            />
+          </View>
+        )}
 
         {/* System Status */}
         <View
