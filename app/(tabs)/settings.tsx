@@ -129,7 +129,40 @@ export default function SettingsScreen() {
     setExportLogModalVisible(false);
   }
 
-  async function handleSaveNotificationLogsCSV() {
+  function handleSaveNotificationLogsCSV() {
+    const count = matchingExportCount;
+    const privacyNote =
+      exportLogPrivacyMode === 'full'
+        ? 'Titles and message text will be included in the file.'
+        : 'Titles and message text will be redacted in the file.';
+    Alert.alert(
+      'Export this data?',
+      `You are about to save a CSV with ${count} notification row${count === 1 ? '' : 's'} using your selected date range and filters. ${privacyNote} You will choose where the file is saved on the next step. Only continue if you meant to export.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'default',
+          onPress: () => {
+            Alert.alert(
+              'Confirm export',
+              'Continue to pick a folder and save the CSV to your device? Nothing is saved until you finish that step.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Export',
+                  style: 'default',
+                  onPress: () => void performSaveNotificationLogsCSV(),
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }
+
+  async function performSaveNotificationLogsCSV() {
     setCsvExporting(true);
     try {
       const result = await saveNotificationLogsCSVAndroid({
@@ -762,7 +795,7 @@ export default function SettingsScreen() {
                   (matchingExportCount === 0 || exportLogLoading || csvExporting) &&
                     styles.modalButtonDisabled,
                 ]}
-                onPress={handleSaveNotificationLogsCSV}
+                onPress={() => handleSaveNotificationLogsCSV()}
                 disabled={matchingExportCount === 0 || exportLogLoading || csvExporting}
               >
                 <Text style={styles.modalButtonPrimaryText}>
