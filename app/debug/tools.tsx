@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Button,
-  FlatList,
-  Modal,
   Platform,
   ScrollView,
   Text,
@@ -13,7 +11,6 @@ import {
   View,
 } from 'react-native';
 
-import * as Contacts from 'expo-contacts';
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/theme';
@@ -29,16 +26,8 @@ import {
   setDNDEnabled,
   setInterruptionFilter,
 } from '@/modules/dnd-manager';
-import NotificationApiManager, {
-  parseEmergencyContactsJson,
-} from '@/modules/notification-api-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-type EmergencyContactRow = { id: string; name: string; phone: string };
-
-function normalizePhoneDigits(phone: string): string {
-  return phone.replace(/[^\d+]/g, '');
-}
 
 export default function DebugToolsScreen() {
   const insets = useSafeAreaInsets();
@@ -68,27 +57,6 @@ export default function DebugToolsScreen() {
   const [notifCount, setNotifCount] = useState(0);
   const [dndStatus, setDndStatus] = useState('');
   const [customMessage, setCustomMessage] = useState('');
-  // Lazy initializer — getEmergencyContactsJson() is a synchronous native call
-  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContactRow[]>(() => {
-    try {
-      const json = NotificationApiManager.getEmergencyContactsJson() ?? '[]';
-      return parseEmergencyContactsJson(json).map((c, i) => ({
-        id: normalizePhoneDigits(c.phone) || `ec-${i}`,
-        name: c.name,
-        phone: c.phone,
-      }));
-    } catch {
-      return [];
-    }
-  });
-  const [contactPickerVisible, setContactPickerVisible] = useState(false);
-  const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
-  const [contactSearch, setContactSearch] = useState('');
-
-  const persistEmergencyContacts = (rows: EmergencyContactRow[]) => {
-    const payload = rows.map(({ name, phone }) => ({ name, phone }));
-    NotificationApiManager.setEmergencyContactsJson(JSON.stringify(payload));
-  };
 
   const refreshStatus = async () => {
     if (Platform.OS !== 'android') return;
@@ -106,31 +74,6 @@ export default function DebugToolsScreen() {
       setNotifCount(0);
     }
   };
-
-  const selectEmergencyContact = async () => {
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Contacts permission is required.');
-      return;
-    }
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-    });
-    const withPhone = data
-      .filter((c) => c.phoneNumbers && c.phoneNumbers.length > 0)
-      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-    if (withPhone.length === 0) {
-      Alert.alert('No Contacts', 'No contacts with phone numbers found.');
-      return;
-    }
-    setContactList(withPhone);
-    setContactSearch('');
-    setContactPickerVisible(true);
-  };
-
-  const filteredContacts = contactList.filter((c) =>
-    (c.name ?? '').toLowerCase().includes(contactSearch.toLowerCase()),
-  );
 
   return (
     <>
@@ -943,105 +886,6 @@ export default function DebugToolsScreen() {
           </View>
         </View>
 
-        {/* Emergency contacts */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            🆘 Emergency contacts
-          </Text>
-
-          <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary }}>
-            Add one or more contacts. Their messages can bypass Landline restrictions (see listener
-            rules). Duplicate numbers are skipped.
-          </Text>
-
-          {emergencyContacts.length === 0 ? (
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.muted, fontStyle: 'italic' }}>
-              None selected
-            </Text>
-          ) : (
-            <View style={{ gap: 8 }}>
-              {emergencyContacts.map((row) => (
-                <View
-                  key={row.id}
-                  style={{
-                    backgroundColor: COLORS.dark.card,
-                    padding: 12,
-                    borderRadius: 8,
-                    borderLeftWidth: 3,
-                    borderLeftColor: COLORS.dark.success,
-                    borderCurve: 'continuous',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark.text.primary }}
-                    >
-                      {row.name || 'Unknown'}
-                    </Text>
-                    <Text
-                      selectable
-                      style={{ fontSize: 13, color: COLORS.dark.text.secondary, marginTop: 4 }}
-                    >
-                      {row.phone}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const next = emergencyContacts.filter((c) => c.id !== row.id);
-                      setEmergencyContacts(next);
-                      persistEmergencyContacts(next);
-                    }}
-                    activeOpacity={0.7}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      backgroundColor: COLORS.dark.error + '33',
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark.error }}>
-                      Remove
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <View style={{ gap: 8 }}>
-            <Button
-              title="Add emergency contact"
-              onPress={selectEmergencyContact}
-              color={COLORS.dark.primary}
-            />
-            {emergencyContacts.length > 0 && (
-              <Button
-                title="Clear all contacts"
-                onPress={() => {
-                  setEmergencyContacts([]);
-                  persistEmergencyContacts([]);
-                }}
-                color={COLORS.dark.error}
-              />
-            )}
-          </View>
-        </View>
-
         {/* Home Screen Widget */}
         <View
           style={{
@@ -1110,147 +954,6 @@ export default function DebugToolsScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Contact Picker Modal */}
-      <Modal
-        visible={contactPickerVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setContactPickerVisible(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: COLORS.dark.surface,
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              paddingTop: 16,
-              maxHeight: '75%',
-            }}
-          >
-            {/* Header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: COLORS.dark.text.primary }}>
-                Add emergency contact
-              </Text>
-              <TouchableOpacity onPress={() => setContactPickerVisible(false)} activeOpacity={0.7}>
-                <Text style={{ fontSize: 15, color: COLORS.dark.primary, fontWeight: '600' }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Search */}
-            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-              <TextInput
-                style={{
-                  backgroundColor: COLORS.dark.card,
-                  borderWidth: 1,
-                  borderColor: COLORS.dark.border,
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  color: COLORS.dark.text.primary,
-                  fontSize: 14,
-                }}
-                placeholder="Search contacts..."
-                placeholderTextColor={COLORS.dark.text.muted}
-                value={contactSearch}
-                onChangeText={setContactSearch}
-                autoCorrect={false}
-              />
-            </View>
-
-            {/* Contact list */}
-            <FlatList
-              data={filteredContacts}
-              keyExtractor={(item, index) => `${item.name ?? ''}-${index}`}
-              keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    const phone = item.phoneNumbers?.[0]?.number?.trim();
-                    const name = (item.name ?? '').trim();
-                    if (!phone) {
-                      Alert.alert('Invalid contact', 'This contact has no phone number.');
-                      return;
-                    }
-                    const norm = normalizePhoneDigits(phone);
-                    if (emergencyContacts.some((c) => normalizePhoneDigits(c.phone) === norm)) {
-                      setContactPickerVisible(false);
-                      Alert.alert('Already added', 'That number is already an emergency contact.');
-                      return;
-                    }
-                    const next: EmergencyContactRow[] = [
-                      ...emergencyContacts,
-                      { id: norm || `ec-${Date.now()}`, name, phone },
-                    ];
-                    setEmergencyContacts(next);
-                    persistEmergencyContacts(next);
-                    setContactPickerVisible(false);
-                  }}
-                  activeOpacity={0.7}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    borderBottomWidth: 1,
-                    borderBottomColor: COLORS.dark.divider,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 19,
-                      backgroundColor: COLORS.dark.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12,
-                    }}
-                  >
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-                      {(item.name ?? '?')[0].toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.text.primary }}
-                    >
-                      {item.name ?? 'Unknown'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.dark.text.secondary, marginTop: 2 }}>
-                      {item.phoneNumbers?.[0]?.number ?? ''}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <View style={{ padding: 24, alignItems: 'center' }}>
-                  <Text style={{ color: COLORS.dark.text.muted, fontSize: 14 }}>
-                    No contacts found
-                  </Text>
-                </View>
-              }
-            />
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }

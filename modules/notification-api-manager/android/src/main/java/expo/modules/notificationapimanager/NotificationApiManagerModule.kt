@@ -133,9 +133,7 @@ class NotificationApiManagerModule : Module() {
             true
         }
 
-        // ============================================================
-        // NOTIFICATION LISTENER SERVICE (for Landline Mode)
-        // ============================================================
+        // Notification Listener Service (for Landline Mode)
 
         /**
          * Check if Notification Listener permission is granted
@@ -231,7 +229,7 @@ class NotificationApiManagerModule : Module() {
             prefs.getBoolean("is_landline_mode_active", false)
         }
 
-        // --- Notification whitelist (Landline Mode): allowed apps + emergency phone digits ---
+        // Notification whitelist (Landline Mode): allowed apps + emergency phone digits
 
         Function("isNotificationFilterEnabled") {
             val ctx = appContext.reactContext ?: return@Function false
@@ -275,6 +273,8 @@ class NotificationApiManagerModule : Module() {
                 .filter { it.length >= 7 }
                 .toSet()
             prefs.edit().putStringSet("emergency_phone_digits", normalized).apply()
+            // Clear cache so the listener picks up changes immediately
+            LandlineNotificationListenerService.clearEmergencyContactsCache()
             true
         }
 
@@ -421,9 +421,7 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
-        // ============================================================
-        // AUTO-REPLY FUNCTIONALITY
-        // ============================================================
+        // Auto-reply functionality
 
         /**
          * Check if auto-reply is currently enabled
@@ -522,9 +520,7 @@ class NotificationApiManagerModule : Module() {
             true
         }
 
-        // ============================================================
-        // EMERGENCY CONTACTS (JSON array; supports multiple)
-        // ============================================================
+        // Emergency contacts (JSON array; supports multiple)
 
         Function("setEmergencyContactsJson") { json: String ->
             val ctx = appContext.reactContext ?: return@Function false
@@ -534,6 +530,8 @@ class NotificationApiManagerModule : Module() {
                 .remove("emergency_contact_name")
                 .remove("emergency_contact_phone")
                 .apply()
+            // Clear the in-memory cache so the listener picks up the new contacts immediately
+            LandlineNotificationListenerService.clearEmergencyContactsCache()
             true
         }
 

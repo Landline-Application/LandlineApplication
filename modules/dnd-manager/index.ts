@@ -45,3 +45,11 @@ export function openAppNotificationSettings(packageName: string): Promise<boolea
 export function getInterruptionFilterConstants(): InterruptionFilterConstants {
   return DNDManagerModule.getInterruptionFilterConstants();
 }
+
+export function setLandlineNotificationPolicy(): boolean {
+  return DNDManagerModule.setLandlineNotificationPolicy();
+}
+
+export function restoreNotificationPolicy(): boolean {
+  return DNDManagerModule.restoreNotificationPolicy();
+}

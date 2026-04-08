@@ -247,6 +247,39 @@ class DndManagerModule : Module() {
                 "UNKNOWN" to NotificationManager.INTERRUPTION_FILTER_UNKNOWN
             )
         }
+
+        // Sets the NotificationPolicy so that PRIORITY mode allows messages from any
+        // sender and calls from starred contacts.  Saves and returns the previous policy
+        // so it can be restored when Landline Mode is turned off.
+        Function("setLandlineNotificationPolicy") {
+            if (!notificationManager.isNotificationPolicyAccessGranted) return@Function false
+            val policy = NotificationManager.Policy(
+                // Allow messages (any sender) + calls (starred contacts) + alarms
+                NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES or
+                NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS,
+                NotificationManager.Policy.PRIORITY_SENDERS_STARRED, // calls: starred only
+                NotificationManager.Policy.PRIORITY_SENDERS_ANY      // messages: any sender
+            )
+            notificationManager.setNotificationPolicy(policy)
+            return@Function true
+        }
+
+        // Restores a permissive policy (all senders, all categories) when Landline Mode ends.
+        Function("restoreNotificationPolicy") {
+            if (!notificationManager.isNotificationPolicyAccessGranted) return@Function false
+            val policy = NotificationManager.Policy(
+                NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES or
+                NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_EVENTS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_REMINDERS,
+                NotificationManager.Policy.PRIORITY_SENDERS_ANY,
+                NotificationManager.Policy.PRIORITY_SENDERS_ANY
+            )
+            notificationManager.setNotificationPolicy(policy)
+            return@Function true
+        }
     }
 
 

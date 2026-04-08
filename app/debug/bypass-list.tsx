@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -19,8 +18,6 @@ import { router, useFocusEffect } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { LandlineColors } from '@/constants/theme';
-import * as DndManager from '@/modules/dnd-manager';
-import type { AppInfo } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,144 +25,62 @@ function normalizeDigits(input: string): string {
   return input.replace(/\D/g, '');
 }
 
-/** Common messaging apps — notifications from these can bypass Landline Mode when selected. */
-const BYPASS_PRESET_MESSAGING = [
-  'com.google.android.apps.messaging',
-  'com.whatsapp',
-  'com.facebook.orca',
-  'org.telegram.messenger',
-  'com.snapchat.android',
-] as const;
+type EmergencyEntry = { name: string; phone: string };
 
-const BYPASS_PRESET_CALLS = [
-  'com.google.android.dialer',
-  'com.android.dialer',
-  'com.samsung.android.dialer',
-] as const;
+function parseStoredContacts(): EmergencyEntry[] {
+  if (Platform.OS !== 'android') return [];
+  try {
+    const json = NotificationApiManager.getEmergencyContactsJson();
+    if (json) {
+      const parsed = JSON.parse(json) as { name?: string; phone?: string }[];
+      const entries = parsed
+        .map((e) => ({ name: e.name ?? '', phone: normalizeDigits(e.phone ?? '') }))
+        .filter((e) => e.phone.length >= 7);
+      if (entries.length > 0) return entries;
+    }
+  } catch {}
+  // Fallback: legacy phone-number-only storage
+  return NotificationApiManager.getEmergencyPhoneNumbers().map((p) => ({ name: '', phone: p }));
+}
 
-export default function BypassListScreen() {
+export default function EmergencyContactsScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [installedApps, setInstalledApps] = useState<AppInfo[]>([]);
 
-  // Synchronous native reads — initialized immediately via lazy useState
-  const [filterEnabled, setFilterEnabled] = useState<boolean>(() =>
-    Platform.OS === 'android' ? NotificationApiManager.isNotificationFilterEnabled() : false,
-  );
-  const [allowedPackages, setAllowedPackages] = useState<Set<string>>(() => {
-    if (Platform.OS !== 'android') return new Set();
-    return new Set(NotificationApiManager.getAllowedNotificationPackages());
-  });
-  const [initialAllowed, setInitialAllowed] = useState<Set<string>>(() => {
-    if (Platform.OS !== 'android') return new Set();
-    return new Set(NotificationApiManager.getAllowedNotificationPackages());
-  });
-  const [initialFilterEnabled, setInitialFilterEnabled] = useState<boolean>(() =>
-    Platform.OS === 'android' ? NotificationApiManager.isNotificationFilterEnabled() : false,
-  );
-  const [emergencyNumbers, setEmergencyNumbers] = useState<string[]>(() =>
-    Platform.OS === 'android' ? NotificationApiManager.getEmergencyPhoneNumbers() : [],
-  );
-  const [initialEmergency, setInitialEmergency] = useState<string[]>(() =>
-    Platform.OS === 'android' ? [...NotificationApiManager.getEmergencyPhoneNumbers()] : [],
-  );
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyEntry[]>(parseStoredContacts);
+  const [initialEmergency, setInitialEmergency] = useState<EmergencyEntry[]>(parseStoredContacts);
+  // Flat list of digits for backward-compat APIs
+  const emergencyNumbers = emergencyContacts.map((e) => e.phone);
 
   const [newPhone, setNewPhone] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
   const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
   const [contactSearch, setContactSearch] = useState('');
 
-  // Only getAllInstalledApps is genuinely async — load it on every focus
-  const loadInstalledApps = useCallback(async () => {
-    if (Platform.OS !== 'android') {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const apps = await DndManager.getAllInstalledApps(false);
-      setInstalledApps(apps);
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Could not load installed apps.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Load emergency numbers on every focus
   useFocusEffect(
     useCallback(() => {
-      loadInstalledApps();
-    }, [loadInstalledApps]),
+      if (Platform.OS !== 'android') {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const current = parseStoredContacts();
+        setEmergencyContacts(current);
+        setInitialEmergency([...current]);
+      } finally {
+        setLoading(false);
+      }
+    }, []),
   );
 
-  const hasChanges = useMemo(() => {
-    if (filterEnabled !== initialFilterEnabled) return true;
-    if (emergencyNumbers.length !== initialEmergency.length) return true;
-    for (let i = 0; i < emergencyNumbers.length; i++) {
-      if (emergencyNumbers[i] !== initialEmergency[i]) return true;
-    }
-    if (allowedPackages.size !== initialAllowed.size) return true;
-    for (const p of allowedPackages) {
-      if (!initialAllowed.has(p)) return true;
-    }
-    for (const p of initialAllowed) {
-      if (!allowedPackages.has(p)) return true;
-    }
-    return false;
-  }, [
-    filterEnabled,
-    initialFilterEnabled,
-    allowedPackages,
-    initialAllowed,
-    emergencyNumbers,
-    initialEmergency,
-  ]);
-
-  const filteredApps = useMemo(() => {
-    if (!searchQuery.trim()) return installedApps;
-    const q = searchQuery.toLowerCase();
-    return installedApps.filter(
-      (a) => a.appName.toLowerCase().includes(q) || a.packageName.toLowerCase().includes(q),
-    );
-  }, [installedApps, searchQuery]);
-
-  const togglePackage = useCallback((packageName: string) => {
-    setAllowedPackages((prev) => {
-      const next = new Set(prev);
-      if (next.has(packageName)) next.delete(packageName);
-      else next.add(packageName);
-      return next;
-    });
-  }, []);
-
-  const addEmergency = useCallback(() => {
-    const digits = normalizeDigits(newPhone);
-    if (digits.length < 7) {
-      Alert.alert('Invalid number', 'Enter at least 7 digits for an emergency contact.');
-      return;
-    }
-    if (emergencyNumbers.includes(digits)) {
-      setNewPhone('');
-      return;
-    }
-    setEmergencyNumbers((prev) => [...prev, digits].sort());
-    setNewPhone('');
-  }, [newPhone, emergencyNumbers]);
-
-  const removeEmergency = useCallback((digits: string) => {
-    setEmergencyNumbers((prev) => prev.filter((d) => d !== digits));
-  }, []);
-
-  const mergeEmergencyDigits = useCallback((newDigits: string[]) => {
-    setEmergencyNumbers((prev) => {
-      const next = new Set(prev);
-      for (const d of newDigits) {
-        if (d.length >= 7) next.add(d);
-      }
-      return [...next].sort();
+  const mergeEmergencyEntries = useCallback((entries: EmergencyEntry[]) => {
+    setEmergencyContacts((prev) => {
+      const existingPhones = new Set(prev.map((e) => e.phone));
+      const toAdd = entries.filter((e) => e.phone.length >= 7 && !existingPhones.has(e.phone));
+      return [...prev, ...toAdd].sort((a, b) => a.phone.localeCompare(b.phone));
     });
   }, []);
 
@@ -196,36 +111,21 @@ export default function BypassListScreen() {
 
   const onPickContact = useCallback(
     (contact: Contacts.Contact) => {
-      const digitsList =
+      const entries: EmergencyEntry[] =
         contact.phoneNumbers
-          ?.map((p) => normalizeDigits(p.number ?? ''))
-          .filter((d) => d.length >= 7) ?? [];
-      if (digitsList.length === 0) {
+          ?.map((p) => ({ name: contact.name ?? '', phone: normalizeDigits(p.number ?? '') }))
+          .filter((e) => e.phone.length >= 7) ?? [];
+      if (entries.length === 0) {
         Alert.alert(
           'No valid numbers',
           'That contact has no phone numbers with at least 7 digits.',
         );
         return;
       }
-      mergeEmergencyDigits(digitsList);
+      mergeEmergencyEntries(entries);
       setContactPickerVisible(false);
     },
-    [mergeEmergencyDigits],
-  );
-
-  const addBypassPreset = useCallback(
-    (packageNames: readonly string[]) => {
-      setAllowedPackages((prev) => {
-        const next = new Set(prev);
-        for (const p of packageNames) {
-          if (installedApps.some((a) => a.packageName === p)) {
-            next.add(p);
-          }
-        }
-        return next;
-      });
-    },
-    [installedApps],
+    [mergeEmergencyEntries],
   );
 
   const filteredContacts = useMemo(
@@ -234,37 +134,145 @@ export default function BypassListScreen() {
     [contactList, contactSearch],
   );
 
+  // Sync emergency contacts with Android starred contacts
+  const syncEmergencyContactsWithStarred = useCallback(async (phoneNumbers: string[]) => {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      const { status, canAskAgain } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Contacts permission not granted, cannot sync starred status');
+        if (canAskAgain) {
+          Alert.alert(
+            'Contacts Permission Needed',
+            'To automatically sync emergency contacts with starred contacts for call handling, please allow contacts access.',
+            [
+              { text: 'Later', style: 'cancel' },
+              { text: 'Grant Access', onPress: () => Contacts.requestPermissionsAsync() },
+            ],
+          );
+        }
+        return;
+      }
+
+      // Get all contacts with phone numbers
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.IsFavorite],
+      });
+
+      let starredCount = 0;
+      let unmatchedEmergencies: string[] = [];
+
+      // For each contact, check if any of their numbers match emergency numbers
+      for (const contact of data) {
+        if (!contact.phoneNumbers || contact.phoneNumbers.length === 0) continue;
+
+        const contactDigits = contact.phoneNumbers
+          .map((p) => normalizeDigits(p.number ?? ''))
+          .filter((d) => d.length >= 7);
+
+        // Check if this contact has any emergency number
+        const matchedEmergency = phoneNumbers.find((emergency) =>
+          contactDigits.some((digits) => {
+            // Match last 10 digits for flexibility
+            const emergencyLast10 = emergency.slice(-10);
+            const contactLast10 = digits.slice(-10);
+            return emergencyLast10 === contactLast10;
+          }),
+        );
+
+        const isEmergencyContact = !!matchedEmergency;
+
+        // Update starred status if needed
+        if (isEmergencyContact && !contact.isFavorite) {
+          try {
+            await Contacts.updateContactAsync({
+              id: contact.id,
+              [Contacts.Fields.IsFavorite]: true,
+            });
+            starredCount++;
+            console.log(`Starred contact: ${contact.name}`);
+          } catch (updateErr) {
+            console.error(`Failed to star contact ${contact.name}:`, updateErr);
+          }
+        } else if (!isEmergencyContact && contact.isFavorite) {
+          // Unstar contacts that are no longer emergency contacts
+          try {
+            await Contacts.updateContactAsync({
+              id: contact.id,
+              [Contacts.Fields.IsFavorite]: false,
+            });
+            console.log(`Unstarred contact: ${contact.name}`);
+          } catch (updateErr) {
+            console.error(`Failed to unstar contact ${contact.name}:`, updateErr);
+          }
+        }
+      }
+
+      // Check for emergency numbers that didn't match any contact
+      for (const emergency of phoneNumbers) {
+        const hasMatch = data.some((contact) =>
+          contact.phoneNumbers?.some((p) => {
+            const digits = normalizeDigits(p.number ?? '');
+            return digits.slice(-10) === emergency.slice(-10);
+          }),
+        );
+        if (!hasMatch) {
+          unmatchedEmergencies.push(emergency);
+        }
+      }
+
+      if (starredCount > 0) {
+        console.log(`Successfully starred ${starredCount} emergency contacts`);
+      }
+      if (unmatchedEmergencies.length > 0) {
+        console.warn('Emergency numbers not found in contacts:', unmatchedEmergencies);
+      }
+    } catch (e) {
+      console.error('Failed to sync emergency contacts with starred contacts:', e);
+    }
+  }, []);
+
+  const hasChanges = useMemo(() => {
+    const currentSorted = [...emergencyNumbers].sort().join(',');
+    const initialSorted = [...initialEmergency]
+      .map((e) => e.phone)
+      .sort()
+      .join(',');
+    return currentSorted !== initialSorted;
+  }, [emergencyNumbers, initialEmergency]);
+
   const persist = useCallback(async () => {
     if (Platform.OS !== 'android') return;
-    if (filterEnabled && allowedPackages.size === 0 && emergencyNumbers.length === 0) {
-      Alert.alert(
-        'Nothing configured',
-        'Add at least one app that bypasses Landline Mode, or an emergency number, or turn off notification permissions.',
-      );
-      return;
-    }
     try {
       setSaving(true);
-      NotificationApiManager.setNotificationFilterEnabled(filterEnabled);
-      NotificationApiManager.setAllowedNotificationPackages([...allowedPackages]);
+      // Save emergency numbers to native storage
       NotificationApiManager.setEmergencyPhoneNumbers(emergencyNumbers);
-      setInitialFilterEnabled(filterEnabled);
-      setInitialAllowed(new Set(allowedPackages));
-      setInitialEmergency([...emergencyNumbers]);
+      // Save with real contact names so Kotlin can match by name OR phone
+      const emergencyContactsJson = JSON.stringify(
+        emergencyContacts.map((e) => ({ name: e.name, phone: e.phone })),
+      );
+      NotificationApiManager.setEmergencyContactsJson(emergencyContactsJson);
+
+      // Sync with Android starred contacts for DND call handling
+      await syncEmergencyContactsWithStarred(emergencyNumbers);
+
+      setInitialEmergency([...emergencyContacts]);
       Alert.alert(
         'Saved',
-        filterEnabled
-          ? 'Only selected apps and matching emergency numbers can keep notifications during Landline Mode.'
-          : 'Notification permissions are off. Landline Mode can use full Do Not Disturb as before.',
+        'Emergency contacts saved. When Landline Mode is active:\n\n' +
+          '• Text messages from emergency contacts will ring normally\n' +
+          '• Calls from emergency contacts will ring (if starred in contacts)\n' +
+          '• All other notifications will be logged silently',
         [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not save settings.');
+      Alert.alert('Error', 'Could not save emergency contacts.');
     } finally {
       setSaving(false);
     }
-  }, [filterEnabled, allowedPackages, emergencyNumbers]);
+  }, [emergencyContacts, emergencyNumbers, syncEmergencyContactsWithStarred]);
 
   const handleBack = () => {
     if (hasChanges) {
@@ -284,8 +292,7 @@ export default function BypassListScreen() {
         <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
           <Text style={styles.unsupportedTitle}>Android only</Text>
           <Text style={styles.unsupportedText}>
-            Notification permissions use Android notification access. They are not available on this
-            platform.
+            Emergency contacts are only available on Android.
           </Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backBtnText}>Go back</Text>
@@ -300,7 +307,7 @@ export default function BypassListScreen() {
       <View style={styles.container}>
         <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
           <ActivityIndicator size="large" color={LandlineColors.dark.primary} />
-          <Text style={styles.loadingText}>Loading apps…</Text>
+          <Text style={styles.loadingText}>Loading…</Text>
         </View>
       </View>
     );
@@ -312,7 +319,7 @@ export default function BypassListScreen() {
         <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
           <Text style={styles.headerBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notification permissions</Text>
+        <Text style={styles.headerTitle}>Emergency Contacts</Text>
         <TouchableOpacity
           onPress={() => void persist()}
           style={styles.headerBtn}
@@ -330,37 +337,17 @@ export default function BypassListScreen() {
       </View>
 
       <FlatList
-        data={filteredApps}
-        keyExtractor={(item) => item.packageName}
+        data={[]}
+        keyExtractor={() => 'static'}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
             <View style={styles.descriptionSection}>
-              <Text style={styles.descriptionTitle}>Landline Mode</Text>
+              <Text style={styles.descriptionTitle}>Emergency Contacts</Text>
               <Text style={styles.descriptionText}>
-                When notification permissions are on and Landline Mode is active, only notifications
-                from apps you allow below (bypass), or from senders whose number appears in the
-                alert text (emergency contacts), stay in the shade. Other notifications are cleared
-                automatically.
+                When Landline Mode is active, these contacts can reach you with sound. All other
+                notifications will be logged silently.
               </Text>
-            </View>
-
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleLabelWrap}>
-                <Text style={styles.toggleTitle}>Use notification permissions</Text>
-                <Text style={styles.toggleSub}>
-                  Restrict alerts during Landline Mode (requires notification access)
-                </Text>
-              </View>
-              <Switch
-                value={filterEnabled}
-                onValueChange={setFilterEnabled}
-                trackColor={{
-                  false: LandlineColors.dark.border,
-                  true: LandlineColors.dark.primary,
-                }}
-                thumbColor="#fff"
-              />
             </View>
 
             <View style={styles.sectionHeaderRow}>
@@ -369,11 +356,11 @@ export default function BypassListScreen() {
                 size={18}
                 color={LandlineColors.dark.text.secondary}
               />
-              <Text style={styles.sectionHeader}>Emergency contacts</Text>
+              <Text style={styles.sectionHeader}>Emergency contact numbers</Text>
             </View>
             <Text style={styles.hint}>
-              Numbers are matched against digits in notification text (e.g. SMS). Add manually or
-              pick from contacts. Minimum 7 digits per entry.
+              Add phone numbers that can ring through when Landline Mode is on. Minimum 7 digits per
+              entry.
             </Text>
 
             <TouchableOpacity
@@ -385,110 +372,72 @@ export default function BypassListScreen() {
               <Text style={styles.primaryOutlineButtonText}>Add from contacts</Text>
             </TouchableOpacity>
 
-            {emergencyNumbers.map((num) => (
-              <View key={num} style={styles.emergencyRow}>
-                <Text style={styles.emergencyDigits}>{num}</Text>
-                <TouchableOpacity onPress={() => removeEmergency(num)} hitSlop={12}>
-                  <MaterialIcons name="close" size={22} color={LandlineColors.dark.text.muted} />
+            {emergencyContacts.map((entry) => (
+              <View key={entry.phone} style={styles.emergencyRow}>
+                <View>
+                  {entry.name ? <Text style={styles.emergencyName}>{entry.name}</Text> : null}
+                  <Text style={styles.emergencyDigits}>{entry.phone}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.emergencyRemoveBtn}
+                  onPress={() =>
+                    setEmergencyContacts((prev) => prev.filter((e) => e.phone !== entry.phone))
+                  }
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="close" size={20} color={LandlineColors.dark.error} />
                 </TouchableOpacity>
               </View>
             ))}
 
-            <View style={styles.addRow}>
+            <View style={styles.addManualRow}>
               <TextInput
                 style={styles.addInput}
+                placeholder="Enter phone number"
+                placeholderTextColor={LandlineColors.dark.text.muted}
                 value={newPhone}
                 onChangeText={setNewPhone}
-                placeholder="Add number"
-                placeholderTextColor={LandlineColors.dark.text.muted}
                 keyboardType="phone-pad"
-                autoComplete="tel"
+                maxLength={20}
               />
-              <TouchableOpacity style={styles.addButton} onPress={addEmergency}>
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.sectionHeaderRow, styles.appsHeader]}>
-              <MaterialIcons name="apps" size={18} color={LandlineColors.dark.text.secondary} />
-              <Text style={styles.sectionHeader}>Apps that bypass Landline Mode</Text>
-              <Text style={styles.appsCount}>{allowedPackages.size} selected</Text>
-            </View>
-            <Text style={styles.hint}>
-              Selected apps can still show notifications while Landline Mode is on. Use quick add
-              for common apps, then refine the list below.
-            </Text>
-
-            <View style={styles.presetRow}>
               <TouchableOpacity
-                style={styles.presetChip}
-                onPress={() => addBypassPreset(BYPASS_PRESET_MESSAGING)}
+                style={[
+                  styles.addButton,
+                  normalizeDigits(newPhone).length < 7 && styles.addButtonDisabled,
+                ]}
+                onPress={() => {
+                  const digits = normalizeDigits(newPhone);
+                  if (digits.length >= 7) {
+                    if (!emergencyNumbers.includes(digits)) {
+                      setEmergencyContacts((prev) =>
+                        [...prev, { name: '', phone: digits }].sort((a, b) =>
+                          a.phone.localeCompare(b.phone),
+                        ),
+                      );
+                    }
+                    setNewPhone('');
+                  }
+                }}
+                disabled={normalizeDigits(newPhone).length < 7}
                 activeOpacity={0.8}
               >
-                <Text style={styles.presetChipText}>+ Messaging</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.presetChip}
-                onPress={() => addBypassPreset(BYPASS_PRESET_CALLS)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.presetChipText}>+ Phone</Text>
+                <MaterialIcons name="add" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchContainer}>
-              <MaterialIcons
-                name="search"
-                size={16}
-                color={LandlineColors.dark.text.muted}
-                style={styles.searchIcon}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search installed apps…"
-                placeholderTextColor={LandlineColors.dark.text.muted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+            <View style={styles.infoSection}>
+              <MaterialIcons name="info" size={16} color={LandlineColors.dark.text.secondary} />
+              <Text style={styles.infoText}>
+                Calls from emergency contacts will ring if the contact is starred in your Android
+                Contacts app. Text messages will ring based on number matching.
+              </Text>
             </View>
           </>
         }
-        renderItem={({ item }) => (
-          <View style={styles.appItem}>
-            <View style={styles.appIconContainer}>
-              <Text style={styles.appIconText}>{item.appName.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={styles.appInfo}>
-              <Text style={styles.appName} numberOfLines={1}>
-                {item.appName}
-              </Text>
-              <Text style={styles.appPackage} numberOfLines={1}>
-                {item.packageName}
-              </Text>
-            </View>
-            <Switch
-              value={allowedPackages.has(item.packageName)}
-              onValueChange={() => togglePackage(item.packageName)}
-              trackColor={{
-                false: LandlineColors.dark.border,
-                true: LandlineColors.dark.primary,
-              }}
-              thumbColor={
-                allowedPackages.has(item.packageName) ? '#fff' : LandlineColors.dark.text.secondary
-              }
-            />
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No apps match your search.</Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
+        renderItem={() => null}
       />
 
+      {/* Contact Picker Modal */}
       <Modal
         visible={contactPickerVisible}
         animationType="slide"
@@ -496,52 +445,55 @@ export default function BypassListScreen() {
         onRequestClose={() => setContactPickerVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add emergency contact</Text>
-              <TouchableOpacity onPress={() => setContactPickerVisible(false)} activeOpacity={0.7}>
+              <Text style={styles.modalTitle}>Select contact</Text>
+              <TouchableOpacity onPress={() => setContactPickerVisible(false)}>
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.modalSearchWrap}>
+
+            <View style={styles.searchContainer}>
+              <MaterialIcons name="search" size={20} color={LandlineColors.dark.text.muted} />
               <TextInput
-                style={styles.modalSearch}
-                placeholder="Search contacts…"
+                style={styles.searchInput}
+                placeholder="Search contacts"
                 placeholderTextColor={LandlineColors.dark.text.muted}
                 value={contactSearch}
                 onChangeText={setContactSearch}
-                autoCorrect={false}
+                autoFocus
               />
             </View>
+
             <FlatList
               data={filteredContacts}
-              keyExtractor={(item, index) => `${item.name ?? 'c'}-${index}`}
-              keyboardShouldPersistTaps="handled"
-              style={styles.modalList}
+              keyExtractor={(item, index) => `${item.name ?? 'unknown'}-${index}`}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  style={styles.contactItem}
                   onPress={() => onPickContact(item)}
                   activeOpacity={0.7}
-                  style={styles.modalRow}
                 >
-                  <View style={styles.modalAvatar}>
-                    <Text style={styles.modalAvatarText}>
+                  <View style={styles.contactAvatar}>
+                    <Text style={styles.contactAvatarText}>
                       {(item.name ?? '?')[0].toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.modalRowText}>
-                    <Text style={styles.modalName} numberOfLines={1}>
-                      {item.name ?? 'Unknown'}
-                    </Text>
-                    <Text style={styles.modalPhone} numberOfLines={1}>
-                      {item.phoneNumbers?.[0]?.number ?? ''}
-                    </Text>
+                  <View style={styles.contactInfo}>
+                    <Text style={styles.contactName}>{item.name ?? 'Unknown'}</Text>
+                    <Text style={styles.contactNumber}>{item.phoneNumbers?.[0]?.number ?? ''}</Text>
                   </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={24}
+                    color={LandlineColors.dark.text.muted}
+                  />
                 </TouchableOpacity>
               )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
               ListEmptyComponent={
-                <View style={styles.modalEmpty}>
-                  <Text style={styles.modalEmptyText}>No contacts found</Text>
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No contacts found</Text>
                 </View>
               }
             />
@@ -563,72 +515,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  loadingText: {
-    marginTop: 12,
-    color: LandlineColors.dark.text.secondary,
-  },
-  unsupportedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: LandlineColors.dark.text.primary,
-    marginBottom: 8,
-  },
-  unsupportedText: {
-    fontSize: 14,
-    color: LandlineColors.dark.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  backBtn: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  backBtnText: {
-    color: LandlineColors.dark.primary,
-    fontWeight: '600',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: LandlineColors.dark.divider,
+    borderBottomColor: LandlineColors.dark.border,
   },
   headerBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 8,
-    minWidth: 72,
+    minWidth: 60,
   },
   headerBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: LandlineColors.dark.primary,
+    color: LandlineColors.dark.text.secondary,
+    fontSize: 15,
+    fontWeight: '500',
   },
   headerBtnTextActive: {
     color: LandlineColors.dark.primary,
+    fontWeight: '600',
   },
   headerBtnTextMuted: {
     color: LandlineColors.dark.text.muted,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
     color: LandlineColors.dark.text.primary,
   },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
   descriptionSection: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: LandlineColors.dark.divider,
+    padding: 20,
+    backgroundColor: LandlineColors.dark.card,
+    margin: 16,
+    borderRadius: 12,
   },
   descriptionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: LandlineColors.dark.text.primary,
     marginBottom: 8,
@@ -638,287 +562,225 @@ const styles = StyleSheet.create({
     color: LandlineColors.dark.text.secondary,
     lineHeight: 20,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: LandlineColors.dark.divider,
-  },
-  toggleLabelWrap: {
-    flex: 1,
-    marginRight: 12,
-  },
-  toggleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: LandlineColors.dark.text.primary,
-  },
-  toggleSub: {
-    fontSize: 12,
-    color: LandlineColors.dark.text.muted,
-    marginTop: 4,
-  },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    paddingHorizontal: 20,
+    marginTop: 24,
     marginBottom: 8,
     gap: 8,
   },
-  appsHeader: {
-    marginTop: 24,
-  },
   sectionHeader: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    color: LandlineColors.dark.text.primary,
-    flex: 1,
-  },
-  appsCount: {
-    fontSize: 12,
-    color: LandlineColors.dark.text.muted,
+    color: LandlineColors.dark.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   hint: {
     fontSize: 13,
-    color: LandlineColors.dark.text.secondary,
-    lineHeight: 18,
-    marginBottom: 12,
+    color: LandlineColors.dark.text.muted,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  primaryOutlineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: LandlineColors.dark.primary,
+    borderRadius: 8,
+  },
+  primaryOutlineButtonText: {
+    color: LandlineColors.dark.primary,
+    fontSize: 15,
+    fontWeight: '600',
   },
   emergencyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: LandlineColors.dark.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    marginHorizontal: 20,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-  },
-  emergencyDigits: {
-    fontSize: 16,
-    color: LandlineColors.dark.text.primary,
-    letterSpacing: 0.5,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  addInput: {
-    flex: 1,
-    backgroundColor: LandlineColors.dark.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: LandlineColors.dark.text.primary,
-  },
-  addButton: {
-    backgroundColor: LandlineColors.dark.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: LandlineColors.dark.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: LandlineColors.dark.text.primary,
-  },
-  appItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: LandlineColors.dark.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-  },
-  appIconContainer: {
-    width: 40,
-    height: 40,
+    padding: 16,
     borderRadius: 8,
-    backgroundColor: LandlineColors.dark.primary + '30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
-  appIconText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: LandlineColors.dark.primary,
-  },
-  appInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  appName: {
+  emergencyName: {
     fontSize: 15,
     fontWeight: '600',
     color: LandlineColors.dark.text.primary,
+    marginBottom: 2,
   },
-  appPackage: {
-    fontSize: 11,
-    color: LandlineColors.dark.text.muted,
-    marginTop: 2,
-  },
-  emptyState: {
-    paddingVertical: 24,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    color: LandlineColors.dark.text.muted,
-  },
-  primaryOutlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: LandlineColors.dark.surface,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.primary,
-  },
-  primaryOutlineButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: LandlineColors.dark.primary,
-  },
-  presetRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 12,
-  },
-  presetChip: {
-    backgroundColor: LandlineColors.dark.surface,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-  },
-  presetChipText: {
+  emergencyDigits: {
     fontSize: 14,
-    fontWeight: '600',
+    color: LandlineColors.dark.text.secondary,
+    fontVariant: ['tabular-nums'],
+  },
+  emergencyRemoveBtn: {
+    padding: 4,
+  },
+  addManualRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  addInput: {
+    flex: 1,
+    backgroundColor: LandlineColors.dark.card,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     color: LandlineColors.dark.text.primary,
+    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: LandlineColors.dark.primary,
+    borderRadius: 8,
+    padding: 12,
+  },
+  addButtonDisabled: {
+    backgroundColor: LandlineColors.dark.border,
+  },
+  infoSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 40,
+    padding: 16,
+    backgroundColor: LandlineColors.dark.surface,
+    borderRadius: 8,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: LandlineColors.dark.text.secondary,
+    lineHeight: 18,
+  },
+  unsupportedTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: LandlineColors.dark.text.primary,
+    marginBottom: 8,
+  },
+  unsupportedText: {
+    fontSize: 15,
+    color: LandlineColors.dark.text.secondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  backBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: LandlineColors.dark.primary,
+    borderRadius: 8,
+  },
+  backBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: LandlineColors.dark.text.secondary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modalSheet: {
-    backgroundColor: LandlineColors.dark.surface,
+  modalContent: {
+    backgroundColor: LandlineColors.dark.background,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingTop: 16,
-    maxHeight: '75%',
+    maxHeight: '80%',
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: LandlineColors.dark.border,
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: LandlineColors.dark.text.primary,
   },
   modalCancel: {
     fontSize: 15,
     color: LandlineColors.dark.primary,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  modalSearchWrap: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  modalSearch: {
-    backgroundColor: LandlineColors.dark.card,
-    borderWidth: 1,
-    borderColor: LandlineColors.dark.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: LandlineColors.dark.text.primary,
-    fontSize: 14,
-  },
-  modalList: {
-    maxHeight: 400,
-  },
-  modalRow: {
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: LandlineColors.dark.divider,
+    margin: 16,
+    paddingHorizontal: 12,
+    backgroundColor: LandlineColors.dark.card,
+    borderRadius: 8,
   },
-  modalAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: LandlineColors.dark.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  modalAvatarText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  modalRowText: {
+  searchInput: {
     flex: 1,
-    minWidth: 0,
-  },
-  modalName: {
-    fontSize: 15,
-    fontWeight: '600',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     color: LandlineColors.dark.text.primary,
+    fontSize: 16,
   },
-  modalPhone: {
-    fontSize: 12,
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  contactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: LandlineColors.dark.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contactAvatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contactInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  contactName: {
+    fontSize: 16,
+    color: LandlineColors.dark.text.primary,
+    fontWeight: '500',
+  },
+  contactNumber: {
+    fontSize: 14,
     color: LandlineColors.dark.text.secondary,
     marginTop: 2,
   },
-  modalEmpty: {
-    padding: 24,
+  separator: {
+    height: 1,
+    backgroundColor: LandlineColors.dark.border,
+    marginLeft: 68,
+  },
+  emptyState: {
+    padding: 40,
     alignItems: 'center',
   },
-  modalEmptyText: {
+  emptyText: {
+    fontSize: 15,
     color: LandlineColors.dark.text.muted,
-    fontSize: 14,
   },
 });

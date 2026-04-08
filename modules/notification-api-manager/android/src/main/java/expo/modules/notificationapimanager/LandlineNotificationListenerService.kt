@@ -67,6 +67,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         @JvmStatic
         fun getInstance(): LandlineNotificationListenerService? = serviceInstance
 
+        @JvmStatic
+        fun clearEmergencyContactsCache() {
+            serviceInstance?.cachedEmergencyContacts = null
+        }
+
         /**
          * Robustly extract text from a notification, trying multiple sources
          * and bypassing system censorship if possible.
@@ -139,29 +144,43 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 return it
             }
             
+            // For call notifications, label them clearly so they are identifiable in the log
+            if (notification.category == Notification.CATEGORY_CALL) {
+                return "Incoming call"
+            }
+
             // Final fallback: just return EXTRA_TEXT even if potentially censored
             val finalText = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
             if (finalText.isBlank()) {
-                // Last ditch effort: try title as text if text is empty
                 return extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
             }
             return finalText
         }
 
         /**
-         * Robustly extract title from a notification.
+         * Robustly extract title from a notification, including call notifications.
          */
         fun extractNotificationTitle(notification: Notification): String {
             val extras = notification.extras ?: return ""
-            
+
             // Try standard EXTRA_TITLE first
             var title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
-            
+
             // Try CONVERSATION_TITLE for MessagingStyle notifications
             if (title.isBlank()) {
                 extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()?.let { title = it }
             }
-            
+
+            // For call notifications (CATEGORY_CALL), the caller is in EXTRA_CALL_PERSON
+            // or the person Uri. Fall back to a generic "Incoming Call" label.
+            if (title.isBlank() && notification.category == Notification.CATEGORY_CALL) {
+                val person = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    extras.getParcelable<android.app.Person>("android.callPerson")?.name?.toString()
+                        ?: extras.getParcelable<android.app.Person>(Notification.EXTRA_CALL_PERSON)?.name?.toString()
+                } else null
+                title = person ?: extras.getCharSequence("android.callPerson.name")?.toString() ?: "Incoming Call"
+            }
+
             return title
         }
 
@@ -169,21 +188,27 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             val trimmed = text.trim()
             if (trimmed.isEmpty()) return true
             return trimmed.equals("Sensitive notification content hidden", ignoreCase = true) ||
-                   trimmed.equals("Content hidden", ignoreCase = true) ||
-                   trimmed.equals("New message", ignoreCase = true)
+                   trimmed.equals("Content hidden", ignoreCase = true)
         }
     }
     
     private val repliedNotifications = mutableSetOf<String>()
-    // Maps sbn.key → the message we sent, so we can (a) skip logging the app's
-    // confirmation re-notification and (b) embed the sent text in the original log entry.
     private val repliedWithMessage = mutableMapOf<String, String>()
     private val emergencyAlertedNotifications = mutableSetOf<String>()
+    // Maps sbn.key -> last logged (contentKey + postTime) string.
+    // Used to deduplicate rapid re-posts of the exact same notification event while
+    // still logging genuinely new messages — even if they share the same text content
+    // (e.g. "ok" sent twice in a row will have different postTimes and are both logged).
+    private val loggedNotificationContent = mutableMapOf<String, String>()
+    // Tracks keys of notifications we have deliberately cancelled so that if the
+    // originating app reposts the same notification we cancel it again without
+    // re-logging (avoiding the "second-message shows as normal DND notification" bug).
+    private val cancelledNotificationKeys = mutableSetOf<String>()
     
     private var rebindAttemptCount = 0
     private val rebindHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
-    @Volatile private var cachedEmergencyContacts: List<EmergencyContactEntry>? = null
+    @Volatile internal var cachedEmergencyContacts: List<EmergencyContactEntry>? = null
     private val emergencyContactsPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == "emergency_contacts_json") {
             cachedEmergencyContacts = null
@@ -271,66 +296,103 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 return
             }
 
-            // Skip logging the app's confirmation re-notification after we sent a reply.
-            // When we fire a RemoteInput reply, the target app updates its notification
-            // (same sbn.key) to show the sent message — we don't want that logged as a
-            // new entry; the original entry already carries replyText.
+            // Skip re-posts of notifications we already replied to (app updates same key
+            // after a RemoteInput reply to show the sent message bubble).
             if (repliedWithMessage.containsKey(sbn.key)) {
                 Log.d(TAG, "Skipping confirmation re-notification for already-replied key: ${sbn.key}")
                 return
             }
 
-            // Whitelist: only allowed apps + emergency numbers may show notifications (others dismissed)
-            if (shouldSuppressByNotificationFilter(packageName, title, text)) {
-                try {
-                    cancelNotification(sbn.key)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not cancel filtered notification", e)
+            val appName = getAppName(packageName)
+            val isEmergencyContactNotification = isFromEmergencyContact(title, text)
+
+            // Compute content key early so we can use it in the repost check below.
+            // Including postTime means two messages with identical text but different
+            // post times are treated as distinct events and both get logged.
+            // A true repost by the SMS app (after we cancel) keeps the same postTime,
+            // so it still deduplicates correctly.
+            val contentKey = "$title|$text|${sbn.postTime}"
+
+            // If this key was previously cancelled (non-emergency repost), decide whether
+            // to cancel again silently or to treat this as a genuinely new message.
+            if (cancelledNotificationKeys.contains(sbn.key)) {
+                if (isEmergencyContactNotification) {
+                    // Emergency contact - remove from cancelled set so it shows normally.
+                    Log.d(TAG, "Emergency contact repost - removing cancel suppression for ${sbn.key}")
+                    cancelledNotificationKeys.remove(sbn.key)
+                    // Fall through to log and let it show (do not cancel below).
+                } else if (loggedNotificationContent[sbn.key] == contentKey) {
+                    // Same content as the last logged notification - this is the SMS app
+                    // reposting immediately after we cancelled it. Cancel again silently.
+                    Log.d(TAG, "Repost of previously cancelled key ${sbn.key} with same content - cancelling again without re-logging")
+                    try {
+                        cancelNotification(sbn.key)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Could not re-cancel reposted notification", e)
+                    }
+                    return
+                } else {
+                    // Different content means a genuine new message arrived in the same
+                    // conversation thread. Remove the cancellation lock so it is fully
+                    // processed (logged and cancelled fresh).
+                    Log.d(TAG, "New content detected for previously cancelled key ${sbn.key} - treating as new message")
+                    cancelledNotificationKeys.remove(sbn.key)
+                    // Fall through to normal processing below.
+                }
+            }
+
+            // Deduplicate: skip if we already logged this exact key+text combination
+            // and it has not been unlocked above. Handles apps that post the same
+            // notification twice in quick succession for unrelated reasons.
+            if (loggedNotificationContent[sbn.key] == contentKey) {
+                Log.d(TAG, "Already logged key ${sbn.key} with same content, skipping duplicate")
+                // Still cancel if it's a non-emergency duplicate
+                if (!isEmergencyContactNotification) {
+                    try {
+                        cancelNotification(sbn.key)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Could not cancel duplicate non-emergency notification", e)
+                    }
                 }
                 return
             }
+            loggedNotificationContent[sbn.key] = contentKey
 
-            // Get app name
-            val appName = getAppName(packageName)
-
-            val isEmergencyContactNotification =
-                landlineModeActive && isFromEmergencyContact(title, text)
-
-            // Check if this notification is from the emergency contact
-            if (isEmergencyContactNotification) {
-                val notificationKey = sbn.key
-                if (emergencyAlertedNotifications.contains(notificationKey)) {
-                    Log.d(TAG, "Already posted emergency alert for notification key: $notificationKey, skipping")
-                } else {
-                    emergencyAlertedNotifications.add(notificationKey)
-                    Log.d(TAG, "Notification from emergency contact, alerting user")
-                    postEmergencyAlert(appName, title, text)
-                }
-            }
-
-            // Attempt auto-reply and capture whether a reply was actually sent.
-            val autoReplied = if (autoReplyEnabled && landlineModeActive && !isEmergencyContactNotification) {
+            // Auto-reply for non-emergency notifications only
+            val autoReplied = if (autoReplyEnabled && !isEmergencyContactNotification) {
                 handleAutoReplyIfNeeded(sbn, notification, packageName)
             } else {
                 false
             }
 
-            // Handle notification logging if Landline mode is active.
-            // replyText is looked up after handleAutoReplyIfNeeded fires below; we log
-            // after the reply so the message text is available in the same entry.
-            if (landlineModeActive) {
-                val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
-                logNotification(
-                    packageName = packageName,
-                    appName = appName,
-                    title = title,
-                    text = text,
-                    timestamp = timestamp,
-                    notificationId = notificationId,
-                    autoReplied = autoReplied,
-                    replyText = replyText
-                )
-                Log.d(TAG, "Logged notification from $appName: $title")
+            val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
+            logNotification(
+                packageName = packageName,
+                appName = appName,
+                title = title,
+                text = text,
+                timestamp = timestamp,
+                notificationId = notificationId,
+                autoReplied = autoReplied,
+                replyText = replyText
+            )
+            Log.d(TAG, "Logged notification from $appName: $title")
+
+            // Emergency contacts: leave the original notification completely untouched.
+            // The DND policy allows messages from any sender, so the SMS app's own
+            // notification will show and ring normally through the shade. We have already
+            // logged it above — nothing else to do.
+            // Non-emergency: cancel and track the key so reposts are also suppressed.
+            if (isEmergencyContactNotification) {
+                Log.d(TAG, "Emergency contact - leaving notification untouched so it shows normally")
+            } else {
+                Log.d(TAG, "Non-emergency - cancelling from shade")
+                cancelledNotificationKeys.add(sbn.key)
+                try {
+                    cancelNotification(sbn.key)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not cancel non-emergency notification", e)
+                }
             }
 
         } catch (e: Exception) {
@@ -342,10 +404,19 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         super.onNotificationRemoved(sbn)
         Log.d(TAG, "Notification removed: ${sbn.packageName}")
         
-        // Remove from replied sets when notification is dismissed
         repliedNotifications.remove(sbn.key)
         repliedWithMessage.remove(sbn.key)
         emergencyAlertedNotifications.remove(sbn.key)
+        // Do NOT clear loggedNotificationContent here - if we cancel a notification
+        // the app may immediately repost the same key+text, and we don't want to
+        // log it twice. The content map naturally allows re-logging when new message
+        // text arrives (different content = new entry logged).
+        //
+        // Do NOT clear cancelledNotificationKeys here either - the removal event fires
+        // immediately after we call cancelNotification(), so clearing it here would undo
+        // the protection against same-content reposts by the SMS app.
+        // The set is cleared when a new unique message arrives (different contentKey),
+        // meaning a genuine new SMS always gets logged and processed correctly.
     }
 
     /**
@@ -415,17 +486,20 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             return true
         }
 
+        // Skip our own app's notifications
         if (packageName == this.packageName) {
             return true
         }
 
-        // Skip empty notifications
-        if (title.isEmpty() && text.isEmpty()) {
+        // Skip pure system UI notifications
+        if (packageName == "android" || packageName == "com.android.systemui") {
             return true
         }
 
-        // Skip system notifications (optional - can be configured)
-        if (packageName == "android" || packageName == "com.android.systemui") {
+        // Skip only if BOTH title and text are empty AND it is not a call notification.
+        // Phone dialer call notifications often have empty title/text but carry caller
+        // info in extras — we extract those separately and allow them through.
+        if (title.isEmpty() && text.isEmpty()) {
             return true
         }
 
@@ -508,7 +582,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         sendBroadcast(intent)
     }
     
-    // ========== Auto-Reply Functionality ==========
+    // Auto-Reply Functionality
     
     /**
      * Check if auto-reply is currently enabled
@@ -673,9 +747,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    // ========== Emergency Contacts (multiple) ==========
+    // Emergency Contacts
 
-    private data class EmergencyContactEntry(val name: String, val phone: String)
+    internal data class EmergencyContactEntry(val name: String, val phone: String)
 
     private fun loadEmergencyContacts(): List<EmergencyContactEntry> {
         cachedEmergencyContacts?.let { return it }
@@ -717,32 +791,57 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         return phone.replace(Regex("[^0-9+]"), "")
     }
 
-    private fun matchesEmergencyContact(title: String, ec: EmergencyContactEntry): Boolean {
-        val normalized = normalizePhone(ec.phone)
-        if (normalized.length < 7) return false
+    private fun matchesEmergencyContact(field: String, ec: EmergencyContactEntry): Boolean {
+        if (field.isBlank()) return false
 
-        val titleDigits = normalizePhone(title)
-        val lastDigits = if (normalized.length >= 10) normalized.takeLast(10) else normalized
-
-        if (titleDigits.isNotEmpty()) {
-            val titleLastDigits = if (titleDigits.length >= 10) titleDigits.takeLast(10) else titleDigits
-            if (titleLastDigits.length < 7) return false
-            if (lastDigits.endsWith(titleLastDigits) || titleLastDigits.endsWith(lastDigits)) return true
+        // 1. Match by contact name (case-insensitive).
+        //    SMS apps show the saved contact name as the notification title.
+        if (ec.name.isNotBlank() && field.trim().equals(ec.name.trim(), ignoreCase = true)) {
+            return true
         }
 
-        return false
+        // 2. Match by phone number digits (last 10 digits for flexibility).
+        val normalizedPhone = normalizePhone(ec.phone)
+        if (normalizedPhone.length < 7) return false
+
+        val fieldDigits = normalizePhone(field)
+        if (fieldDigits.length < 7) return false
+
+        val phoneLast = normalizedPhone.takeLast(10)
+        val fieldLast = fieldDigits.takeLast(10)
+        return phoneLast == fieldLast
     }
 
     private fun isFromEmergencyContact(title: String, text: String): Boolean {
-        return loadEmergencyContacts().any { matchesEmergencyContact(title, it) }
+        val contacts = loadEmergencyContacts()
+        if (contacts.isEmpty()) {
+            Log.w(TAG, "No emergency contacts loaded - check that contacts were saved correctly")
+            return false
+        }
+        Log.d(TAG, "Checking against ${contacts.size} emergency contact(s): ${contacts.map { it.name + "/" + it.phone }}")
+        val match = contacts.any {
+            matchesEmergencyContact(title, it) || matchesEmergencyContact(text, it)
+        }
+        Log.d(TAG, "isFromEmergencyContact(title='$title', text='${text.take(40)}'): $match")
+        return match
     }
 
     private fun postEmergencyAlert(appName: String, title: String, text: String) {
         try {
-            val channelId = "emergency_contact_alert"
+            // Android silently ignores setBypassDnd(true) when re-registering an existing
+            // channel with the same ID — the OS locks channel settings after first creation.
+            // To guarantee bypass-DND is active we delete any legacy channel ID and always
+            // use a versioned ID that is fresh on this install.
+            val channelId = "emergency_contact_alert_v2"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+                // Delete the old channel so it no longer appears in app settings.
+                nm.deleteNotificationChannel("emergency_contact_alert")
+
+                // Create (or no-op if already exists with correct settings) the versioned
+                // channel. On first creation setBypassDnd(true) is honoured by the OS.
                 if (nm.getNotificationChannel(channelId) == null) {
                     val channel = NotificationChannel(
                         channelId,
@@ -753,9 +852,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                         lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
                         enableVibration(true)
                         setSound(
-                            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
                             android.media.AudioAttributes.Builder()
-                                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                                 .build()
                         )
