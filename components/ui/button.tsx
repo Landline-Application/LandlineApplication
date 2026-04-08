@@ -125,10 +125,7 @@ export function Button({
           containerVariants[variant],
           containerSizes[size],
           { width: fullWidth ? '100%' : 'auto' },
-          isDisabled && {
-            opacity: 0.6,
-            backgroundColor: variant === 'ghost' || variant === 'text' ? undefined : COLORS.muted,
-          },
+          isDisabled && { opacity: 0.4 },
         ]}
       >
         {loading ? (
