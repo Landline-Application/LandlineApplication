@@ -96,7 +96,7 @@ export default function NotebookLogView({
 }: NotebookLogViewProps) {
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
@@ -105,13 +105,13 @@ export default function NotebookLogView({
     setRefreshing(false);
   };
 
-  const toggleExpand = (id: number) => {
-    setExpandedIds((prev) => {
+  const toggleExpand = (key: string) => {
+    setExpandedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(id);
+        next.add(key);
       }
       return next;
     });
@@ -240,11 +240,12 @@ export default function NotebookLogView({
             {/* Entries card */}
             <View style={styles.entriesCard}>
               {entries.map((notif, idx) => {
-                const isExpanded = expandedIds.has(notif.id);
+                const entryKey = `${notif.id}-${notif.postTime}`;
+                const isExpanded = expandedKeys.has(entryKey);
                 const isLast = idx === entries.length - 1;
                 return (
                   <Pressable
-                    key={`${notif.id}-${notif.postTime}`}
+                    key={entryKey}
                     style={({ pressed }) => [
                       styles.entry,
                       !isLast && styles.entryBorder,
@@ -252,7 +253,7 @@ export default function NotebookLogView({
                     ]}
                     onPress={() => {
                       haptics.soft();
-                      toggleExpand(notif.id);
+                      toggleExpand(entryKey);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={notif.title}
