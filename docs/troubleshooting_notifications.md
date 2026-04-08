@@ -11,13 +11,13 @@ When tapping "Send Test Message" in **Settings → Tools → Debug Tools**, noti
 **Check if permission is granted:**
 
 ```bash
-adb shell dumpsys package com.anonymous.LandlineApplication | grep POST_NOTIFICATIONS
+adb shell dumpsys package com.outersnail.Landline | grep POST_NOTIFICATIONS
 ```
 
 **Grant permission manually:**
 
 ```bash
-adb shell pm grant com.anonymous.LandlineApplication android.permission.POST_NOTIFICATIONS
+adb shell pm grant com.outersnail.Landline android.permission.POST_NOTIFICATIONS
 ```
 
 **Or grant in UI:**
@@ -33,7 +33,7 @@ The notification channel must be created before posting notifications.
 **Check channels:**
 
 ```bash
-adb shell dumpsys notification | grep -A5 "com.anonymous.LandlineApplication"
+adb shell dumpsys notification | grep -A5 "com.outersnail.Landline"
 ```
 
 **Solution:** Channels are created automatically on first notification. If not working, uninstall and reinstall app.
@@ -63,7 +63,7 @@ adb shell settings put global zen_mode 0
 **Ensure app is running:**
 
 ```bash
-adb shell am start -n com.anonymous.LandlineApplication/.MainActivity
+adb shell am start -n com.outersnail.Landline/.MainActivity
 ```
 
 ### 5. Notification Priority Too Low
@@ -93,16 +93,16 @@ Run these steps in order:
 ```bash
 # 1. Check app is installed
 adb shell pm list packages | grep LandlineApplication
-# Should output: package:com.anonymous.LandlineApplication
+# Should output: package:com.outersnail.Landline
 
 # 2. Grant POST_NOTIFICATIONS permission
-adb shell pm grant com.anonymous.LandlineApplication android.permission.POST_NOTIFICATIONS
+adb shell pm grant com.outersnail.Landline android.permission.POST_NOTIFICATIONS
 
 # 3. Disable DND
 adb shell settings put global zen_mode 0
 
 # 4. Start the app
-adb shell am start -n com.anonymous.LandlineApplication/.MainActivity
+adb shell am start -n com.outersnail.Landline/.MainActivity
 
 # 5. Monitor logs while testing
 adb logcat -s "ReactNativeJS:*" "TestNotification*:*" "NotificationManager:*" | grep -v "^$"
@@ -147,7 +147,7 @@ adb shell dumpsys notification
 adb shell cmd notification clear
 
 # Force stop app
-adb shell am force-stop com.anonymous.LandlineApplication
+adb shell am force-stop com.outersnail.Landline
 
 # Reinstall app
 cd android && ./gradlew installDebug
@@ -206,7 +206,7 @@ If this doesn't show notifications, the emulator/device has notification issues.
 ✅ Permission granted:
 
 ```bash
-adb shell dumpsys package com.anonymous.LandlineApplication | grep POST_NOTIFICATIONS
+adb shell dumpsys package com.outersnail.Landline | grep POST_NOTIFICATIONS
 # Shows: granted=true
 ```
 

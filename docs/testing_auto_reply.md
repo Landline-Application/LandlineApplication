@@ -1,8 +1,10 @@
 # Testing Auto-Reply Manager on Emulator
 
+> ⚠️ **Important Android Limitation**: On Android 15+ (API 35), NotificationListenerService **cannot receive notifications from its own app**. This means test notifications sent from within the app will appear in the notification shade, but the auto-reply service will NOT see them and therefore will NOT send auto-replies. See [auto_reply_testing_limitation.md](auto_reply_testing_limitation.md) for full details and workarounds.
+
 ## Testing Setup Complete ✓
 
-The app now includes a test notification generator that simulates real messaging app notifications with reply actions.
+The app includes a test notification generator that creates notifications with reply actions for visual verification. Note that auto-reply will only work with notifications from OTHER apps, not test notifications from within this app.
 
 ## Testing Steps
 
@@ -51,16 +53,17 @@ The app now includes a test notification generator that simulates real messaging
 
 1. Tap "Send Multiple Test Messages"
 2. Creates 3 test notifications (Alice, Bob, Charlie)
-3. Watch auto-reply respond to each
+3. Notifications will appear in shade (but auto-reply won't trigger for these test notifications)
 
-### 5. Verify Auto-Reply
+### 5. Verify Auto-Reply (With Real Apps)
 
-**Check if it worked:**
+**Note:** Auto-reply only triggers for notifications from OTHER apps, not test notifications from this app.
 
-1. After sending test notification, wait 1-2 seconds
-2. Pull down notification shade
-3. Look for "Reply Sent" notification showing your auto-reply
-4. Or tap "Show Active Notifications" to see all notifications
+**To test auto-reply:**
+
+1. Install a messaging app (WhatsApp, Messenger, etc.)
+2. Send yourself a message from another device
+3. Auto-reply will trigger and send your configured message
 
 **Check Service Logs:**
 
@@ -69,11 +72,11 @@ The app now includes a test notification generator that simulates real messaging
 adb logcat | grep AutoReplyListener
 ```
 
-You should see:
+You should see (for real notifications from other apps):
 
 ```
-AutoReplyListener: Processing notification from expo.modules.autoreplymanager.testnotificationhelper
-AutoReplyListener: Auto-reply sent: I'm in a meeting...
+AutoReplyListener: Processing notification from com.whatsapp
+AutoReplyListener: Auto-reply sent to com.whatsapp: I'm in a meeting...
 ```
 
 ## Test Notification Details
@@ -207,7 +210,7 @@ adb shell dumpsys notification
 adb shell cmd notification clear
 
 # Force stop app
-adb shell am force-stop com.anonymous.landlineapplication
+adb shell am force-stop com.outersnail.Landline
 ```
 
 ## Success Criteria
