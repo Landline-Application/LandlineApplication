@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import * as Contacts from 'expo-contacts';
+import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/theme';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
@@ -133,10 +134,43 @@ export default function DebugToolsScreen() {
 
   return (
     <>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingTop: insets.top,
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.dark.border,
+          backgroundColor: COLORS.dark.background,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ paddingVertical: 8, paddingRight: 12 }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.primary }}>
+            ← Back
+          </Text>
+        </TouchableOpacity>
+        <Text
+          style={{
+            flex: 1,
+            fontSize: 17,
+            fontWeight: '700',
+            textAlign: 'center',
+            color: COLORS.dark.text.primary,
+          }}
+        >
+          Debug Tools
+        </Text>
+        <View style={{ width: 60 }} />
+      </View>
+
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
-          paddingTop: insets.top,
           paddingBottom: 40,
           gap: 20,
         }}

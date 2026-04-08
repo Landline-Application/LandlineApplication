@@ -4,6 +4,7 @@ import { Dimensions, Pressable, StyleSheet, View, ViewStyle } from 'react-native
 
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Motion, Shadows } from '@/constants/theme';
 import { haptics } from '@/services/haptics';
 import Reanimated, {
@@ -15,8 +16,6 @@ import Reanimated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-
-import { StatusIndicator } from './status-indicator';
 
 const { width } = Dimensions.get('window');
 

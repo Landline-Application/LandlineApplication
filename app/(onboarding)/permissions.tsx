@@ -4,10 +4,10 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
 
-import { Button } from '@/components/core/button';
 import { Blob, Page } from '@/components/onboarding/onboarding-primitives';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { Permission, PermissionCards, usePermissions } from '@/components/permissions';
+import { Button } from '@/components/ui/button';
 import { COLORS, Fonts, Radius } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

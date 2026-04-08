@@ -4,16 +4,19 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { Button } from '@/components/core/button';
-import { Card } from '@/components/core/card';
-import { StatusIndicator } from '@/components/core/status-indicator';
+import { router } from 'expo-router';
+
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Radius, Spacing } from '@/constants/theme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,108 +85,131 @@ export default function LandlineScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── HEADER ── */}
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Landline Mode</Text>
-        <Text style={styles.screenSubtitle}>Capture notifications silently while you focus.</Text>
+    <>
+      <View style={[styles.navBar, { paddingTop: insets.top }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={12}
+        >
+          <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </Pressable>
+        <Text style={styles.navTitle}>Landline Mode</Text>
+        <View style={styles.navSpacer} />
       </View>
 
-      {/* ── HERO STATUS CARD ── */}
-      <Card variant="outlined" shadow="md" padding="lg" borderRadius="xl" style={styles.heroCard}>
-        {/* Mode indicator */}
-        <View style={styles.heroIndicatorRow}>
-          <StatusIndicator
-            active={isActive}
-            size="lg"
-            showGlow={isActive}
-            color={isActive ? COLORS.primary : COLORS.text.muted}
-          />
-          <View style={styles.heroTextGroup}>
-            <Text style={styles.heroLabel}>Landline Mode</Text>
-            <Text style={[styles.heroState, isActive ? styles.heroStateOn : styles.heroStateOff]}>
-              {isActive ? 'On' : 'Off'}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── HEADER ── */}
+        <View style={styles.header}>
+          <Text style={styles.screenTitle}>Landline Mode</Text>
+          <Text style={styles.screenSubtitle}>Capture notifications silently while you focus.</Text>
+        </View>
+
+        {/* ── HERO STATUS CARD ── */}
+        <Card variant="outlined" shadow="md" padding="lg" borderRadius="xl" style={styles.heroCard}>
+          {/* Mode indicator */}
+          <View style={styles.heroIndicatorRow}>
+            <StatusIndicator
+              active={isActive}
+              size="lg"
+              showGlow={isActive}
+              color={isActive ? COLORS.primary : COLORS.text.muted}
+            />
+            <View style={styles.heroTextGroup}>
+              <Text style={styles.heroLabel}>Landline Mode</Text>
+              <Text style={[styles.heroState, isActive ? styles.heroStateOn : styles.heroStateOff]}>
+                {isActive ? 'On' : 'Off'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Notification access status row */}
+          <View style={styles.divider} />
+          <View style={styles.statusRow}>
+            <StatusIndicator
+              active={hasPermission}
+              size="sm"
+              showGlow={false}
+              color={hasPermission ? COLORS.success : COLORS.error}
+            />
+            <Text style={styles.statusRowLabel}>Notification Access</Text>
+            <Text
+              style={[
+                styles.statusRowValue,
+                { color: hasPermission ? COLORS.success : COLORS.error },
+              ]}
+            >
+              {hasPermission ? 'Granted' : 'Not granted'}
             </Text>
           </View>
-        </View>
 
-        {/* Notification access status row */}
-        <View style={styles.divider} />
-        <View style={styles.statusRow}>
-          <StatusIndicator
-            active={hasPermission}
-            size="sm"
-            showGlow={false}
-            color={hasPermission ? COLORS.success : COLORS.error}
-          />
-          <Text style={styles.statusRowLabel}>Notification Access</Text>
-          <Text
-            style={[
-              styles.statusRowValue,
-              { color: hasPermission ? COLORS.success : COLORS.error },
-            ]}
-          >
-            {hasPermission ? 'Granted' : 'Not granted'}
-          </Text>
-        </View>
-
-        {/* Primary action — M3 Filled button (highest emphasis, blocking action) */}
-        {hasPermission && (
-          <View style={styles.heroButtonWrapper}>
-            {isLoading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingLabel}>Updating…</Text>
-              </View>
-            ) : (
-              <Button
-                label={isActive ? 'Turn Landline Mode Off' : 'Turn Landline Mode On'}
-                onPress={handleToggleLandlineMode}
-                variant={isActive ? 'danger' : 'primary'}
-                size="lg"
-                fullWidth
-                disabled={isLoading}
-              />
-            )}
-          </View>
-        )}
-      </Card>
-
-      {/* ── PERMISSION CARD — M3 Outlined button (medium emphasis, non-blocking) ── */}
-      {!hasPermission && (
-        <Card variant="outlined" shadow="sm" padding="lg" borderRadius="xl" style={styles.section}>
-          <View style={styles.permissionHeader}>
-            <View style={styles.permissionIconWrap}>
-              <MaterialIcons name="notifications-off" size={20} color={COLORS.warning} />
+          {/* Primary action — M3 Filled button (highest emphasis, blocking action) */}
+          {hasPermission && (
+            <View style={styles.heroButtonWrapper}>
+              {isLoading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.loadingLabel}>Updating…</Text>
+                </View>
+              ) : (
+                <Button
+                  label={isActive ? 'Turn Landline Mode Off' : 'Turn Landline Mode On'}
+                  onPress={handleToggleLandlineMode}
+                  variant={isActive ? 'danger' : 'primary'}
+                  size="lg"
+                  fullWidth
+                  disabled={isLoading}
+                />
+              )}
             </View>
-            <Text style={styles.permissionTitle}>Notification Access Needed</Text>
-          </View>
-          <Text style={styles.bodyText}>
-            To use Landline Mode, grant Notification Access. We only use this to log notifications
-            while mode is active.
-          </Text>
-          <View style={styles.permissionButtonWrapper}>
-            <Button
-              label="Grant Notification Access"
-              onPress={handleRequestPermission}
-              variant="ghost"
-              size="md"
-              fullWidth
-            />
-          </View>
+          )}
         </Card>
-      )}
 
-      {/* ── FOOTER HINT ── */}
-      <Text style={styles.footerHint}>
-        While Landline Mode is on, notifications are quietly logged. Visit the Notifications tab any
-        time to review what you missed.
-      </Text>
-    </ScrollView>
+        {/* ── PERMISSION CARD — M3 Outlined button (medium emphasis, non-blocking) ── */}
+        {!hasPermission && (
+          <Card
+            variant="outlined"
+            shadow="sm"
+            padding="lg"
+            borderRadius="xl"
+            style={styles.section}
+          >
+            <View style={styles.permissionHeader}>
+              <View style={styles.permissionIconWrap}>
+                <MaterialIcons name="notifications-off" size={20} color={COLORS.warning} />
+              </View>
+              <Text style={styles.permissionTitle}>Notification Access Needed</Text>
+            </View>
+            <Text style={styles.bodyText}>
+              To use Landline Mode, grant Notification Access. We only use this to log notifications
+              while mode is active.
+            </Text>
+            <View style={styles.permissionButtonWrapper}>
+              <Button
+                label="Grant Notification Access"
+                onPress={handleRequestPermission}
+                variant="ghost"
+                size="md"
+                fullWidth
+              />
+            </View>
+          </Card>
+        )}
+
+        {/* ── FOOTER HINT ── */}
+        <Text style={styles.footerHint}>
+          While Landline Mode is on, notifications are quietly logged. Visit the Notifications tab
+          any time to review what you missed.
+        </Text>
+      </ScrollView>
+    </>
   );
 }
 
@@ -195,7 +221,44 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.jumbo,
+  },
+
+  // ── Nav bar ───────────────────────────────────────────────────────────────
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surface.border,
+    backgroundColor: COLORS.background,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingRight: Spacing.md,
+    gap: 2,
+  },
+  backButtonPressed: {
+    opacity: 0.65,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  navTitle: {
+    flex: 1,
+    fontSize: 20,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
+    textAlign: 'center',
+  },
+  navSpacer: {
+    width: 60,
   },
   centerContainer: {
     flex: 1,

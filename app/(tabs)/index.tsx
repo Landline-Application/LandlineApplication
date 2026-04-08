@@ -15,9 +15,9 @@ import {
 
 import { router } from 'expo-router';
 
-import { Card } from '@/components/core/card';
-import { RotaryDialButton } from '@/components/core/rotary-dial-button';
-import { SessionCard } from '@/components/core/session-card';
+import { RotaryDialButton } from '@/components/home/rotary-dial-button';
+import { SessionCard } from '@/components/home/session-card';
+import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
