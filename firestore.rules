@@ -8,5 +8,19 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Beta signup collection for waitlist
+    match /betaSignups/{docId} {
+      // Allow create if email is valid format
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.matches('^[\\w\\-\\.]+@([\\w\\-]+\\.)+[\\w\\-]{2,4}$')
+                    && request.resource.data.timestamp is timestamp;
+
+      // Allow read only for specific admin user
+      allow read: if request.auth != null && request.auth.token.email == 'admin@landline.app';
+
+      // No update or delete allowed
+      allow update, delete: if false;
+    }
   }
 }
