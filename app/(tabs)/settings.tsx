@@ -51,7 +51,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
   const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
-  const { localDisplayName, setLocalDisplayName } = usePreferencesStore();
+  const { localDisplayName, setLocalDisplayName, reset: resetPreferences } = usePreferencesStore();
   const [displayNameDraft, setDisplayNameDraft] = useState(
     () => usePreferencesStore.getState().localDisplayName,
   );
@@ -205,6 +205,9 @@ export default function SettingsScreen() {
       const result = await StorageManager.deleteAllUserData();
 
       if (result.success) {
+        // Reset in-memory store state so UI reflects the deletion immediately
+        resetPreferences();
+
         closeDeleteModal();
         Alert.alert('Data Deleted', 'All your data has been permanently deleted from the app.', [
           {

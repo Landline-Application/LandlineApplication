@@ -59,6 +59,9 @@ interface PreferencesState {
   // Called by AuthContext after every auth state change (anonymous or real user)
   onAuthReady: (uid: string) => Promise<void>;
 
+  // Resets all preferences and display name back to defaults (used on data deletion)
+  reset: () => void;
+
   // Internal
   _syncToFirestore: () => Promise<void>;
 }
@@ -96,6 +99,17 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       setLocalDisplayName: (name: string) => {
         set({ localDisplayName: name });
+      },
+
+      reset: () => {
+        set({
+          autoReplyEnabled: DEFAULT_AUTO_REPLY_ENABLED,
+          notificationRetentionDays: DEFAULT_RETENTION_DAYS,
+          localDisplayName: '',
+          isSyncing: false,
+          lastSyncedAt: null,
+          hasPendingSync: false,
+        });
       },
 
       // -----------------------------------------------------------------------
