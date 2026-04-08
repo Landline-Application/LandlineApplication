@@ -118,6 +118,50 @@ export interface ButtonProps extends VariantProps<typeof buttonVariants> {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+// Layout-affecting style keys that must be forwarded to the outer Animated.View
+// so that flex, width, etc. participate correctly in the parent's layout.
+const LAYOUT_KEYS: (keyof ViewStyle)[] = [
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'alignSelf',
+  'width',
+  'height',
+  'minWidth',
+  'maxWidth',
+  'minHeight',
+  'maxHeight',
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'marginHorizontal',
+  'marginVertical',
+  'position',
+  'top',
+  'bottom',
+  'left',
+  'right',
+];
+
+function splitStyle(style?: ViewStyle): { outerStyle: ViewStyle; innerStyle: ViewStyle } {
+  if (!style) return { outerStyle: {}, innerStyle: {} };
+  const outerStyle: ViewStyle = {};
+  const innerStyle: ViewStyle = {};
+  for (const key of Object.keys(style) as (keyof ViewStyle)[]) {
+    if (LAYOUT_KEYS.includes(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (outerStyle as any)[key] = style[key];
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (innerStyle as any)[key] = style[key];
+    }
+  }
+  return { outerStyle, innerStyle };
+}
+
 export function Button({
   label,
   onPress,
@@ -141,6 +185,10 @@ export function Button({
   };
 
   const isDisabled = disabled || loading;
+
+  // Split caller's style so layout props go to the Animated.View wrapper
+  // and visual props (borderRadius, etc.) go to the Pressable.
+  const { outerStyle, innerStyle } = splitStyle(style);
 
   const handlePressIn = useCallback(() => {
     if (isDisabled) return;
@@ -170,7 +218,13 @@ export function Button({
     variant === 'ghost' || variant === 'text' ? COLORS.primary : COLORS.text.onPrimary;
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, fullWidth && { width: '100%' }]}>
+    <Animated.View
+      style={[
+        { transform: [{ scale: scaleAnim }] },
+        fullWidth && { alignSelf: 'stretch' },
+        outerStyle,
+      ]}
+    >
       <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
@@ -181,12 +235,12 @@ export function Button({
         accessibilityState={{ disabled: isDisabled }}
         style={[
           config.container,
-          fullWidth && { width: '100%', alignSelf: 'stretch' },
+          fullWidth && { alignSelf: 'stretch' },
           isDisabled && {
             opacity: 0.6,
             backgroundColor: variant === 'ghost' || variant === 'text' ? undefined : COLORS.muted,
           },
-          style,
+          innerStyle,
         ]}
       >
         {loading ? (
