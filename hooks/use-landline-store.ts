@@ -140,22 +140,21 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
   activateLandlineMode: async (mode: SessionMode = 'indefinite', durationMinutes?: number) => {
     set({ isLoading: true, error: null });
     try {
-      // Call native API to set landline mode
-      NotificationApiManager.setLandlineMode(true);
-
-      // Note: We're not using DND to suppress notifications because that would also
-      // block emergency contact notifications. Instead, we let all notifications through
-      // and programmatically cancel only non-emergency ones in the listener service.
-      // This ensures emergency contacts get the full normal notification experience.
+      // Set DND policy and mode BEFORE activating Landline Mode so that the policy
+      // is in place when the first notification arrives. If we set landline mode first,
+      // a notification could arrive before DND is configured and be mishandled.
       try {
         if (DndManager.hasPermission()) {
-          // Disable DND completely so notifications can reach our listener
-          await DndManager.setDNDEnabled(false);
+          const constants = DndManager.getInterruptionFilterConstants();
+          DndManager.setLandlineNotificationPolicy();
+          await DndManager.setInterruptionFilter(constants.PRIORITY);
         }
       } catch (dndErr) {
         console.warn('DND not available:', dndErr);
-        // Continue anyway - DND is optional
       }
+
+      // Activate Landline Mode after DND is configured
+      NotificationApiManager.setLandlineMode(true);
 
       // Verify it actually activated
       const actualActive = NotificationApiManager.isLandlineModeActive();
@@ -209,9 +208,10 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Call native API to deactivate
       NotificationApiManager.setLandlineMode(false);
 
-      // Disable DND (optional)
+      // Restore DND to normal and reset the notification policy
       try {
         if (DndManager.hasPermission()) {
+          DndManager.restoreNotificationPolicy();
           await DndManager.setDNDEnabled(false);
         }
       } catch (dndErr) {

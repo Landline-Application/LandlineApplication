@@ -542,11 +542,13 @@ export default function SettingsScreen() {
             >
               <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
                 <View style={styles.menuItemIcon}>
-                  <MaterialIcons name="apps" size={22} color={COLORS.secondary} />
+                  <MaterialIcons name="phone" size={22} color={COLORS.secondary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Bypass List</Text>
-                  <Text style={styles.menuItemSubtitle}>Choose apps that can ignore silencing</Text>
+                  <Text style={styles.menuItemTitle}>Emergency Contacts</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    Contacts that can reach you during Landline Mode
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
