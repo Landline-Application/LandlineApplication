@@ -152,6 +152,11 @@ The `.aab` output will be written to the project root. This does **not** count a
 
 ---
 
+## Quick Links
+
+- [docs/EAS-SETUP.md](docs/EAS-SETUP.md) - Links to official Expo/EAS documentation for EAS setup and Google Play Console integration
+- [docs/FIREBASE-CONFIG.md](docs/FIREBASE-CONFIG.md) - Firebase configuration and google-services.json setup
+
 ## Troubleshooting
 
 ### Metro Cache and TreeFS Errors

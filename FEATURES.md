@@ -2,7 +2,7 @@
 
 ## Overview
 
-Landline is an Android-first mobile application built with Expo and React Native that silently intercepts and logs notifications, manages auto-replies, and controls device interruption settings. Built with Expo SDK 54, React 19, React Native 0.81, and TypeScript. Uses the New Architecture and experimental React Compiler.
+Landline is an Android-first mobile application built with Expo and React Native that silently intercepts and logs notifications, manages auto-replies, and controls device interruption settings. Built with Expo SDK 55, React 19, React Native 0.83, and TypeScript. Uses the New Architecture and experimental React Compiler.
 
 **Current Status:** Functional backend and native modules; UI/UX design needed; user flow not finalized. Authentication flows use mock API calls (no real backend).
 
@@ -259,9 +259,9 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### Framework
 
-- Expo 54.0.33 (New Architecture enabled)
-- React 19.1.0 (experimental React Compiler enabled)
-- React Native 0.81.5
+- Expo 55.0.11 (New Architecture enabled)
+- React 19.2.0 (experimental React Compiler enabled)
+- React Native 0.83.4
 - TypeScript ~5.9.2
 - Package manager: pnpm 10.17.0
 
@@ -272,9 +272,11 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### State Management
 
+- **Zustand** - Global state management for Landline Mode, Auto-Reply, and background services
+  - `useLandlineStore` - Manages Landline Mode state and notification logs
+  - `useAutoReplyStore` - Manages Auto-Reply settings and reply history
 - React Context (`AuthContext` for authentication)
-- Component-local `useState` for all other UI state
-- No external state library (no Redux, Zustand, etc.)
+- Component-local `useState` for component-specific UI state
 
 ### Storage
 
@@ -358,7 +360,7 @@ From project documentation (README.md) but no implementation in the codebase:
 - Device Admin for lock screen control
 - Overlay Permission for floating widget
 - Usage Access for per-app usage monitoring
-- Color/theme migration (documented in `docs/color-migration-todo.md`)
+- Color/theme tokens (documented in `docs/theme.md`)
 
 ---
 
