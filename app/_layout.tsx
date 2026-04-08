@@ -219,7 +219,6 @@ function NavigationGate() {
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="debug/tools" options={{ headerShown: false }} />
       <Stack.Screen name="debug/landline" options={{ headerShown: false }} />
-      <Stack.Screen name="debug/bypass-list" options={{ headerShown: false }} />
     </Stack>
   );
 }

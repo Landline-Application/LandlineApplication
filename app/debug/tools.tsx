@@ -608,8 +608,6 @@ export default function DebugToolsScreen() {
                 backgroundColor: COLORS.dark.card,
                 padding: 12,
                 borderRadius: 8,
-                borderLeftWidth: 3,
-                borderLeftColor: COLORS.dark.success,
                 borderCurve: 'continuous',
               }}
             >
@@ -908,8 +906,6 @@ export default function DebugToolsScreen() {
               backgroundColor: COLORS.dark.card,
               padding: 12,
               borderRadius: 8,
-              borderLeftWidth: 3,
-              borderLeftColor: COLORS.dark.primary,
               borderCurve: 'continuous',
             }}
           >

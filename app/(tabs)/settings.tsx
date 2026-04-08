@@ -472,6 +472,29 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/emergency-contacts');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="contact-phone" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Emergency Contacts</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    Contacts that can reach you during Landline Mode
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
           </Card>
         </View>
 
@@ -526,29 +549,6 @@ export default function SettingsScreen() {
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuItemTitle}>Landline Mode</Text>
                   <Text style={styles.menuItemSubtitle}>Configure silencing engine</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.itemDivider} />
-
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                router.push('/debug/bypass-list');
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
-                  <MaterialIcons name="phone" size={22} color={COLORS.secondary} />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Emergency Contacts</Text>
-                  <Text style={styles.menuItemSubtitle}>
-                    Contacts that can reach you during Landline Mode
-                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
