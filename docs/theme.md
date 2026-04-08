@@ -39,37 +39,37 @@ The application uses two custom font families:
 
 ## General Components
 
-The following components are available for general use throughout the application. Import them from `@/components`:
+### UI Primitives (`components/ui/`)
 
-### Core Components (`components/core/`)
+These are the general-purpose building blocks. Import the most common ones from the barrel `@/components`.
 
-| Component          | Import         | Description                                                                                                                                 |
-| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`           | `@/components` | Primary button with variants (primary, secondary, ghost, danger) and sizes (sm, md, lg, xl). Includes press animations and haptic feedback. |
-| `Card`             | `@/components` | Container component with variants (base, elevated, outlined), configurable shadows, padding, and border radius.                             |
-| `StatusIndicator`  | `@/components` | Animated status dot with optional glow effect. Supports active/inactive states and multiple sizes.                                          |
-| `SessionCard`      | `@/components` | Data display card showing a label and value, styled for session statistics.                                                                 |
-| `RotaryDialButton` | `@/components` | Specialized circular button with rotary dial styling.                                                                                       |
+| Component         | Import                           | Description                                                                                                                             |
+| ----------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`          | `@/components`                   | Unified button — CVA variants (primary, secondary, ghost, danger, text), sizes (sm, md, lg, xl), animated press scale, haptic feedback. |
+| `Card`            | `@/components`                   | Container with variants (base, elevated, outlined), configurable shadows, padding, and border radius.                                   |
+| `StatusIndicator` | `@/components`                   | Animated status dot with optional pulsing glow. Supports active/inactive states and sm/md/lg sizes.                                     |
+| `IconSymbol`      | `@/components/ui/icon-symbol`    | Material Icons wrapper. Browse available names at https://icons.expo.fyi                                                                |
+| `Collapsible`     | `@/components/ui/collapsible`    | Accordion with animated chevron.                                                                                                        |
+| `ExternalLink`    | `@/components/ui/external-link`  | Opens URLs in the in-app browser on native, new tab on web.                                                                             |
+| `FormLayout`      | `@/components/ui/form-layout`    | SafeArea + KeyboardAvoidingView + ScrollView wrapper for form screens.                                                                  |
+| `NavigationBar`   | `@/components/ui/navigation-bar` | Material Design 3 bottom navigation bar with active indicator pills.                                                                    |
 
-### UI Components (`components/ui/`)
+### Form Inputs (`components/ui/form/`)
 
-| Component       | Import Path                      | Description                                                                                |
-| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `IconSymbol`    | `@/components/ui/icon-symbol`    | Cross-platform icon component using Material Icons. Browse icons at https://icons.expo.fyi |
-| `Collapsible`   | `@/components/ui/collapsible`    | Accordion component with chevron animation for expandable content.                         |
-| `ExternalLink`  | `@/components/ui/external-link`  | Link component that opens URLs in-app browser on native, external tab on web.              |
-| `FormLayout`    | `@/components/ui/form-layout`    | SafeArea + KeyboardAvoidingView wrapper for form screens with scroll handling.             |
-| `NavigationBar` | `@/components/ui/navigation-bar` | Material Design 3 bottom navigation bar with active indicator pills.                       |
-| `HapticTab`     | `@/components/ui/haptic-tab`     | Tab bar button wrapper providing haptic feedback on iOS.                                   |
+| Component             | Import Path                                     | Description                                          |
+| --------------------- | ----------------------------------------------- | ---------------------------------------------------- |
+| `PhoneInput`          | `@/components/ui/form/phone-number`             | Phone number input with country flag and validation. |
+| `EmailPasswordInput`  | `@/components/ui/form/email-password-input`     | Combined email + password fields.                    |
+| `ContinueWithSocials` | `@/components/ui/form/continue-socials-buttons` | Social login button group (Google, Email, Phone).    |
 
-### Form Components (`components/ui/form/`)
+### Home-Screen Components (`components/home/`)
 
-| Component             | Import Path                                     | Description                                                                              |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `Button` (form)       | `@/components/ui/form/button`                   | Alternative button using class-variance-authority for variants (primary, outline, text). |
-| `PhoneInput`          | `@/components/ui/form/phone-number`             | Phone number input with country flag display and validation.                             |
-| `EmailPasswordInput`  | `@/components/ui/form/email-password-input`     | Combined email and password input fields.                                                |
-| `ContinueWithSocials` | `@/components/ui/form/continue-socials-buttons` | Social login button group (Google, Email, Phone).                                        |
+These are specific to the home screen and not for general reuse.
+
+| Component          | Import Path                            | Description                                   |
+| ------------------ | -------------------------------------- | --------------------------------------------- |
+| `RotaryDialButton` | `@/components/home/rotary-dial-button` | Branded spinning rotary dial hero button.     |
+| `SessionCard`      | `@/components/home/session-card`       | Stat display card showing a label/value pair. |
 
 ### Usage Example
 
@@ -78,7 +78,6 @@ import { Button, Card, StatusIndicator } from '@/components';
 import { FormLayout } from '@/components/ui/form-layout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
-// In your component:
 <FormLayout>
   <Card variant="elevated" shadow="md">
     <StatusIndicator active={true} />

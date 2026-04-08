@@ -4,8 +4,8 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 
 import { router } from 'expo-router';
 
+import { Button } from '@/components/ui/button';
 import { FormLayout } from '@/components/ui/form-layout';
-import { Button } from '@/components/ui/form/button';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/theme';
 import { getPhoneConfirmation, setPhoneConfirmation } from '@/utils/firebase/auth';
@@ -147,13 +147,12 @@ export default function VerifyPhoneScreen() {
         </View>
 
         <Button
+          label="VERIFY"
           onPress={() => handleSubmit()}
           disabled={!isCodeComplete || isLoading}
           loading={isLoading}
           variant="primary"
-        >
-          VERIFY
-        </Button>
+        />
 
         <View style={styles.resendContainer}>
           {resendTimer > 0 ? (
@@ -166,9 +165,7 @@ export default function VerifyPhoneScreen() {
         </View>
       </RolodexCard>
 
-      <Button onPress={() => router.back()} variant="text">
-        Go Back
-      </Button>
+      <Button label="Go Back" onPress={() => router.back()} variant="text" />
     </FormLayout>
   );
 }

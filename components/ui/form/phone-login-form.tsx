@@ -4,7 +4,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { Href, router } from 'expo-router';
 
-import { Button } from '@/components/ui/form/button';
+import { Button } from '@/components/ui/button';
 import { ContinueWithSocials } from '@/components/ui/form/continue-socials-buttons';
 import { PhoneInput } from '@/components/ui/form/phone-number';
 import { COLORS } from '@/constants/theme';
@@ -67,13 +67,12 @@ export function PhoneLoginForm({
       />
 
       <Button
+        label="CONTINUE"
         onPress={submitPhone}
         disabled={!isFormValid || isLoading}
         loading={isLoading}
         variant="primary"
-      >
-        CONTINUE
-      </Button>
+      />
 
       <View style={styles.dividerContainer}>
         <View style={styles.dividerLine} />
@@ -88,9 +87,11 @@ export function PhoneLoginForm({
       />
 
       <View style={styles.footerContainer}>
-        <Button onPress={() => router.push(footerLinkRoute)} variant="text">
-          {footerLinkLabel}
-        </Button>
+        <Button
+          label={footerLinkLabel}
+          onPress={() => router.push(footerLinkRoute)}
+          variant="text"
+        />
       </View>
     </>
   );

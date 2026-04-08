@@ -13,8 +13,8 @@ import {
 
 import { router } from 'expo-router';
 
-import { Button } from '@/components/core/button';
-import { Card } from '@/components/core/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';

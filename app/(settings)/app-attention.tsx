@@ -15,9 +15,9 @@ import {
 
 import { router, useFocusEffect } from 'expo-router';
 
-import { Card } from '@/components/core/card';
-import { StatusIndicator } from '@/components/core/status-indicator';
+import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
