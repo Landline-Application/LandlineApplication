@@ -240,7 +240,7 @@ export default function NotebookLogView({
             {/* Entries card */}
             <View style={styles.entriesCard}>
               {entries.map((notif, idx) => {
-                const entryKey = `${notif.id}-${notif.postTime}`;
+                const entryKey = `${appName}-${notif.id}-${notif.postTime}-${idx}`;
                 const isExpanded = expandedKeys.has(entryKey);
                 const isLast = idx === entries.length - 1;
                 return (
