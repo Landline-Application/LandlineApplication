@@ -9,6 +9,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 const SESSION_START_KEY = 'landline_session_start_time';
+
+function deduplicateNotifications(logs: NotebookLogEntry[]): NotebookLogEntry[] {
+  const seen = new Set<string>();
+  return logs.filter((n) => {
+    const key = `${n.packageName}-${n.postTime}-${n.title}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 const SESSION_MODE_KEY = 'landline_session_mode';
 const SESSION_END_TIME_KEY = 'landline_session_end_time';
 
@@ -106,7 +116,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         hasDndPermission: dndPerm,
         lastStatusUpdate: Date.now(),
         isActive: active,
-        notifications: Array.isArray(logs) ? logs : [],
+        notifications: Array.isArray(logs) ? deduplicateNotifications(logs) : [],
         sessionStartTime: sessionStart,
         sessionMode,
         sessionEndTime: sessionEnd,
@@ -133,16 +143,14 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // Call native API to set landline mode
       NotificationApiManager.setLandlineMode(true);
 
-      // Try to enable DND (optional). When notification permissions (bypass list) are active, use normal
-      // interruption mode so allowed alerts can appear; others are cancelled in the listener.
+      // Note: We're not using DND to suppress notifications because that would also
+      // block emergency contact notifications. Instead, we let all notifications through
+      // and programmatically cancel only non-emergency ones in the listener service.
+      // This ensures emergency contacts get the full normal notification experience.
       try {
         if (DndManager.hasPermission()) {
-          if (isNotificationFilterEffective()) {
-            const constants = DndManager.getInterruptionFilterConstants();
-            await DndManager.setInterruptionFilter(constants.ALL);
-          } else {
-            await DndManager.setDNDEnabled(true);
-          }
+          // Disable DND completely so notifications can reach our listener
+          await DndManager.setDNDEnabled(false);
         }
       } catch (dndErr) {
         console.warn('DND not available:', dndErr);
@@ -255,7 +263,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
     try {
       const logs = await NotificationApiManager.getLoggedNotifications();
       set({
-        notifications: Array.isArray(logs) ? logs : [],
+        notifications: Array.isArray(logs) ? deduplicateNotifications(logs) : [],
         refreshError: null, // Clear refresh errors on success
       });
     } catch (err) {
