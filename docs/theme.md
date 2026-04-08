@@ -151,6 +151,6 @@ The spacing system uses an 8px grid:
 
 ## Implementation Notes
 
-- **CVA:** New components should use `class-variance-authority` for variant management (see `components/ui/form/button.tsx`).
+- **Variants:** Components with multiple visual states use plain `Record<Variant, ViewStyle>` lookup objects to define their styles. Define each variant as a named key and compose them in the component's style array.
 - **Standardized Tokens:** Avoid hardcoded hex values. Always prefer `COLORS`, `Radius`, and `Spacing` tokens.
 - **Landline Mode Store:** Use `useLandlineStore` for managing Landline sessions. The store handles auto-deactivation and refresh intervals internally.
