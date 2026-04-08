@@ -20,8 +20,6 @@ import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { haptics } from '@/services/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ── Reply message templates ───────────────────────────────────────────────────
-
 const TEMPLATES: { label: string; message: string }[] = [
   {
     label: 'In a Meeting',
@@ -47,8 +45,6 @@ const TEMPLATES: { label: string; message: string }[] = [
   },
 ];
 
-// ── App filter presets ────────────────────────────────────────────────────────
-
 const APP_PRESETS: { label: string; description: string; packages: string[] }[] = [
   {
     label: 'All Apps',
@@ -72,8 +68,6 @@ const APP_PRESETS: { label: string; description: string; packages: string[] }[] 
   },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function AutoReplyScreen() {
   const insets = useSafeAreaInsets();
 
@@ -94,7 +88,7 @@ export default function AutoReplyScreen() {
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
 
-  // ── Toggle auto-reply on/off ────────────────────────────────────────────────
+  
 
   async function handleToggle(value: boolean) {
     if (!hasPermission) {
@@ -120,7 +114,7 @@ export default function AutoReplyScreen() {
     }
   }
 
-  // ── Request notification listener permission ────────────────────────────────
+  
 
   async function handleRequestPermission() {
     try {
@@ -134,7 +128,7 @@ export default function AutoReplyScreen() {
     }
   }
 
-  // ── Apply a template message ────────────────────────────────────────────────
+  
 
   async function handleApplyTemplate(templateMessage: string, label: string) {
     haptics.light();
@@ -145,7 +139,7 @@ export default function AutoReplyScreen() {
     }
   }
 
-  // ── Save custom message ─────────────────────────────────────────────────────
+  
 
   async function handleSaveCustomMessage() {
     const trimmed = customMessage.trim();
@@ -165,7 +159,7 @@ export default function AutoReplyScreen() {
     }
   }
 
-  // ── Apply app filter preset ─────────────────────────────────────────────────
+  
 
   async function handleApplyPreset(packages: string[], label: string) {
     haptics.light();
@@ -176,21 +170,7 @@ export default function AutoReplyScreen() {
     }
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  function activePresetLabel(): string {
-    for (const preset of APP_PRESETS) {
-      if (
-        preset.packages.length === allowedApps.length &&
-        preset.packages.every((p) => allowedApps.includes(p))
-      ) {
-        return preset.label;
-      }
-    }
-    return 'Custom';
-  }
-
-  // ── Render ──────────────────────────────────────────────────────────────────
+  
 
   return (
     <View style={styles.container}>
@@ -369,35 +349,29 @@ export default function AutoReplyScreen() {
         {/* ── App filter ── */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Reply to Apps</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardSectionTitle}>
-              Active filter:{' '}
-              <Text style={styles.cardSectionTitleHighlight}>{activePresetLabel()}</Text>
-            </Text>
-            {APP_PRESETS.map((preset) => {
-              const isActive =
-                preset.packages.length === allowedApps.length &&
-                preset.packages.every((p) => allowedApps.includes(p));
-              return (
-                <TouchableOpacity
-                  key={preset.label}
-                  style={[styles.presetRow, isActive && styles.presetRowActive]}
-                  onPress={() => handleApplyPreset(preset.packages, preset.label)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.presetRadio, isActive && styles.presetRadioActive]}>
-                    {isActive && <View style={styles.presetRadioInner} />}
-                  </View>
-                  <View style={styles.presetContent}>
-                    <Text style={[styles.presetLabel, isActive && styles.presetLabelActive]}>
-                      {preset.label}
-                    </Text>
-                    <Text style={styles.presetDescription}>{preset.description}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {APP_PRESETS.map((preset) => {
+            const isActive =
+              preset.packages.length === allowedApps.length &&
+              preset.packages.every((p) => allowedApps.includes(p));
+            return (
+              <TouchableOpacity
+                key={preset.label}
+                style={[styles.presetRow, isActive && styles.presetRowActive]}
+                onPress={() => handleApplyPreset(preset.packages, preset.label)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.presetRadio, isActive && styles.presetRadioActive]}>
+                  {isActive && <View style={styles.presetRadioInner} />}
+                </View>
+                <View style={styles.presetContent}>
+                  <Text style={[styles.presetLabel, isActive && styles.presetLabelActive]}>
+                    {preset.label}
+                  </Text>
+                  <Text style={styles.presetDescription}>{preset.description}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* ── Info footer ── */}
@@ -414,8 +388,6 @@ export default function AutoReplyScreen() {
     </View>
   );
 }
-
-// ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -598,8 +570,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: `${COLORS.primary}20`,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
     padding: Spacing.md,
     marginBottom: Spacing.md,
   },
