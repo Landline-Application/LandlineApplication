@@ -421,6 +421,53 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
+        /**
+         * Remove a single log line matching the persisted pipe-delimited format.
+         * Identifiers match [LandlineNotificationListenerService.logNotification]: logTimestamp (parts[0]),
+         * packageName, postTime (notification post time), notification id.
+         */
+        AsyncFunction("deleteLoggedNotification") { logTimestamp: Double, packageName: String, postTime: Double, notificationId: Int ->
+            val ctx = appContext.reactContext ?: return@AsyncFunction false
+
+            try {
+                val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+                val logsString = prefs.getString("notification_logs", "") ?: ""
+                if (logsString.isEmpty()) {
+                    return@AsyncFunction false
+                }
+
+                val logTs = logTimestamp.toLong()
+                val postTs = postTime.toLong()
+                val lines = logsString.split("\n")
+                val kept = mutableListOf<String>()
+                var removed = false
+
+                for (line in lines) {
+                    if (line.isEmpty()) continue
+                    val parts = line.split("|")
+                    if (parts.size >= 7) {
+                        val ts = parts[0].toLongOrNull()
+                        val pkg = parts[1]
+                        val pTime = parts[5].toLongOrNull()
+                        val nid = parts[6].toIntOrNull()
+                        if (!removed && ts == logTs && pkg == packageName && pTime == postTs && nid == notificationId) {
+                            removed = true
+                            continue
+                        }
+                    }
+                    kept.add(line)
+                }
+
+                if (removed) {
+                    prefs.edit().putString("notification_logs", kept.joinToString("\n")).apply()
+                }
+                removed
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationApiManager", "Error deleting notification: ${e.message}", e)
+                false
+            }
+        }
+
         // Auto-reply functionality
 
         /**

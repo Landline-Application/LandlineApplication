@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react';
 
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import NotebookLogView from '@/components/notifications/notebook-log-view';
+import NotebookLogView, { type NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Spacing, TouchTargets } from '@/constants/theme';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
@@ -25,6 +25,29 @@ export default function NotificationsScreen() {
       Alert.alert('Error', 'Failed to load notifications');
     }
   }, [refreshNotifications]);
+
+  const handleDeleteNotification = useCallback(
+    async (entry: NotebookLogEntry) => {
+      if (Platform.OS !== 'android' || entry.timestamp == null) return;
+      try {
+        const ok = await NotificationApiManager.deleteLoggedNotification(
+          entry.timestamp,
+          entry.packageName,
+          entry.postTime,
+          entry.id,
+        );
+        if (ok) {
+          await refreshNotifications();
+        } else {
+          Alert.alert('Could not delete', 'This entry could not be removed. Try again.');
+        }
+      } catch (error) {
+        console.error('Failed to delete notification:', error);
+        Alert.alert('Could not delete', 'Something went wrong. Try again.');
+      }
+    },
+    [refreshNotifications],
+  );
 
   const handleClearAll = useCallback(() => {
     Alert.alert(
@@ -94,6 +117,7 @@ export default function NotificationsScreen() {
           notifications={notifications}
           onRefresh={loadNotifications}
           isActive={isActive}
+          onDeleteNotification={Platform.OS === 'android' ? handleDeleteNotification : undefined}
         />
       )}
     </View>
