@@ -1,20 +1,12 @@
-/**
- * NotificationLogView
- *
- * A modern grouped notification feed that fits the app's Organic/Natural
- * design system. Replaces the previous notebook metaphor with clean
- * M3-informed list rows on the app's cream surface.
- */
 import React, { useMemo, useState } from 'react';
 
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ScrollView as GestureScrollView, Swipeable } from 'react-native-gesture-handler';
+import { ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import SwipeableRow from '@/components/ui/swipeable-row';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
 import { haptics } from '@/services/haptics';
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 export interface NotebookLogEntry {
   id: number;
@@ -26,18 +18,15 @@ export interface NotebookLogEntry {
   category?: string;
   timestamp?: number;
   autoReplied?: boolean;
-  replyText?: string; // the message that was auto-replied, if any
+  replyText?: string;
 }
 
 interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
   isActive?: boolean;
-  /** When set (e.g. Android), rows support swipe-to-reveal delete. */
   onDeleteNotification?: (entry: NotebookLogEntry) => void | Promise<void>;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatRelativeTime(timestamp: number): string {
   const diff = Date.now() - timestamp;
@@ -49,10 +38,7 @@ function formatRelativeTime(timestamp: number): string {
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatTimestamp(timestamp: number): string {
@@ -65,12 +51,11 @@ function formatTimestamp(timestamp: number): string {
   });
 }
 
-/** Derive a stable muted tint from an app name for its avatar circle */
 function appTint(appName: string): string {
   const tints = [
-    `${COLORS.primary}22`, // moss green
-    `${COLORS.secondary}22`, // clay
-    `${COLORS.info}22`, // same as primary — intentional
+    `${COLORS.primary}22`,
+    `${COLORS.secondary}22`,
+    `${COLORS.info}22`,
     'rgba(93,112,82,0.13)',
     'rgba(193,140,93,0.13)',
   ];
@@ -90,7 +75,105 @@ function appInitials(appName: string): string {
     .join('');
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+interface EntryRowProps {
+  notif: NotebookLogEntry;
+  isLast: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  canDelete?: boolean;
+  onDelete?: () => void | Promise<void>;
+  swipeContainerStyle?: import('react-native').StyleProp<import('react-native').ViewStyle>;
+}
+
+function EntryRow({ notif, isLast, isExpanded, onToggleExpand, canDelete, onDelete, swipeContainerStyle }: EntryRowProps) {
+  const pressable = (
+    <Pressable
+      style={({ pressed }) => [
+        styles.entry,
+        !isLast && styles.entryBorder,
+        pressed && styles.entryPressed,
+      ]}
+      onPress={() => {
+        haptics.soft();
+        onToggleExpand();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={notif.title}
+      accessibilityHint={canDelete ? 'Tap to expand or collapse. Swipe left to delete.' : 'Tap to expand or collapse'}
+      accessibilityActions={canDelete ? [{ name: 'delete', label: 'Delete notification' }] : undefined}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'delete') {
+          void onDelete?.();
+        }
+      }}
+    >
+      <View style={styles.entryMain}>
+        <View style={styles.entryHeadlineRow}>
+          <Text style={styles.entryTitle} numberOfLines={isExpanded ? undefined : 1}>
+            {notif.title}
+          </Text>
+          <Text style={styles.entryRelTime}>{formatRelativeTime(notif.postTime)}</Text>
+        </View>
+
+        {!!notif.text && (
+          <Text style={styles.entryBody} numberOfLines={isExpanded ? undefined : 2}>
+            {notif.text}
+          </Text>
+        )}
+
+        {isExpanded && (
+          <View style={styles.entryMeta}>
+            <Text style={styles.entryTimestamp}>{formatTimestamp(notif.postTime)}</Text>
+            {notif.autoReplied && (
+              <View style={styles.autoRepliedBadge}>
+                <MaterialIcons name="reply" size={11} color={COLORS.primary} />
+                <Text style={styles.autoRepliedBadgeText}>Auto Replied</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {isExpanded && notif.autoReplied && !!notif.replyText && (
+          <View style={styles.replySubRow}>
+            <View style={styles.replySubRowLine} />
+            <View style={styles.replySubRowContent}>
+              <Text style={styles.replySubRowLabel}>Replied</Text>
+              <Text style={styles.replySubRowText}>{notif.replyText}</Text>
+            </View>
+          </View>
+        )}
+
+        {!isExpanded && notif.autoReplied && (
+          <View style={styles.autoRepliedPill}>
+            <MaterialIcons name="reply" size={10} color={COLORS.primary} />
+            <Text style={styles.autoRepliedPillText}>Auto Replied</Text>
+          </View>
+        )}
+      </View>
+
+      <MaterialIcons
+        name={isExpanded ? 'expand-less' : 'expand-more'}
+        size={18}
+        color={COLORS.text.muted}
+        style={styles.chevron}
+      />
+    </Pressable>
+  );
+
+  if (!canDelete || !onDelete) return pressable;
+
+  return (
+    <SwipeableRow
+      onSwipeLeft={{
+        render: () => <MaterialIcons name="delete-outline" size={22} color={COLORS.background} />,
+        onAction: onDelete,
+      }}
+      containerStyle={swipeContainerStyle}
+    >
+      {pressable}
+    </SwipeableRow>
+  );
+}
 
 export default function NotebookLogView({
   notifications,
@@ -121,13 +204,11 @@ export default function NotebookLogView({
     });
   };
 
-  // Build sorted unique app-name filter list
   const filterOptions = useMemo(() => {
     const apps = Array.from(new Set(notifications.map((n) => n.appName))).sort();
     return ['All', ...apps];
   }, [notifications]);
 
-  // Filter notifications
   const filtered = useMemo(
     () =>
       selectedFilter === 'All'
@@ -136,14 +217,12 @@ export default function NotebookLogView({
     [notifications, selectedFilter],
   );
 
-  // Group by app for the feed
   const groups = useMemo(() => {
     const map: Record<string, NotebookLogEntry[]> = {};
     for (const n of filtered) {
       if (!map[n.appName]) map[n.appName] = [];
       map[n.appName].push(n);
     }
-    // Sort groups by most recent notification
     return Object.entries(map).sort(
       ([, a], [, b]) =>
         Math.max(...b.map((n) => n.postTime)) - Math.max(...a.map((n) => n.postTime)),
@@ -152,7 +231,6 @@ export default function NotebookLogView({
 
   return (
     <View style={styles.root}>
-      {/* ── Filter chip row ── */}
       {filterOptions.length > 1 && (
         <View style={styles.filterBar}>
           <ScrollView
@@ -184,7 +262,6 @@ export default function NotebookLogView({
         </View>
       )}
 
-      {/* ── Feed (gesture-handler ScrollView so Swipeable works with pull-to-refresh) ── */}
       <GestureScrollView
         style={styles.feed}
         contentContainerStyle={styles.feedContent}
@@ -198,7 +275,6 @@ export default function NotebookLogView({
           />
         }
       >
-        {/* Empty state */}
         {filtered.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
@@ -217,7 +293,6 @@ export default function NotebookLogView({
           </View>
         )}
 
-        {/* Notification count summary */}
         {filtered.length > 0 && (
           <Text style={styles.countLabel}>
             {filtered.length} {filtered.length === 1 ? 'notification' : 'notifications'}
@@ -225,10 +300,8 @@ export default function NotebookLogView({
           </Text>
         )}
 
-        {/* App groups */}
         {groups.map(([appName, entries]) => (
           <View key={appName} style={styles.group}>
-            {/* Group header */}
             <View style={styles.groupHeader}>
               <View style={[styles.appAvatar, { backgroundColor: appTint(appName) }]}>
                 <Text style={styles.appAvatarText}>{appInitials(appName)}</Text>
@@ -241,155 +314,49 @@ export default function NotebookLogView({
               </View>
             </View>
 
-            {/* Entries card */}
             <View style={styles.entriesCard}>
               {entries.map((notif, idx) => {
                 const entryKey = `${appName}-${notif.id}-${notif.postTime}-${idx}`;
-                const isExpanded = expandedKeys.has(entryKey);
+                const isFirst = idx === 0;
                 const isLast = idx === entries.length - 1;
-                const canSwipeDelete =
+                const canDelete =
                   typeof onDeleteNotification === 'function' && typeof notif.timestamp === 'number';
 
-                const row = (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.entry,
-                      !isLast && styles.entryBorder,
-                      pressed && styles.entryPressed,
-                    ]}
-                    onPress={() => {
-                      haptics.soft();
-                      toggleExpand(entryKey);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={notif.title}
-                    accessibilityHint={
-                      canSwipeDelete
-                        ? 'Tap to expand or collapse. Swipe left to delete.'
-                        : 'Tap to expand or collapse'
-                    }
-                  >
-                    {/* M3 two-line list: headline + supporting text */}
-                    <View style={styles.entryMain}>
-                      {/* Headline row */}
-                      <View style={styles.entryHeadlineRow}>
-                        <Text style={styles.entryTitle} numberOfLines={isExpanded ? undefined : 1}>
-                          {notif.title}
-                        </Text>
-                        <Text style={styles.entryRelTime}>
-                          {formatRelativeTime(notif.postTime)}
-                        </Text>
-                      </View>
-
-                      {/* Supporting text */}
-                      {!!notif.text && (
-                        <Text style={styles.entryBody} numberOfLines={isExpanded ? undefined : 2}>
-                          {notif.text}
-                        </Text>
-                      )}
-
-                      {/* Expanded: full timestamp + auto-reply badge */}
-                      {isExpanded && (
-                        <View style={styles.entryMeta}>
-                          <Text style={styles.entryTimestamp}>
-                            {formatTimestamp(notif.postTime)}
-                          </Text>
-                          {notif.autoReplied && (
-                            <View style={styles.autoRepliedBadge}>
-                              <MaterialIcons name="reply" size={11} color={COLORS.primary} />
-                              <Text style={styles.autoRepliedBadgeText}>Auto Replied</Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {/* Expanded: indented reply sub-row */}
-                      {isExpanded && notif.autoReplied && !!notif.replyText && (
-                        <View style={styles.replySubRow}>
-                          <View style={styles.replySubRowLine} />
-                          <View style={styles.replySubRowContent}>
-                            <Text style={styles.replySubRowLabel}>Replied</Text>
-                            <Text style={styles.replySubRowText}>{notif.replyText}</Text>
-                          </View>
-                        </View>
-                      )}
-
-                      {/* Collapsed: small auto-reply pill */}
-                      {!isExpanded && notif.autoReplied && (
-                        <View style={styles.autoRepliedPill}>
-                          <MaterialIcons name="reply" size={10} color={COLORS.primary} />
-                          <Text style={styles.autoRepliedPillText}>Auto Replied</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Expand/collapse chevron */}
-                    <MaterialIcons
-                      name={isExpanded ? 'expand-less' : 'expand-more'}
-                      size={18}
-                      color={COLORS.text.muted}
-                      style={styles.chevron}
-                    />
-                  </Pressable>
-                );
+                const swipeContainerStyle = {
+                  borderTopLeftRadius: isFirst ? Radius.lg : 0,
+                  borderTopRightRadius: isFirst ? Radius.lg : 0,
+                  borderBottomLeftRadius: isLast ? Radius.lg : 0,
+                  borderBottomRightRadius: isLast ? Radius.lg : 0,
+                };
 
                 return (
-                  <React.Fragment key={entryKey}>
-                    {canSwipeDelete ? (
-                      <Swipeable
-                        friction={2}
-                        overshootRight={false}
-                        renderRightActions={() => (
-                          <View style={styles.swipeDeleteTrack}>
-                            <Pressable
-                              style={({ pressed }) => [
-                                styles.swipeDeleteButton,
-                                pressed && styles.swipeDeleteButtonPressed,
-                              ]}
-                              onPress={() => {
-                                haptics.medium();
-                                void onDeleteNotification(notif);
-                              }}
-                              accessibilityRole="button"
-                              accessibilityLabel="Delete notification"
-                            >
-                              <MaterialIcons
-                                name="delete-outline"
-                                size={22}
-                                color={COLORS.background}
-                              />
-                            </Pressable>
-                          </View>
-                        )}
-                      >
-                        {row}
-                      </Swipeable>
-                    ) : (
-                      row
-                    )}
-                  </React.Fragment>
+                  <EntryRow
+                    key={entryKey}
+                    notif={notif}
+                    isLast={isLast}
+                    isExpanded={expandedKeys.has(entryKey)}
+                    onToggleExpand={() => toggleExpand(entryKey)}
+                    canDelete={canDelete}
+                    onDelete={canDelete ? () => onDeleteNotification(notif) : undefined}
+                    swipeContainerStyle={swipeContainerStyle}
+                  />
                 );
               })}
             </View>
           </View>
         ))}
 
-        {/* Bottom breathing room */}
         <View style={styles.feedFooter} />
       </GestureScrollView>
     </View>
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
-  // ── Filter chip bar ──────────────────────────────────────────────────────
   filterBar: {
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -423,8 +390,6 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: COLORS.text.onPrimary,
   },
-
-  // ── Feed ──────────────────────────────────────────────────────────────────
   feed: {
     flex: 1,
   },
@@ -435,8 +400,6 @@ const styles = StyleSheet.create({
   feedFooter: {
     height: Spacing.jumbo,
   },
-
-  // ── Count label ───────────────────────────────────────────────────────────
   countLabel: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
@@ -444,8 +407,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginBottom: Spacing.md,
   },
-
-  // ── Empty state ───────────────────────────────────────────────────────────
   emptyState: {
     alignItems: 'center',
     paddingTop: 80,
@@ -475,8 +436,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 260,
   },
-
-  // ── App group ─────────────────────────────────────────────────────────────
   group: {
     marginBottom: Spacing.lg,
   },
@@ -487,7 +446,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     paddingHorizontal: Spacing.xs,
   },
-  // Leading avatar (M3 list leading avatar pattern)
   appAvatar: {
     width: 28,
     height: 28,
@@ -519,33 +477,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.primary,
   },
-
-  // ── Entries card ─────────────────────────────────────────────────────────
   entriesCard: {
     backgroundColor: COLORS.surface.base,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    overflow: 'visible',
+    overflow: 'hidden',
     ...Shadows.sm,
   },
-
-  swipeDeleteTrack: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  swipeDeleteButton: {
-    backgroundColor: COLORS.error,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 72,
-    marginVertical: 0,
-  },
-  swipeDeleteButtonPressed: {
-    opacity: 0.88,
-  },
-
-  // ── Entry row (M3 two-line list item) ─────────────────────────────────────
   entry: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -553,6 +492,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     minHeight: TouchTargets.md,
     gap: Spacing.sm,
+    backgroundColor: COLORS.surface.base,
   },
   entryBorder: {
     borderBottomWidth: 1,
@@ -565,7 +505,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 3,
   },
-  // M3 headline text
   entryHeadlineRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -586,21 +525,18 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     paddingTop: 2,
   },
-  // M3 supporting text
   entryBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 18,
     color: COLORS.text.secondary,
   },
-  // Full timestamp shown on expand
   entryTimestamp: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: COLORS.text.muted,
     marginTop: Spacing.xs,
   },
-  // Meta row: timestamp + badges (shown when expanded)
   entryMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -608,7 +544,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginTop: Spacing.xs,
   },
-  // Auto-replied badge (shown in expanded state)
   autoRepliedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -626,7 +561,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     letterSpacing: 0.2,
   },
-  // Auto-replied pill (shown in collapsed state, below body text)
   autoRepliedPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -644,12 +578,10 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     letterSpacing: 0.1,
   },
-  // M3 trailing icon
   chevron: {
     marginTop: 2,
     flexShrink: 0,
   },
-  // Indented auto-reply sub-row (shown expanded when replyText is present)
   replySubRow: {
     flexDirection: 'row',
     marginTop: Spacing.sm,
