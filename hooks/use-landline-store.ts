@@ -5,6 +5,11 @@ import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
 } from '@/modules/notification-api-manager';
+import {
+  cancelLandlineModeReminderScheduled,
+  ensureLandlineReminderScheduledIfNeeded,
+  scheduleLandlineReminderFromSessionStart,
+} from '@/services/landline-mode-reminder';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
@@ -116,6 +121,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       // If active, start auto-refresh
       if (active) {
         get().startAutoRefresh();
+        void ensureLandlineReminderScheduledIfNeeded();
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -178,6 +184,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       if (actualActive) {
         get().startAutoRefresh();
         await get().refreshNotifications();
+        void scheduleLandlineReminderFromSessionStart(now.getTime());
       } else {
         throw new Error('Failed to activate Landline Mode');
       }
@@ -222,6 +229,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         } catch (storageErr) {
           console.warn('Failed to clear session data:', storageErr);
         }
+        await cancelLandlineModeReminderScheduled();
       }
 
       // Clear countdown interval if exists

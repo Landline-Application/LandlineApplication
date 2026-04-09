@@ -13,6 +13,8 @@ import {
 export interface UserPreferences {
   autoReplyEnabled?: boolean;
   notificationRetentionDays?: number;
+  /** Hours between “Still in Landline Mode?” reminders while mode is on. */
+  landlineReminderIntervalHours?: number;
 }
 
 export interface UserDocument {
