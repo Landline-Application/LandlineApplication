@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 
-import {
-  Alert,
-  Button,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
-import { COLORS } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { haptics } from '@/services/haptics';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
@@ -76,167 +71,76 @@ export default function DebugToolsScreen() {
   };
 
   return (
-    <>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top,
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: COLORS.dark.border,
-          backgroundColor: COLORS.dark.background,
-        }}
-      >
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ paddingVertical: 8, paddingRight: 12 }}
-        >
-          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.dark.primary }}>
-            ← Back
-          </Text>
-        </TouchableOpacity>
-        <Text
-          style={{
-            flex: 1,
-            fontSize: 17,
-            fontWeight: '700',
-            textAlign: 'center',
-            color: COLORS.dark.text.primary,
+          onPress={() => {
+            haptics.light();
+            router.back();
           }}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={12}
         >
+          <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} accessibilityRole="header">
           Debug Tools
         </Text>
-        <View style={{ width: 60 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{
-          paddingBottom: 40,
-          gap: 20,
-        }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        style={{ flex: 1, backgroundColor: COLORS.dark.background }}
+        style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={{ paddingHorizontal: 20, gap: 4 }}>
-          <Text
-            style={{
-              fontSize: 28,
-              fontWeight: '800',
-              color: COLORS.dark.text.primary,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            Debug Tools
-          </Text>
-          <Text style={{ fontSize: 14, color: COLORS.dark.text.secondary }}>
-            Testing & System Information
-          </Text>
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>Debug Tools</Text>
+          <Text style={styles.heroSubtitle}>Testing and system information</Text>
         </View>
 
-        {/* System Status */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            📱 System Status
-          </Text>
-
-          <View style={{ gap: 8 }}>
-            <Button title="Refresh Status" onPress={refreshStatus} color={COLORS.dark.primary} />
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>System Status</Text>
+          <View style={styles.buttonStack}>
+            <Button label="Refresh status" onPress={refreshStatus} variant="primary" fullWidth />
           </View>
-        </View>
+        </Card>
 
-        {/* Notification System */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            🔔 Notification System
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Permission:
-            </Text>
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>Notification system</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Permission</Text>
             <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: NotificationApiManager.hasPostPermission()
-                  ? COLORS.dark.success
-                  : COLORS.dark.text.muted,
-              }}
+              style={[
+                styles.statValue,
+                NotificationApiManager.hasPostPermission() ? styles.statValueSuccess : null,
+              ]}
             >
               {NotificationApiManager.hasPostPermission() ? 'Granted' : 'Denied'}
             </Text>
           </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Logged Notifications:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: COLORS.dark.text.muted,
-                fontVariant: ['tabular-nums'],
-              }}
-            >
-              {notifCount}
-            </Text>
+          <View style={[styles.statRow, styles.statRowLast]}>
+            <Text style={styles.statLabel}>Logged notifications</Text>
+            <Text style={[styles.statValue, styles.tabular]}>{notifCount}</Text>
           </View>
-
-          <View style={{ gap: 8 }}>
+          <View style={styles.buttonStack}>
             <Button
-              title="Request Permission"
+              label="Request permission"
               onPress={async () => {
                 const granted = await NotificationApiManager.requestPostPermission();
                 Alert.alert('Permission', granted ? 'Granted!' : 'Denied');
                 refreshStatus();
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
             <Button
-              title="Send Test Notification"
+              label="Send test notification"
               onPress={() => {
                 if (!NotificationApiManager.hasPostPermission()) {
                   Alert.alert('Error', 'Enable notifications first');
@@ -247,10 +151,11 @@ export default function DebugToolsScreen() {
                 NotificationApiManager.notify('Test', 'Debug notification', 'debug', id);
                 Alert.alert('Success', 'Test notification sent');
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
             <Button
-              title="Refresh Logs"
+              label="Refresh logs"
               onPress={async () => {
                 try {
                   const notifs = await NotificationApiManager.getLoggedNotifications();
@@ -260,10 +165,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', `Failed to get logs: ${error}`);
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
             <Button
-              title="Clear All Logs"
+              label="Clear all logs"
               onPress={() => {
                 Alert.alert('Clear Logs', 'Are you sure?', [
                   { text: 'Cancel', style: 'cancel' },
@@ -282,79 +188,28 @@ export default function DebugToolsScreen() {
                   },
                 ]);
               }}
-              color={COLORS.dark.primary}
+              variant="danger"
+              fullWidth
             />
           </View>
-        </View>
+        </Card>
 
-        {/* Landline Mode */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            📞 Landline Mode
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Landline Mode:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: landlineActive ? COLORS.dark.success : COLORS.dark.text.muted,
-              }}
-            >
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>Landline Mode</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Landline Mode</Text>
+            <Text style={[styles.statValue, landlineActive ? styles.statValueSuccess : null]}>
               {landlineActive ? 'Active' : 'Inactive'}
             </Text>
           </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Logged Notifications:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: COLORS.dark.text.muted,
-                fontVariant: ['tabular-nums'],
-              }}
-            >
-              {notifications.length}
-            </Text>
+          <View style={[styles.statRow, styles.statRowLast]}>
+            <Text style={styles.statLabel}>Logged notifications</Text>
+            <Text style={[styles.statValue, styles.tabular]}>{notifications.length}</Text>
           </View>
-
-          <View style={{ gap: 8 }}>
+          <View style={styles.buttonStack}>
             {!landlinePermission && (
               <Button
-                title="Request Permission"
+                label="Request permission"
                 onPress={async () => {
                   try {
                     await requestLandlinePermission();
@@ -364,12 +219,13 @@ export default function DebugToolsScreen() {
                     Alert.alert('Error', 'Could not open settings');
                   }
                 }}
-                color={COLORS.dark.warning}
+                variant="secondary"
+                fullWidth
               />
             )}
             <Button
               key={`landline-${landlineActive}`}
-              title={landlineActive ? 'Deactivate Landline Mode' : 'Activate Landline Mode'}
+              label={landlineActive ? 'Deactivate Landline Mode' : 'Activate Landline Mode'}
               onPress={async () => {
                 try {
                   if (landlineActive) {
@@ -384,80 +240,39 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not toggle landline mode');
                 }
               }}
-              color={landlineActive ? COLORS.dark.error : COLORS.dark.success}
+              variant={landlineActive ? 'danger' : 'primary'}
+              fullWidth
             />
             <Button
-              title="Refresh Logs"
+              label="Refresh logs"
               onPress={async () => {
                 await refreshNotifications();
                 Alert.alert('Refreshed', `Found ${notifications.length} notifications`);
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
           </View>
-        </View>
+        </Card>
 
-        {/* Do Not Disturb */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            🚫 Do Not Disturb
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              DND Permission:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: hasDNDPermission() ? COLORS.dark.success : COLORS.dark.text.muted,
-              }}
-            >
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>Do Not Disturb</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>DND permission</Text>
+            <Text style={[styles.statValue, hasDNDPermission() ? styles.statValueSuccess : null]}>
               {hasDNDPermission() ? 'Granted' : 'Denied'}
             </Text>
           </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              DND Status:
-            </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark.text.muted }}>
-              {dndStatus}
+          <View style={[styles.statRow, styles.statRowLast]}>
+            <Text style={styles.statLabel}>DND status</Text>
+            <Text style={[styles.statValue, styles.statValueWrap]} numberOfLines={3}>
+              {dndStatus || '—'}
             </Text>
           </View>
-
-          <View style={{ gap: 8 }}>
+          <View style={styles.buttonStack}>
             {!hasDNDPermission() && (
               <Button
-                title="Request DND Permission"
+                label="Request DND permission"
                 onPress={async () => {
                   const granted = await requestDNDPermission();
                   Alert.alert(
@@ -466,12 +281,13 @@ export default function DebugToolsScreen() {
                   );
                   await refreshStatus();
                 }}
-                color={COLORS.dark.warning}
+                variant="secondary"
+                fullWidth
               />
             )}
             <Button
               key={`dnd-${dndStatus}`}
-              title={dndStatus.includes('NONE') ? 'Enable DND (All)' : 'Set Priority Mode'}
+              label={dndStatus.includes('NONE') ? 'Enable DND (All)' : 'Set priority mode'}
               onPress={async () => {
                 if (!hasDNDPermission()) {
                   Alert.alert('Permission Required', 'Please grant DND permission first');
@@ -488,19 +304,21 @@ export default function DebugToolsScreen() {
                 }
                 setTimeout(() => refreshStatus(), 500);
               }}
-              color={dndStatus.includes('NONE') ? COLORS.dark.success : COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
             <Button
-              title="Disable DND"
+              label="Disable DND"
               onPress={async () => {
                 const result = await setDNDEnabled(false);
                 Alert.alert('DND', JSON.stringify(result, null, 2));
                 setTimeout(() => refreshStatus(), 500);
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
             <Button
-              title="Get Installed Apps"
+              label="Get installed apps"
               onPress={async () => {
                 const apps = await getAllInstalledApps(false);
                 Alert.alert(
@@ -511,129 +329,44 @@ export default function DebugToolsScreen() {
                     .join('\n')}`,
                 );
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
           </View>
-        </View>
+        </Card>
 
-        {/* Auto-Reply */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            💬 Auto-Reply
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Auto-Reply Status:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: autoReplyEnabled ? COLORS.dark.success : COLORS.dark.text.muted,
-              }}
-            >
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>Auto-Reply</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Auto-Reply status</Text>
+            <Text style={[styles.statValue, autoReplyEnabled ? styles.statValueSuccess : null]}>
               {autoReplyEnabled ? 'Enabled' : 'Disabled'}
             </Text>
           </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Service Running:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: isServiceRunning() ? COLORS.dark.success : COLORS.dark.text.muted,
-              }}
-            >
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Service running</Text>
+            <Text style={[styles.statValue, isServiceRunning() ? styles.statValueSuccess : null]}>
               {isServiceRunning() ? 'Running' : 'Stopped'}
             </Text>
           </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.dark.divider,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, flex: 1 }}>
-              Listener Permission:
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: isListenerEnabled() ? COLORS.dark.success : COLORS.dark.text.muted,
-              }}
-            >
+          <View style={[styles.statRow, styles.statRowLast]}>
+            <Text style={styles.statLabel}>Listener permission</Text>
+            <Text style={[styles.statValue, isListenerEnabled() ? styles.statValueSuccess : null]}>
               {isListenerEnabled() ? 'Granted' : 'Denied'}
             </Text>
           </View>
-
           {autoReplyMessage && (
-            <View
-              style={{
-                backgroundColor: COLORS.dark.card,
-                padding: 12,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: COLORS.dark.text.secondary,
-                  fontWeight: '600',
-                  marginBottom: 4,
-                }}
-              >
-                Current Message:
-              </Text>
-              <Text
-                selectable
-                style={{ fontSize: 14, color: COLORS.dark.text.primary, lineHeight: 20 }}
-              >
+            <View style={styles.quoteBox}>
+              <Text style={styles.quoteLabel}>Current message</Text>
+              <Text selectable style={styles.quoteBody}>
                 {autoReplyMessage}
               </Text>
             </View>
           )}
-
-          <View style={{ gap: 8 }}>
+          <View style={styles.buttonStack}>
             {!autoReplyPermission && (
               <Button
-                title="Request Permission"
+                label="Request permission"
                 onPress={async () => {
                   try {
                     await requestAutoReplyPermission();
@@ -643,13 +376,13 @@ export default function DebugToolsScreen() {
                     Alert.alert('Error', 'Could not open settings');
                   }
                 }}
-                color={COLORS.dark.warning}
+                variant="secondary"
+                fullWidth
               />
             )}
-
             <Button
               key={`auto-reply-${autoReplyEnabled}`}
-              title={autoReplyEnabled ? 'Disable Auto-Reply' : 'Enable Auto-Reply'}
+              label={autoReplyEnabled ? 'Disable Auto-Reply' : 'Enable Auto-Reply'}
               onPress={async () => {
                 if (!autoReplyPermission) {
                   Alert.alert(
@@ -671,27 +404,13 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not toggle auto-reply');
                 }
               }}
-              color={autoReplyEnabled ? COLORS.dark.error : COLORS.dark.success}
+              variant={autoReplyEnabled ? 'danger' : 'primary'}
+              fullWidth
             />
-
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: COLORS.dark.text.secondary,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                marginTop: 8,
-              }}
-            >
-              Quick Templates:
-            </Text>
-            <Text style={{ fontSize: 12, color: COLORS.dark.text.muted, marginBottom: 4 }}>
-              Tap a template to load it into the editor
-            </Text>
-
+            <Text style={styles.subheading}>Quick templates</Text>
+            <Text style={styles.hint}>Tap a template to load it into the editor</Text>
             <Button
-              title="In a Meeting"
+              label="In a meeting"
               onPress={async () => {
                 try {
                   await setAutoReplyMessage(
@@ -703,11 +422,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
-
             <Button
-              title="On Vacation"
+              label="On vacation"
               onPress={async () => {
                 try {
                   await setAutoReplyMessage(
@@ -719,11 +438,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
-
             <Button
-              title="Driving"
+              label="Driving"
               onPress={async () => {
                 try {
                   await setAutoReplyMessage(
@@ -735,11 +454,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
-
             <Button
-              title="Focus Time"
+              label="Focus time"
               onPress={async () => {
                 try {
                   await setAutoReplyMessage(
@@ -751,11 +470,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
-
             <Button
-              title="Away"
+              label="Away"
               onPress={async () => {
                 try {
                   await setAutoReplyMessage(
@@ -767,44 +486,20 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="ghost"
+              fullWidth
             />
-
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: COLORS.dark.text.secondary,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                marginTop: 8,
-              }}
-            >
-              Custom Message:
-            </Text>
-
+            <Text style={styles.subheading}>Custom message</Text>
             <TextInput
-              style={{
-                backgroundColor: COLORS.dark.card,
-                borderWidth: 1,
-                borderColor: COLORS.dark.border,
-                borderRadius: 8,
-                padding: 12,
-                color: COLORS.dark.text.primary,
-                fontSize: 14,
-                minHeight: 80,
-                textAlignVertical: 'top',
-                borderCurve: 'continuous',
-              }}
+              style={styles.textInput}
               placeholder="Enter custom auto-reply message..."
-              placeholderTextColor={COLORS.dark.text.muted}
+              placeholderTextColor={COLORS.text.muted}
               value={customMessage}
               onChangeText={setCustomMessage}
               multiline
             />
-
             <Button
-              title="Set Custom Message"
+              label="Set custom message"
               onPress={async () => {
                 if (!customMessage.trim()) {
                   Alert.alert('Empty Message', 'Please enter a message');
@@ -819,27 +514,13 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update message');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
-
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: COLORS.dark.text.secondary,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                marginTop: 8,
-              }}
-            >
-              Reply to Apps:
-            </Text>
-            <Text style={{ fontSize: 12, color: COLORS.dark.text.muted, marginBottom: 4 }}>
-              Choose which apps trigger an auto-reply
-            </Text>
-
+            <Text style={styles.subheading}>Reply to apps</Text>
+            <Text style={styles.hint}>Choose which apps trigger an auto-reply</Text>
             <Button
-              title="All Apps"
+              label="All apps"
               onPress={async () => {
                 try {
                   await setAutoReplyAllowedApps([]);
@@ -848,11 +529,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update allowed apps');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
-
             <Button
-              title="Messaging Only"
+              label="Messaging only"
               onPress={async () => {
                 try {
                   await setAutoReplyAllowedApps([
@@ -866,11 +547,11 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update allowed apps');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
-
             <Button
-              title="WhatsApp Only"
+              label="WhatsApp only"
               onPress={async () => {
                 try {
                   await setAutoReplyAllowedApps(['com.whatsapp']);
@@ -879,45 +560,23 @@ export default function DebugToolsScreen() {
                   Alert.alert('Error', 'Could not update allowed apps');
                 }
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
           </View>
-        </View>
+        </Card>
 
-        {/* Home Screen Widget */}
-        <View
-          style={{
-            backgroundColor: COLORS.dark.surface,
-            marginHorizontal: 16,
-            borderRadius: 12,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: COLORS.dark.border,
-            borderCurve: 'continuous',
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark.text.primary }}>
-            🏠 Home Screen Widget
-          </Text>
-
-          <View
-            style={{
-              backgroundColor: COLORS.dark.card,
-              padding: 12,
-              borderRadius: 8,
-              borderCurve: 'continuous',
-            }}
-          >
-            <Text style={{ fontSize: 13, color: COLORS.dark.text.secondary, lineHeight: 18 }}>
+        <Card variant="elevated" padding="md" style={styles.sectionCard}>
+          <Text style={styles.cardTitle}>Home screen widget</Text>
+          <View style={styles.infoCallout}>
+            <Text style={styles.bodyMuted}>
               Widget provides quick access to Landline mode from your home screen and quick settings
               panel.
             </Text>
           </View>
-
-          <View style={{ gap: 8 }}>
+          <View style={styles.buttonStack}>
             <Button
-              title="Widget Instructions"
+              label="Widget instructions"
               onPress={() => {
                 Alert.alert(
                   'Add Widget to Home Screen',
@@ -930,10 +589,11 @@ export default function DebugToolsScreen() {
                   [{ text: 'Got it!' }],
                 );
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
             <Button
-              title="Quick Settings Tile Instructions"
+              label="Quick Settings tile instructions"
               onPress={() => {
                 Alert.alert(
                   'Quick Settings Tile',
@@ -945,11 +605,178 @@ export default function DebugToolsScreen() {
                   [{ text: 'Understood' }],
                 );
               }}
-              color={COLORS.dark.primary}
+              variant="primary"
+              fullWidth
             />
           </View>
-        </View>
+        </Card>
       </ScrollView>
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surface.border,
+    backgroundColor: COLORS.background,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingRight: Spacing.md,
+    gap: 2,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_600SemiBold',
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 60,
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.jumbo,
+    gap: Spacing.lg,
+  },
+  hero: {
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  heroTitle: {
+    fontSize: 28,
+    color: COLORS.foreground,
+    fontFamily: 'Fraunces_700Bold',
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+  },
+  sectionCard: {
+    ...Shadows.sm,
+  },
+  cardTitle: {
+    fontSize: 16,
+    color: COLORS.foreground,
+    fontFamily: 'Nunito_600SemiBold',
+    marginBottom: Spacing.md,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surface.border,
+    marginBottom: Spacing.sm,
+  },
+  statRowLast: {
+    marginBottom: Spacing.md,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 13,
+    color: COLORS.text.muted,
+    fontFamily: 'Nunito_600SemiBold',
+  },
+  statValueSuccess: {
+    color: COLORS.success,
+  },
+  statValueWrap: {
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: Spacing.md,
+  },
+  tabular: {
+    fontVariant: ['tabular-nums'],
+  },
+  buttonStack: {
+    gap: Spacing.sm,
+  },
+  subheading: {
+    fontSize: 13,
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.text.secondary,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  hint: {
+    fontSize: 12,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.text.muted,
+    marginBottom: Spacing.sm,
+  },
+  bodyMuted: {
+    fontSize: 13,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.text.secondary,
+    lineHeight: 20,
+  },
+  quoteBox: {
+    backgroundColor: COLORS.surface.card,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+    marginBottom: Spacing.md,
+  },
+  quoteLabel: {
+    fontSize: 12,
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.text.secondary,
+    marginBottom: Spacing.xs,
+  },
+  quoteBody: {
+    fontSize: 14,
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.foreground,
+    lineHeight: 20,
+  },
+  textInput: {
+    backgroundColor: COLORS.surface.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    color: COLORS.foreground,
+    fontSize: 14,
+    fontFamily: 'Nunito_400Regular',
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  infoCallout: {
+    backgroundColor: COLORS.surface.card,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+    marginBottom: Spacing.md,
+  },
+});
