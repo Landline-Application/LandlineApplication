@@ -45,7 +45,7 @@ export default function OnboardingCreateAccountScreen() {
           <Text style={styles.subtitle}>Optional but recommended for backup and sync.</Text>
 
           <CreateAccountForm
-            onSuccess={() => router.push('/terms-and-privacy')}
+            onSuccess={() => router.push('/terms-of-service')}
             onSignIn={() => router.replace('/sign-in')}
           />
         </ScrollView>
@@ -54,7 +54,7 @@ export default function OnboardingCreateAccountScreen() {
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <Button
             label="Skip for now"
-            onPress={() => router.push('/terms-and-privacy')}
+            onPress={() => router.push('/terms-of-service')}
             variant="ghost"
             style={styles.skipButton}
           />
