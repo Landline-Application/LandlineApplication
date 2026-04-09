@@ -5,7 +5,6 @@ import { AppState } from 'react-native';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import {
   type FirebaseAuthTypes,
-  auth,
   createUserWithEmailAndPassword,
   firebaseSignOut,
   linkWithCredential,
@@ -15,6 +14,8 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
 } from '@/utils/firebase/auth';
+import * as FirebaseApp from '@/utils/firebase/app';
+import { getApps } from '@react-native-firebase/app';
 import { getGoogleCredential } from '@/utils/firebase/google-auth';
 import { upsertUserDocument } from '@/utils/firebase/user-service';
 import {
@@ -61,13 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // This picks up emailVerified flipping to true after the user taps the
   // verification link and returns to the app.
   const reloadUser = useCallback(async () => {
-    const currentUser = auth.currentUser;
+    if (getApps().length === 0) return;
+    const currentUser = FirebaseApp.auth.currentUser;
     if (!currentUser) return;
     try {
       await reload(currentUser);
-      // auth.currentUser is a new object reference after reload — re-set state
+      // FirebaseApp.auth.currentUser is a new object reference after reload — re-set state
       // so consumers re-render with the updated emailVerified value.
-      setUser(auth.currentUser);
+      setUser(FirebaseApp.auth.currentUser);
     } catch {
       // Silently ignore — if this fails the user just won't see the update
       // until their next forced token refresh.
@@ -107,12 +109,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [uid]);
 
   useEffect(() => {
+    if (getApps().length === 0) {
+      if (__DEV__) {
+        console.warn(
+          '[Landline] Firebase is not configured (missing google-services.json). Auth is disabled until you add it and rebuild. See BUILD.md.',
+        );
+      }
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
     // isFirstEvent distinguishes a persisted session being restored on startup
     // (first event) from subsequent auth state changes caused by explicit
     // sign-in / sign-out actions (where no refresh is needed).
     let isFirstEvent = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(FirebaseApp.auth, async (firebaseUser) => {
       try {
         if (firebaseUser && isFirstEvent) {
           // On startup: attempt to refresh the token to confirm the account still exists.
@@ -128,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.warn('User deleted from console, signing in anonymously.');
               setUser(null);
               try {
-                await signInAnonymously(auth);
+                await signInAnonymously(FirebaseApp.auth);
               } catch (anonError: unknown) {
                 const anonCode = (anonError as { code?: string })?.code;
                 if (anonCode === 'auth/admin-restricted-operation') {
@@ -154,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // a Firebase identity from day one (enables Firestore writes, future linking).
           isFirstEvent = false;
           try {
-            await signInAnonymously(auth);
+            await signInAnonymously(FirebaseApp.auth);
             // onAuthStateChanged will fire again with the new anonymous user.
           } catch (e: unknown) {
             const code = (e as { code?: string })?.code;
@@ -186,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ---------------------------------------------------------------------------
   const signUp = async (email: string, password: string) => {
     const credential = EmailAuthProvider.credential(email, password);
-    const currentUser = auth.currentUser;
+    const currentUser = FirebaseApp.auth.currentUser;
 
     let linkedUser: FirebaseAuthTypes.User;
 
@@ -208,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw linkError;
       }
     } else {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(FirebaseApp.auth, email, password);
       linkedUser = result.user;
     }
 
@@ -233,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ---------------------------------------------------------------------------
   const signIn = async (email: string, password: string) => {
     const credential = EmailAuthProvider.credential(email, password);
-    const currentUser = auth.currentUser;
+    const currentUser = FirebaseApp.auth.currentUser;
 
     let signedInUser: FirebaseAuthTypes.User;
 
@@ -244,14 +257,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (linkError: unknown) {
         const code = (linkError as { code?: string })?.code;
         if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
-          const result = await signInWithEmailAndPassword(auth, email, password);
+          const result = await signInWithEmailAndPassword(FirebaseApp.auth, email, password);
           signedInUser = result.user;
         } else {
           throw linkError;
         }
       }
     } else {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(FirebaseApp.auth, email, password);
       signedInUser = result.user;
     }
 
@@ -261,13 +274,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign-out is kept for completeness but the anonymous session is permanent —
   // the user's identity is always anchored to an anonymous UID from first launch.
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    await firebaseSignOut(FirebaseApp.auth);
     // onAuthStateChanged will receive null and bootstrap a new anonymous session.
   };
 
   const signInWithGoogle = async () => {
     const googleCredential = await getGoogleCredential();
-    const currentUser = auth.currentUser;
+    const currentUser = FirebaseApp.auth.currentUser;
 
     let result: FirebaseAuthTypes.UserCredential;
 
@@ -279,27 +292,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (code === 'auth/credential-already-in-use') {
           // This Google account is already tied to a real account — sign in normally.
           // Google has no separate sign-up/sign-in distinction so this is always correct.
-          result = await signInWithCredential(auth, googleCredential);
+          result = await signInWithCredential(FirebaseApp.auth, googleCredential);
         } else {
           throw linkError;
         }
       }
     } else {
-      result = await signInWithCredential(auth, googleCredential);
+      result = await signInWithCredential(FirebaseApp.auth, googleCredential);
     }
 
     upsertUserDocument(result.user).catch((e) => console.warn('upsertUserDocument failed:', e));
   };
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(FirebaseApp.auth, email);
   };
 
   const refreshUser = async () => {
-    const current = auth.currentUser;
+    const current = FirebaseApp.auth.currentUser;
     if (!current) return;
     await reload(current);
-    setUser(auth.currentUser);
+    setUser(FirebaseApp.auth.currentUser);
   };
 
   return (

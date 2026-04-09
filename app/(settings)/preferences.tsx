@@ -1,6 +1,15 @@
 import React, { useMemo, useState } from 'react';
 
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -10,6 +19,8 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
+import { rescheduleLandlineReminderAfterIntervalChange } from '@/services/landline-mode-reminder';
+import { LANDLINE_REMINDER_INTERVAL_OPTIONS } from '@/utils/landline-reminder-interval';
 import {
   RETENTION_OPTIONS,
   type RetentionDays,
@@ -27,10 +38,18 @@ export default function PreferencesScreen() {
   const retentionDays = usePreferencesStore(
     (state) => state.notificationRetentionDays,
   ) as RetentionDays;
+  const landlineReminderIntervalHours = usePreferencesStore(
+    (state) => state.landlineReminderIntervalHours,
+  );
+  const setLandlineReminderIntervalHours = usePreferencesStore(
+    (state) => state.setLandlineReminderIntervalHours,
+  );
   const [retentionModalVisible, setRetentionModalVisible] = useState(false);
   // Modal draft value — initialized when modal opens (store is hydrated by then)
   const [selectedRetentionOption, setSelectedRetentionOption] =
     useState<RetentionDays>(retentionDays);
+  const [reminderModalVisible, setReminderModalVisible] = useState(false);
+  const [selectedReminderHours, setSelectedReminderHours] = useState(landlineReminderIntervalHours);
 
   const nextCleanupText = useMemo(
     () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
@@ -55,6 +74,31 @@ export default function PreferencesScreen() {
       console.error('Error saving retention period:', error);
       Alert.alert('Error', 'Failed to save retention settings');
     }
+  }
+
+  function openReminderModal() {
+    setSelectedReminderHours(landlineReminderIntervalHours);
+    setReminderModalVisible(true);
+  }
+
+  function closeReminderModal() {
+    setReminderModalVisible(false);
+  }
+
+  async function handleSaveReminderInterval() {
+    try {
+      setLandlineReminderIntervalHours(selectedReminderHours);
+      await rescheduleLandlineReminderAfterIntervalChange(selectedReminderHours);
+      closeReminderModal();
+      haptics.light();
+    } catch (error) {
+      console.error('Error saving reminder interval:', error);
+      Alert.alert('Error', 'Failed to save reminder settings');
+    }
+  }
+
+  function reminderIntervalLabel(hours: number) {
+    return hours === 1 ? 'Every hour' : `Every ${hours} hours`;
   }
 
   return (
@@ -113,6 +157,38 @@ export default function PreferencesScreen() {
             </Card>
           </TouchableOpacity>
         </View>
+
+        {Platform.OS === 'android' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Landline Mode</Text>
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                openReminderModal();
+              }}
+              activeOpacity={0.7}
+            >
+              <Card variant="elevated" padding="md" style={styles.prefCard}>
+                <View style={styles.prefRow}>
+                  <View style={styles.prefTextBlock}>
+                    <Text style={styles.prefTitle}>Session reminder</Text>
+                    <Text style={styles.prefSubtitle}>
+                      Local notification while Landline Mode is on: “Still in Landline Mode?” with
+                      options to keep it on or turn it off.
+                    </Text>
+                  </View>
+                  <View style={styles.retentionValueContainer}>
+                    <Text style={styles.retentionValue}>
+                      {reminderIntervalLabel(landlineReminderIntervalHours)}
+                    </Text>
+                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                  </View>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Retention Modal */}
@@ -179,6 +255,77 @@ export default function PreferencesScreen() {
                 <Button
                   label="Save"
                   onPress={handleSaveRetention}
+                  variant="primary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </View>
+          </Card>
+        </View>
+      </Modal>
+
+      {/* Landline session reminder interval (Android) */}
+      <Modal
+        visible={reminderModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeReminderModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.retentionModalContent}>
+            <Text style={styles.modalTitle}>Session reminder</Text>
+            <Text style={styles.modalBody}>
+              How long can Landline Mode stay on before we ask if you still want it? You can snooze
+              from the notification.
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {LANDLINE_REMINDER_INTERVAL_OPTIONS.map((hours) => {
+                const isSelected = selectedReminderHours === hours;
+                return (
+                  <TouchableOpacity
+                    key={hours}
+                    style={[styles.retentionOption, isSelected && styles.retentionOptionSelected]}
+                    onPress={() => {
+                      haptics.light();
+                      setSelectedReminderHours(hours);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.retentionOptionRadio,
+                        isSelected && styles.retentionOptionRadioSelected,
+                      ]}
+                    >
+                      {isSelected && <View style={styles.retentionOptionRadioInner} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.retentionOptionText,
+                        isSelected && styles.retentionOptionTextSelected,
+                      ]}
+                    >
+                      {reminderIntervalLabel(hours)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.retentionModalFooter}>
+              <View style={styles.modalButtons}>
+                <Button
+                  label="Cancel"
+                  onPress={closeReminderModal}
+                  variant="secondary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Save"
+                  onPress={() => void handleSaveReminderInterval()}
                   variant="primary"
                   size="md"
                   style={{ flex: 1 }}
