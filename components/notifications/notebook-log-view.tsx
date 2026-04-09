@@ -8,6 +8,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView as GestureScrollView, Swipeable } from 'react-native-gesture-handler';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
@@ -32,6 +33,8 @@ interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
   isActive?: boolean;
+  /** When set (e.g. Android), rows support swipe-to-reveal delete. */
+  onDeleteNotification?: (entry: NotebookLogEntry) => void | Promise<void>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,6 +96,7 @@ export default function NotebookLogView({
   notifications,
   onRefresh,
   isActive,
+  onDeleteNotification,
 }: NotebookLogViewProps) {
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
@@ -180,8 +184,8 @@ export default function NotebookLogView({
         </View>
       )}
 
-      {/* ── Feed ── */}
-      <ScrollView
+      {/* ── Feed (gesture-handler ScrollView so Swipeable works with pull-to-refresh) ── */}
+      <GestureScrollView
         style={styles.feed}
         contentContainerStyle={styles.feedContent}
         showsVerticalScrollIndicator={false}
@@ -243,9 +247,11 @@ export default function NotebookLogView({
                 const entryKey = `${appName}-${notif.id}-${notif.postTime}-${idx}`;
                 const isExpanded = expandedKeys.has(entryKey);
                 const isLast = idx === entries.length - 1;
-                return (
+                const canSwipeDelete =
+                  typeof onDeleteNotification === 'function' && typeof notif.timestamp === 'number';
+
+                const row = (
                   <Pressable
-                    key={entryKey}
                     style={({ pressed }) => [
                       styles.entry,
                       !isLast && styles.entryBorder,
@@ -257,7 +263,11 @@ export default function NotebookLogView({
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={notif.title}
-                    accessibilityHint="Tap to expand or collapse"
+                    accessibilityHint={
+                      canSwipeDelete
+                        ? 'Tap to expand or collapse. Swipe left to delete.'
+                        : 'Tap to expand or collapse'
+                    }
                   >
                     {/* M3 two-line list: headline + supporting text */}
                     <View style={styles.entryMain}>
@@ -322,6 +332,43 @@ export default function NotebookLogView({
                     />
                   </Pressable>
                 );
+
+                return (
+                  <React.Fragment key={entryKey}>
+                    {canSwipeDelete ? (
+                      <Swipeable
+                        friction={2}
+                        overshootRight={false}
+                        renderRightActions={() => (
+                          <View style={styles.swipeDeleteTrack}>
+                            <Pressable
+                              style={({ pressed }) => [
+                                styles.swipeDeleteButton,
+                                pressed && styles.swipeDeleteButtonPressed,
+                              ]}
+                              onPress={() => {
+                                haptics.medium();
+                                void onDeleteNotification(notif);
+                              }}
+                              accessibilityRole="button"
+                              accessibilityLabel="Delete notification"
+                            >
+                              <MaterialIcons
+                                name="delete-outline"
+                                size={22}
+                                color={COLORS.background}
+                              />
+                            </Pressable>
+                          </View>
+                        )}
+                      >
+                        {row}
+                      </Swipeable>
+                    ) : (
+                      row
+                    )}
+                  </React.Fragment>
+                );
               })}
             </View>
           </View>
@@ -329,7 +376,7 @@ export default function NotebookLogView({
 
         {/* Bottom breathing room */}
         <View style={styles.feedFooter} />
-      </ScrollView>
+      </GestureScrollView>
     </View>
   );
 }
@@ -479,8 +526,23 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    overflow: 'hidden',
+    overflow: 'visible',
     ...Shadows.sm,
+  },
+
+  swipeDeleteTrack: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  swipeDeleteButton: {
+    backgroundColor: COLORS.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 72,
+    marginVertical: 0,
+  },
+  swipeDeleteButtonPressed: {
+    opacity: 0.88,
   },
 
   // ── Entry row (M3 two-line list item) ─────────────────────────────────────
