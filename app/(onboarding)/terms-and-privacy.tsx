@@ -17,7 +17,6 @@ import { Blob, Button, Card, Page } from '@/components/onboarding/onboarding-pri
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
 import { COLORS, Fonts } from '@/constants/theme';
-import { markOnboardingComplete } from '@/utils/onboarding-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,10 +31,10 @@ export default function TermsAndPrivacyScreen() {
 
     setIsLoading(true);
     try {
-      await markOnboardingComplete();
-      router.replace('/(tabs)');
+      // Completion is persisted when the user reaches the main app (permissions or alternate paths).
+      router.replace('/permissions');
     } catch {
-      Alert.alert('Error', 'Failed to save your preferences. Please try again.');
+      Alert.alert('Error', 'Failed to continue. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -69,8 +68,8 @@ export default function TermsAndPrivacyScreen() {
         <View style={styles.container}>
           <OnboardingProgress
             total={3}
-            current={2}
-            labels={['Permissions', 'Account', 'Privacy']}
+            current={1}
+            labels={['Account', 'Legal', 'Permissions']}
           />
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

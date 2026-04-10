@@ -110,10 +110,9 @@ export default function RootLayout() {
   );
 }
 
-// Handles the single startup routing decision: has the user completed onboarding?
-// After that initial check it steps aside — all further navigation is imperative
-// (router.replace / router.push at the call site). Auth is not required to use
-// the app, so sign-out never triggers a redirect here.
+// Startup routing: incomplete onboarding → setup walkthrough; completed → main app.
+// If the user is already inside (onboarding) routes, we do not redirect away until
+// completion is checked. Completed users who land on onboarding are sent to tabs.
 function NavigationGate() {
   const [isReady, setIsReady] = useState(false);
   const { isLoading: isAuthLoading } = useAuth();
@@ -200,11 +199,13 @@ function NavigationGate() {
       initialRouteDone.current = true;
 
       const completed = await hasCompletedOnboarding();
-      const isOnOnboardingScreen = segments[0] === '(onboarding)';
+      const inOnboarding = segments[0] === '(onboarding)';
 
-      if (!completed && !isOnOnboardingScreen) {
-        router.replace('/onboarding');
-      } else if (completed && isOnOnboardingScreen) {
+      if (!completed) {
+        if (!inOnboarding) {
+          router.replace('/setup-walkthrough');
+        }
+      } else if (inOnboarding) {
         router.replace('/(tabs)');
       }
     }

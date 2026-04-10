@@ -213,7 +213,7 @@ export default function SettingsScreen() {
           {
             text: 'OK',
             onPress: () => {
-              router.replace('/(onboarding)/onboarding');
+              router.replace('/setup-walkthrough');
             },
           },
         ]);
@@ -254,11 +254,11 @@ export default function SettingsScreen() {
       // Refresh global status
       await useLandlineStore.getState().checkStatus();
 
-      Alert.alert('Success', 'Terms acceptance cleared. App will now redirect to terms screen.', [
+      Alert.alert('Success', 'Terms acceptance cleared. App will now show setup.', [
         {
           text: 'OK',
           onPress: () => {
-            router.replace('/onboarding');
+            router.replace('/setup-walkthrough');
           },
         },
       ]);
