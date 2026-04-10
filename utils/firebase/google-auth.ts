@@ -1,4 +1,4 @@
-import { auth } from '@/utils/firebase/app';
+import * as FirebaseApp from '@/utils/firebase/app';
 import { deleteUserDocument } from '@/utils/firebase/user-service';
 import {
   type FirebaseAuthTypes,
@@ -36,7 +36,7 @@ export async function getGoogleCredential(): Promise<FirebaseAuthTypes.AuthCrede
 export async function signInWithGoogle(): Promise<FirebaseAuthTypes.UserCredential> {
   const idToken = await getGoogleIdToken();
   const credential = GoogleAuthProvider.credential(idToken);
-  return signInWithCredential(auth, credential);
+  return signInWithCredential(FirebaseApp.auth, credential);
 }
 
 /**

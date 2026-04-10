@@ -17,9 +17,15 @@
  *      • hasPendingSync === false → remote wins when present; apply and mark synced
  *      • remote is null/empty    → keep local, push local state up (first install)
  */
-import { auth } from '@/utils/firebase/auth';
+import * as FirebaseApp from '@/utils/firebase/app';
+import { getApps } from '@react-native-firebase/app';
 import { getUserPreferences, mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { UserPreferences } from '@/utils/firebase/user-service';
+import {
+  DEFAULT_LANDLINE_REMINDER_INTERVAL_HOURS,
+  isValidReminderIntervalHours,
+  persistReminderIntervalHours,
+} from '@/utils/landline-reminder-interval';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -40,6 +46,8 @@ interface PreferencesState {
   // Preferences — always available, even offline / before auth
   autoReplyEnabled: boolean;
   notificationRetentionDays: number;
+  /** Hours between session reminders while Landline Mode is active (Android). */
+  landlineReminderIntervalHours: number;
 
   // Local-only display name for anonymous users.
   // Stored on-device only; never synced to Firestore.
@@ -54,6 +62,7 @@ interface PreferencesState {
   // Public setters — called by other stores and UI components
   setAutoReplyEnabled: (val: boolean) => void;
   setRetentionDays: (days: number) => void;
+  setLandlineReminderIntervalHours: (hours: number) => void;
   setLocalDisplayName: (name: string) => void;
 
   // Called by AuthContext after every auth state change (anonymous or real user)
@@ -78,6 +87,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       // -----------------------------------------------------------------------
       autoReplyEnabled: DEFAULT_AUTO_REPLY_ENABLED,
       notificationRetentionDays: DEFAULT_RETENTION_DAYS,
+      landlineReminderIntervalHours: DEFAULT_LANDLINE_REMINDER_INTERVAL_HOURS,
       localDisplayName: '',
       isSyncing: false,
       lastSyncedAt: null,
@@ -94,6 +104,13 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       setRetentionDays: (days: number) => {
         set({ notificationRetentionDays: days, hasPendingSync: true });
+        get()._syncToFirestore();
+      },
+
+      setLandlineReminderIntervalHours: (hours: number) => {
+        if (!isValidReminderIntervalHours(hours)) return;
+        set({ landlineReminderIntervalHours: hours, hasPendingSync: true });
+        void persistReminderIntervalHours(hours);
         get()._syncToFirestore();
       },
 
@@ -146,8 +163,20 @@ export const usePreferencesStore = create<PreferencesState>()(
           if (remote.notificationRetentionDays !== undefined) {
             update.notificationRetentionDays = remote.notificationRetentionDays;
           }
+          if (
+            remote.landlineReminderIntervalHours !== undefined &&
+            isValidReminderIntervalHours(remote.landlineReminderIntervalHours)
+          ) {
+            update.landlineReminderIntervalHours = remote.landlineReminderIntervalHours;
+          }
 
           set({ ...update, hasPendingSync: false, lastSyncedAt: Date.now() });
+          if (
+            update.landlineReminderIntervalHours != null &&
+            isValidReminderIntervalHours(update.landlineReminderIntervalHours)
+          ) {
+            void persistReminderIntervalHours(update.landlineReminderIntervalHours);
+          }
         } catch (e) {
           // Network error — keep local state, mark pending so we retry next time.
           console.warn('usePreferencesStore.onAuthReady: failed to fetch remote prefs', e);
@@ -160,16 +189,19 @@ export const usePreferencesStore = create<PreferencesState>()(
       // -----------------------------------------------------------------------
 
       _syncToFirestore: async () => {
-        const uid = auth.currentUser?.uid;
+        if (getApps().length === 0) return;
+        const uid = FirebaseApp.auth.currentUser?.uid;
         if (!uid) return; // No user yet — changes are kept in hasPendingSync
 
-        const { autoReplyEnabled, notificationRetentionDays } = get();
+        const { autoReplyEnabled, notificationRetentionDays, landlineReminderIntervalHours } =
+          get();
 
         set({ isSyncing: true });
         try {
           const preferences: UserPreferences = {
             autoReplyEnabled,
             notificationRetentionDays,
+            landlineReminderIntervalHours,
           };
           await mergeUserPreferences(uid, preferences);
           set({ hasPendingSync: false, lastSyncedAt: Date.now() });
@@ -189,10 +221,19 @@ export const usePreferencesStore = create<PreferencesState>()(
       partialize: (state) => ({
         autoReplyEnabled: state.autoReplyEnabled,
         notificationRetentionDays: state.notificationRetentionDays,
+        landlineReminderIntervalHours: state.landlineReminderIntervalHours,
         localDisplayName: state.localDisplayName,
         lastSyncedAt: state.lastSyncedAt,
         hasPendingSync: state.hasPendingSync,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (
+          state?.landlineReminderIntervalHours != null &&
+          isValidReminderIntervalHours(state.landlineReminderIntervalHours)
+        ) {
+          void persistReminderIntervalHours(state.landlineReminderIntervalHours);
+        }
+      },
     },
   ),
 );
