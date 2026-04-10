@@ -172,7 +172,7 @@ export default function ProfileScreen() {
 
       await signOut().catch(() => {});
       closeDeleteModal();
-      router.replace('/onboarding');
+      router.replace('/setup-walkthrough');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code;
       if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {

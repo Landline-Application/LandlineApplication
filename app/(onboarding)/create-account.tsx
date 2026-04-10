@@ -33,7 +33,7 @@ export default function OnboardingCreateAccountScreen() {
       />
 
       <View style={[styles.container, { zIndex: 2 }]}>
-        <OnboardingProgress total={3} current={1} labels={['Permissions', 'Account', 'Privacy']} />
+        <OnboardingProgress total={3} current={0} labels={['Account', 'Legal', 'Permissions']} />
 
         <ScrollView
           style={styles.scroll}

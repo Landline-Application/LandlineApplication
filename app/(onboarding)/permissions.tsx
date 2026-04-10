@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -9,6 +9,7 @@ import { OnboardingProgress } from '@/components/onboarding/onboarding-progress'
 import { Permission, PermissionCards, usePermissions } from '@/components/permissions';
 import { Button } from '@/components/ui/button';
 import { COLORS, Fonts, Radius } from '@/constants/theme';
+import { markOnboardingComplete } from '@/utils/onboarding-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PermissionsScreen() {
@@ -42,9 +43,13 @@ export default function PermissionsScreen() {
     [checkAllPermissions, checkStatus],
   );
 
-  const handleContinue = useCallback(() => {
-    if (allGranted) {
-      router.push('/create-account');
+  const handleContinue = useCallback(async () => {
+    if (!allGranted) return;
+    try {
+      await markOnboardingComplete();
+      router.replace('/(tabs)');
+    } catch {
+      Alert.alert('Error', 'Could not save progress. Please try again.');
     }
   }, [allGranted]);
 
@@ -60,7 +65,11 @@ export default function PermissionsScreen() {
       <Blob color={COLORS.primary} size={200} top={-40} right={-60} opacity={0.06} shapeIndex={1} />
 
       <View style={styles.container}>
-        <OnboardingProgress total={3} current={0} labels={['Permissions', 'Account', 'Privacy']} />
+        <OnboardingProgress
+          total={3}
+          current={2}
+          labels={['Account', 'Legal', 'Permissions']}
+        />
 
         <View style={styles.header}>
           <Text style={styles.title}>A few things first</Text>

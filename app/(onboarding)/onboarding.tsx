@@ -65,7 +65,7 @@ export default function WelcomeScreen() {
         <View style={styles.ctaContainer}>
           <Button
             label="Get Started"
-            onPress={() => router.push('/feature-slides')}
+            onPress={() => router.push('/setup-walkthrough')}
             variant="primary"
             style={styles.ctaButton}
           />

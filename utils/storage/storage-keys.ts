@@ -12,6 +12,9 @@ export const STORAGE_KEYS = {
   // User Legal & Compliance
   TERMS_ACCEPTANCE: '@landline_terms_acceptance',
 
+  /** Device-local flag: user finished onboarding (see utils/onboarding-storage.ts) */
+  ONBOARDING_COMPLETE: '@landline_onboarding_complete',
+
   // User preferences — persisted locally and synced to Firestore when authenticated
   USER_PREFERENCES: '@landline_user_preferences',
 

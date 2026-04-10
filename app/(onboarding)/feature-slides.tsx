@@ -58,12 +58,12 @@ export default function FeatureSlidesScreen() {
       });
       setCurrentSlide(currentSlide + 1);
     } else {
-      router.push('/permissions');
+      router.push('/create-account');
     }
   };
 
   const handleSkip = () => {
-    router.push('/permissions');
+    router.push('/create-account');
   };
 
   const slide = SLIDES[currentSlide];

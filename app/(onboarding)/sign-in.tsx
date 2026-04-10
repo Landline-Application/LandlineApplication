@@ -8,6 +8,7 @@ import { SignInForm } from '@/components/auth/sign-in-form';
 import { Blob, Button, Page } from '@/components/onboarding/onboarding-primitives';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
+import { markOnboardingComplete } from '@/utils/onboarding-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OnboardingSignInPage() {
@@ -57,7 +58,14 @@ export default function OnboardingSignInPage() {
         </View>
 
         <SignInForm
-          onSuccess={() => router.replace('/(tabs)')}
+          onSuccess={async () => {
+            try {
+              await markOnboardingComplete();
+            } catch (e) {
+              console.warn('markOnboardingComplete', e);
+            }
+            router.replace('/(tabs)');
+          }}
           onForgotPassword={() => router.push('/auth/forgot-password')}
           onCreateAccount={() => router.replace('/create-account')}
         />
@@ -67,7 +75,14 @@ export default function OnboardingSignInPage() {
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <Button
           label="Skip for now"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={async () => {
+            try {
+              await markOnboardingComplete();
+            } catch (e) {
+              console.warn('markOnboardingComplete', e);
+            }
+            router.replace('/(tabs)');
+          }}
           variant="ghost"
           style={styles.skipButton}
         />

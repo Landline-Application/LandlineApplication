@@ -1,6 +1,10 @@
 import { StorageManager } from '@/utils/storage/storage-manager';
+import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 
-const ONBOARDING_KEY = '@landline_onboarding_complete';
+const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_COMPLETE;
+
+/** Bump when onboarding steps change so you can optionally re-show (future use). */
+const ONBOARDING_VERSION = '1.0.0';
 
 interface OnboardingState {
   completed: boolean;
@@ -8,6 +12,11 @@ interface OnboardingState {
   version: string;
 }
 
+/**
+ * Whether this install has finished the onboarding flow (AsyncStorage on device).
+ * - Reinstall / clear data: returns false until completed again.
+ * - Logout: unchanged — completion is device-scoped, not tied to Firebase session.
+ */
 export async function hasCompletedOnboarding(): Promise<boolean> {
   try {
     const state = await StorageManager.getItem<OnboardingState>(ONBOARDING_KEY);
@@ -18,15 +27,21 @@ export async function hasCompletedOnboarding(): Promise<boolean> {
   }
 }
 
+/**
+ * Persist onboarding completion. Call when the user reaches the main app after the
+ * full flow (e.g. permissions granted) or after an explicit “skip” / alternate
+ * entry that should count as done (sign-in success, phone verification, etc.).
+ */
 export async function markOnboardingComplete(): Promise<void> {
   const state: OnboardingState = {
     completed: true,
     completedAt: new Date().toISOString(),
-    version: '1.0.0',
+    version: ONBOARDING_VERSION,
   };
   await StorageManager.setItem(ONBOARDING_KEY, state);
 }
 
+/** Clear completion so the user sees onboarding again (e.g. Settings reset). */
 export async function resetOnboarding(): Promise<void> {
   await StorageManager.removeItem(ONBOARDING_KEY);
 }
