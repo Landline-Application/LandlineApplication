@@ -4,7 +4,9 @@ import { Alert } from 'react-native';
 
 import { router } from 'expo-router';
 
-import { auth, setPhoneConfirmation, signInWithPhoneNumber } from '@/utils/firebase/auth';
+import * as FirebaseApp from '@/utils/firebase/app';
+import { setPhoneConfirmation, signInWithPhoneNumber } from '@/utils/firebase/auth';
+import { getApps } from '@react-native-firebase/app';
 import { getCountryCodeFromNumber, validatePhoneNumber } from '@/utils/phone-number';
 
 interface UsePhoneAuthProps {
@@ -49,8 +51,15 @@ export function usePhoneAuth({ initialValue }: UsePhoneAuthProps): UsePhoneAuthR
     setIsLoading(true);
 
     try {
+      if (getApps().length === 0) {
+        Alert.alert(
+          'Firebase not configured',
+          'Add google-services.json to the project root and rebuild. See BUILD.md.',
+        );
+        return;
+      }
       const formattedNumber = `+${phoneInput}`;
-      const confirmation = await signInWithPhoneNumber(auth, formattedNumber);
+      const confirmation = await signInWithPhoneNumber(FirebaseApp.auth, formattedNumber);
       setPhoneConfirmation(confirmation);
       router.push('/verify-phone');
     } catch (error: any) {

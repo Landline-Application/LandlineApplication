@@ -1,3 +1,5 @@
+import '@/services/landline-reminder-task';
+
 import { useEffect, useRef, useState } from 'react';
 
 import { LogBox, Platform, Text } from 'react-native';
@@ -13,6 +15,7 @@ import { useAppState } from '@/hooks/use-app-state';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { initLandlineReminderSubsystem } from '@/services/landline-mode-reminder';
 import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
 import { hasCompletedOnboarding, migrateFromOldAcceptance } from '@/utils/onboarding-storage';
 import {
@@ -129,6 +132,10 @@ function NavigationGate() {
 
         // Initialize retention settings (sets defaults for fresh installs)
         await initializeRetentionSettings();
+
+        if (Platform.OS === 'android') {
+          await initLandlineReminderSubsystem();
+        }
 
         const { checkStatus } = useLandlineStore.getState();
         await checkStatus();
