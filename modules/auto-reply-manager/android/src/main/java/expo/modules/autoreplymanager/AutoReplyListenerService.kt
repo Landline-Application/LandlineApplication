@@ -24,9 +24,14 @@ class AutoReplyListenerService : NotificationListenerService() {
         private const val KEY_ALLOWED_APPS = "allowed_apps"
         private const val KEY_REPLY_HISTORY = "reply_history"
         
-        private var serviceInstance: AutoReplyListenerService? = null
+        @JvmStatic
+        internal var serviceInstance: AutoReplyListenerService? = null
         
+        @JvmStatic
         fun isServiceRunning(): Boolean = serviceInstance != null
+
+        @JvmStatic
+        fun getInstance(): AutoReplyListenerService? = serviceInstance
     }
 
     private val notificationManager: NotificationManager by lazy {

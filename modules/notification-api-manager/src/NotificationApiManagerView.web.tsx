@@ -8,7 +8,11 @@ export default function NotificationApiManagerView(props: NotificationApiManager
       <iframe
         style={{ flex: 1 }}
         src={props.url}
-        onLoad={() => props.onLoad({ nativeEvent: { url: props.url } })}
+        onLoad={() => {
+          if (props.onLoad) {
+            props.onLoad({ nativeEvent: { url: props.url || '' } });
+          }
+        }}
       />
     </div>
   );

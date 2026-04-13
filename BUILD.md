@@ -140,12 +140,22 @@ The resulting `.aab` file can be downloaded from the [Expo dashboard](https://ex
 Runs the build on your machine using your local Android SDK. Requires `ANDROID_HOME` to be set correctly in your environment.
 
 ```bash
+# If you need a new build, you will need to update the version number as such.
+# The CLI will tell you the current version, so all you need to do is increment by one.
+# If you need a different environment change -e
+eas build:version:set -p android -e production
+
 eas build --platform android --profile production --local
 ```
 
 The `.aab` output will be written to the project root. This does **not** count against your monthly EAS build quota.
 
 ---
+
+## Quick Links
+
+- [docs/EAS-SETUP.md](docs/EAS-SETUP.md) - Links to official Expo/EAS documentation for EAS setup and Google Play Console integration
+- [docs/FIREBASE-CONFIG.md](docs/FIREBASE-CONFIG.md) - Firebase configuration and google-services.json setup
 
 ## Troubleshooting
 

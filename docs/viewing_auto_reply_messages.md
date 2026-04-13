@@ -16,7 +16,7 @@ You'll see:
 
 - The message text sent
 - Timestamp of when it was sent
-- Up to 10 most recent replies (with total count)
+- Up to 50 most recent replies (with total count)
 
 ### Example Output
 
@@ -76,8 +76,8 @@ Reply History (15 total)
 # Enable auto-reply
 tap "Enable Auto-Reply"
 
-# Send test notification
-tap "Send Test Message"
+# Send a real message from another device (WhatsApp, etc.)
+# (Test notifications from this app won't trigger auto-reply)
 
 # Wait for auto-reply (check logs)
 adb logcat | grep "Auto-reply sent"
@@ -116,7 +116,7 @@ console.log(result.message); // "Reply history cleared"
 
 ```bash
 # View SharedPreferences
-adb shell run-as com.anonymous.LandlineApplication cat /data/data/com.anonymous.LandlineApplication/shared_prefs/auto_reply_prefs.xml | grep reply_history
+adb shell run-as com.outersnail.Landline cat /data/data/com.outersnail.Landline/shared_prefs/auto_reply_prefs.xml | grep reply_history
 ```
 
 ### View logs

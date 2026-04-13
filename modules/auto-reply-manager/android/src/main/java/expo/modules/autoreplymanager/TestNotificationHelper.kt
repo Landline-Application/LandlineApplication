@@ -67,6 +67,7 @@ object TestNotificationHelper {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
         
         notificationManager.notify(notificationId, notification)
@@ -81,6 +82,7 @@ object TestNotificationHelper {
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Test message notifications for auto-reply testing"
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             enableVibration(true)
         }
         notificationManager.createNotificationChannel(channel)

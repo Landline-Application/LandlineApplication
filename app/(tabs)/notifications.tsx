@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import NotebookLogView from '@/components/notebook-log-view';
+import NotebookLogView from '@/components/notifications/notebook-log-view';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { COLORS, Radius, Spacing, TouchTargets } from '@/constants/theme';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -12,9 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
-  const [viewMode, setViewMode] = useState<'notebook' | 'classic'>('notebook');
 
-  // Enable fast refresh (3s) when viewing this screen and Landline Mode is active
+  // Fast refresh (3s) while this screen is focused and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
 
   const loadNotifications = useCallback(async () => {
@@ -31,10 +31,7 @@ export default function NotificationsScreen() {
       'Clear All Notifications',
       'Are you sure you want to clear all logged notifications? This cannot be undone.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear All',
           style: 'destructive',
@@ -43,7 +40,6 @@ export default function NotificationsScreen() {
               const success = await NotificationApiManager.clearAllData();
               if (success) {
                 await refreshNotifications();
-                Alert.alert('Success', 'All notifications cleared');
               } else {
                 Alert.alert('Error', 'Failed to clear notifications');
               }
@@ -57,136 +53,122 @@ export default function NotificationsScreen() {
     );
   }, [refreshNotifications]);
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#8B7355" />
-        <Text style={styles.loadingText}>Loading notifications...</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {/* Header with Controls */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Text style={styles.headerTitle}>Landline Log</Text>
-        <View style={styles.headerControls}>
-          <TouchableOpacity
-            style={styles.viewToggle}
-            onPress={() => setViewMode(viewMode === 'notebook' ? 'classic' : 'notebook')}
-          >
-            <MaterialIcons
-              name={viewMode === 'notebook' ? 'menu-book' : 'view-agenda'}
-              size={16}
-              color="#F4E4C1"
-              style={styles.viewToggleIcon}
-            />
-            <Text style={styles.viewToggleText}>
-              {viewMode === 'notebook' ? 'Notebook' : 'Modern'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-            <MaterialIcons
-              name="delete-outline"
-              size={16}
-              color="#fff"
-              style={styles.clearButtonIcon}
-            />
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
+    <View style={styles.root}>
+      {/* ── Header ── */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Log</Text>
+          {isActive && (
+            <View style={styles.livePill}>
+              <View style={styles.liveDot} />
+              <Text style={styles.livePillText}>Live</Text>
+            </View>
+          )}
         </View>
+
+        {/* M3 Standard icon button — clear (destructive, lowest emphasis) */}
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={handleClearAll}
+          accessibilityRole="button"
+          accessibilityLabel="Clear all notifications"
+          disabled={isLoading || notifications.length === 0}
+        >
+          <MaterialIcons
+            name="delete-outline"
+            size={22}
+            color={notifications.length === 0 ? COLORS.text.muted : COLORS.error}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Notebook View */}
-      {viewMode === 'notebook' ? (
+      {/* ── Content ── */}
+      {isLoading && notifications.length === 0 ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading notifications…</Text>
+        </View>
+      ) : (
         <NotebookLogView
           notifications={notifications}
           onRefresh={loadNotifications}
           isActive={isActive}
         />
-      ) : (
-        <View style={styles.modernPlaceholder}>
-          <Text style={styles.placeholderText}>Classic view - To be implemented</Text>
-        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#3d3325',
+    backgroundColor: COLORS.background,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#3d3325',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#D4AF7A',
-  },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: 'rgba(61, 51, 37, 0.95)',
-    paddingBottom: 15,
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: '#6B5A44',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F4E4C1',
+    fontFamily: 'Fraunces_700Bold',
+    fontSize: 26,
+    lineHeight: 32,
+    color: COLORS.text.primary,
   },
-  headerControls: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  viewToggle: {
-    backgroundColor: '#6B5A44',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  // Subtle live indicator pill — visible only when Landline Mode is capturing
+  livePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    backgroundColor: `${COLORS.primary}18`,
   },
-  viewToggleIcon: {},
-  viewToggleText: {
-    color: '#F4E4C1',
-    fontSize: 14,
-    fontWeight: '600',
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
   },
-  clearButton: {
-    backgroundColor: '#c0392b',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    flexDirection: 'row',
+  livePillText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: COLORS.primary,
+  },
+  // M3 Standard icon button — 48dp touch target, no container
+  iconButton: {
+    width: TouchTargets.md,
+    height: TouchTargets.md,
+    borderRadius: Radius.full,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
   },
-  clearButtonIcon: {},
-  clearButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modernPlaceholder: {
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  loadingState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: Spacing.md,
   },
-  placeholderText: {
-    color: '#D4AF7A',
-    fontSize: 16,
+  loadingText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.text.secondary,
   },
 });

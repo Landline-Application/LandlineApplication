@@ -83,7 +83,7 @@ adb shell dumpsys activity services | grep AutoReplyListenerService
 
 ```bash
 adb shell dumpsys notification | grep "Notification listeners" -A5
-# Should include: com.anonymous.LandlineApplication/expo.modules.autoreplymanager.AutoReplyListenerService
+# Should include: com.outersnail.Landline/expo.modules.autoreplymanager.AutoReplyListenerService
 ```
 
 ### 3. Check Auto-Reply is Enabled

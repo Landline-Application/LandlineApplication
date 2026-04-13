@@ -2,7 +2,7 @@
 
 ## Overview
 
-Landline is an Android-first mobile application built with Expo and React Native that silently intercepts and logs notifications, manages auto-replies, and controls device interruption settings. Built with Expo SDK 54, React 19, React Native 0.81, and TypeScript. Uses the New Architecture and experimental React Compiler.
+Landline is an Android-first mobile application built with Expo and React Native that silently intercepts and logs notifications, manages auto-replies, and controls device interruption settings. Built with Expo SDK 55, React 19, React Native 0.83, and TypeScript. Uses the New Architecture and experimental React Compiler.
 
 **Current Status:** Functional backend and native modules; UI/UX design needed; user flow not finalized. Authentication flows use mock API calls (no real backend).
 
@@ -90,7 +90,7 @@ Landline is an Android-first mobile application built with Expo and React Native
 ### Landline Mode Control
 
 - **Description:** Toggle notification logging on/off. When enabled, the `LandlineNotificationListenerService` silently captures all incoming notifications without displaying them.
-- **Current Implementation:** `(tabs)/landline` — accessible via the Tools section in Settings
+- **Current Implementation:** `/debug/landline` — accessible via the Tools & Diagnostics section in Settings
 - **Status:** Functional; hidden from tab bar, navigable from Settings
 - **Backend:** `NotificationApiManager` native module; state stored in `landline_mode_prefs` SharedPreferences
 - **Note:** The self-notification filter in `LandlineNotificationListenerService` is temporarily disabled for testing. A broadcast intent (`com.landlineapp.NOTIFICATION_RECEIVED`) is emitted for real-time UI updates but no receiver exists in the React Native layer.
@@ -115,7 +115,7 @@ Landline is an Android-first mobile application built with Expo and React Native
 ### Background Services Management
 
 - **Description:** Control foreground services (`START_STICKY` for auto-restart), schedule periodic background tasks via WorkManager, manage battery optimization settings, monitor Doze mode status.
-- **Current Implementation:** `(tabs)/debug-tools` — accessible via the Tools section in Settings
+- **Current Implementation:** `/debug/tools` — accessible via the Tools & Diagnostics section in Settings
 - **Status:** Functional; hidden from tab bar, navigable from Settings
 - **Backend:** `BackgroundServiceManager` native module
 - **Note:** `BackgroundWorker.performNotificationCheck()` is a TODO placeholder — the actual background work logic is not implemented. Foreground service uses `foregroundServiceType="specialUse"`. Wake lock support exists but is disabled in code.
@@ -133,8 +133,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 
 ### Landline Mode Integration
 
-- **Current State:** Functional page, hidden from tab bar, accessible via Settings → Tools
-- **File:** `app/(tabs)/landline.tsx`
+- **Current State:** Functional page, hidden from tab bar, accessible via Settings → Tools & Diagnostics
+- **File:** `app/debug/landline.tsx`
 
 ### Auto-Reply Configuration
 
@@ -148,8 +148,8 @@ Landline is an Android-first mobile application built with Expo and React Native
 
 ### Background Services Control
 
-- **Current State:** Functional debug page, hidden from tab bar, accessible via Settings → Tools
-- **File:** `app/(tabs)/debug-tools.tsx`
+- **Current State:** Functional debug page, hidden from tab bar, accessible via Settings → Tools & Diagnostics
+- **File:** `app/debug/tools.tsx`
 
 ### Notification Log "Classic View"
 
@@ -201,15 +201,13 @@ Root layout (`app/_layout.tsx`) wraps the app in `SafeAreaProvider` > `AuthProvi
 
 ### Tab Bar
 
-Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS press feedback. `landline` and `debug-tools` are registered but hidden from the tab bar (`href: null`) and accessible via the Tools section in Settings.
+Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS press feedback. The debug and configuration pages are now located in the `/debug/` directory and accessible via the Tools & Diagnostics section in Settings.
 
 | Tab             | Title         | Visible | Production Ready  |
 | --------------- | ------------- | ------- | ----------------- |
 | `index`         | Home          | Yes     | No (test content) |
 | `notifications` | Notifications | Yes     | Partial           |
 | `settings`      | Settings      | Yes     | Yes               |
-| `landline`      | —             | No      | Partial           |
-| `debug-tools`   | —             | No      | No (debug page)   |
 
 ### Route Table
 
@@ -228,13 +226,14 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### Hidden / Debug Pages
 
-| Route                | Purpose               | Exposure           |
-| -------------------- | --------------------- | ------------------ |
-| `(tabs)/landline`    | Landline mode control | Settings → Tools   |
-| `(tabs)/debug-tools` | System diagnostics    | Settings → Tools   |
-| `/auto-reply-test`   | Auto-reply testing    | Linked from home   |
-| `/dnd-test`          | DND testing           | Linked from home   |
-| `/modal`             | Template modal        | Unused placeholder |
+| Route                | Purpose               | Exposure                       |
+| -------------------- | --------------------- | ------------------------------ |
+| `/debug/landline`    | Landline mode control | Settings → Tools & Diagnostics |
+| `/debug/tools`       | System diagnostics    | Settings → Tools & Diagnostics |
+| `/debug/bypass-list` | Notification bypass   | Settings → Tools & Diagnostics |
+| `/auto-reply-test`   | Auto-reply testing    | Linked from home               |
+| `/dnd-test`          | DND testing           | Linked from home               |
+| `/modal`             | Template modal        | Unused placeholder             |
 
 ---
 
@@ -260,9 +259,9 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### Framework
 
-- Expo 54.0.33 (New Architecture enabled)
-- React 19.1.0 (experimental React Compiler enabled)
-- React Native 0.81.5
+- Expo 55.0.11 (New Architecture enabled)
+- React 19.2.0 (experimental React Compiler enabled)
+- React Native 0.83.4
 - TypeScript ~5.9.2
 - Package manager: pnpm 10.17.0
 
@@ -273,9 +272,11 @@ Three visible tabs defined in `app/(tabs)/_layout.tsx`. Uses `HapticTab` for iOS
 
 ### State Management
 
+- **Zustand** - Global state management for Landline Mode, Auto-Reply, and background services
+  - `useLandlineStore` - Manages Landline Mode state and notification logs
+  - `useAutoReplyStore` - Manages Auto-Reply settings and reply history
 - React Context (`AuthContext` for authentication)
-- Component-local `useState` for all other UI state
-- No external state library (no Redux, Zustand, etc.)
+- Component-local `useState` for component-specific UI state
 
 ### Storage
 
@@ -359,14 +360,14 @@ From project documentation (README.md) but no implementation in the codebase:
 - Device Admin for lock screen control
 - Overlay Permission for floating widget
 - Usage Access for per-app usage monitoring
-- Color/theme migration (documented in `docs/color-migration-todo.md`)
+- Color/theme tokens (documented in `docs/theme.md`)
 
 ---
 
 ## Known Issues & Technical Debt
 
 1. **Auth not wired up:** Login/signup pages do not call `AuthContext.signIn()`/`signUp()` — auth state is not persisted through the actual login flow
-2. **Debug pages linked from Settings:** `landline` and `debug-tools` are hidden from the tab bar but accessible via Settings → Tools
+2. **Debug pages linked from Settings:** `landline`, `tools`, and `bypass-list` are accessible via Settings → Tools & Diagnostics
 3. **Home page is a test page:** Contains debug buttons, no production dashboard
 4. **Notification log classic view:** Toggle exists but the view returns `null`
 5. **Password validation mismatch:** `validators.ts` requires 8+ chars with complexity rules; auth pages only check 6+ chars inline

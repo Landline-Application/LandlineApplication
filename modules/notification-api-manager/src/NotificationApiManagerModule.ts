@@ -32,6 +32,8 @@ type NotificationApiNativeModule = {
   // Notification Listener (Landline Mode)
   hasNotificationListenerPermission(): boolean;
   requestNotificationListenerPermission(): Promise<boolean>;
+  hasSmsPermission(): boolean;
+  requestSmsNotificationPermission(): Promise<boolean>;
   setLandlineMode(isActive: boolean): boolean;
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
@@ -60,6 +62,8 @@ type NotificationApiNativeModule = {
   getEmergencyContactsJson(): string;
   // Data Management
   clearAllData(): Promise<boolean>;
+  // Notification Retention - delete notifications older than cutoff timestamp
+  deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number>;
 };
 
 // Stale dev clients may omit newer native methods; avoid crashing until `expo run:android` picks up Kotlin.
@@ -97,6 +101,14 @@ export function hasNotificationListenerPermission() {
 
 export function requestNotificationListenerPermission() {
   return Native.requestNotificationListenerPermission();
+}
+
+export function requestSmsNotificationPermission() {
+  return Native.requestSmsNotificationPermission();
+}
+
+export function hasSmsPermission() {
+  return Native.hasSmsPermission();
 }
 
 export function setLandlineMode(isActive: boolean) {
@@ -241,6 +253,16 @@ export function clearAllData() {
   return Native.clearAllData();
 }
 
+export function deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number> {
+  const fn = Native.deleteNotificationsOlderThan;
+  if (typeof fn === 'function') {
+    return fn.call(Native, cutoffTimestamp);
+  }
+  // Fallback: return 0 if native method not available (stale dev client)
+  console.warn('deleteNotificationsOlderThan native method not available');
+  return Promise.resolve(0);
+}
+
 export default {
   hasPostPermission,
   requestPostPermission,
@@ -248,6 +270,8 @@ export default {
   notify,
   hasNotificationListenerPermission,
   requestNotificationListenerPermission,
+  hasSmsPermission,
+  requestSmsNotificationPermission,
   setLandlineMode,
   isLandlineModeActive,
   getLoggedNotifications,
@@ -274,4 +298,5 @@ export default {
   getEmergencyContactsJson,
   parseEmergencyContactsJson,
   clearAllData,
+  deleteNotificationsOlderThan,
 };

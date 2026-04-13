@@ -5,7 +5,6 @@
 
 set -e
 
-# Get list of available AVDs
 AVDS=$(emulator -list-avds 2>/dev/null)
 
 if [ -z "$AVDS" ]; then
@@ -14,7 +13,6 @@ if [ -z "$AVDS" ]; then
   exit 1
 fi
 
-# Use gum to let user select a device
 SELECTED_AVD=$(echo "$AVDS" | gum choose --header "Select an Android Emulator to launch:")
 
 if [ -z "$SELECTED_AVD" ]; then
@@ -23,7 +21,5 @@ if [ -z "$SELECTED_AVD" ]; then
 fi
 
 echo "Launching: $SELECTED_AVD"
-echo "Using software rendering (swiftshader_indirect) for compatibility..."
 
-# Launch the emulator with software rendering to avoid GPU issues
-exec emulator -avd "$SELECTED_AVD" -gpu swiftshader_indirect "$@"
+exec emulator -avd "$SELECTED_AVD" -gpu host

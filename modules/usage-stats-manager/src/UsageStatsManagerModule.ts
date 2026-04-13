@@ -6,6 +6,8 @@ export type AppUsageSummary = {
   packageName: string;
   appName: string;
   totalTimeMs: number;
+  /** File URI of the app icon, if available */
+  iconUri?: string;
 };
 
 type UsageStatsNativeModule = {
@@ -44,8 +46,7 @@ export function openUsageStatsSettings(): Promise<boolean> {
 export function getTopUsageApps(window: UsageWindow, limit = 5): Promise<AppUsageSummary[]> {
   const native = getNative();
   if (!native) return Promise.resolve([]);
-  const days =
-    window === '7d' ? 7 : window === '30d' ? 30 : 1;
+  const days = window === '7d' ? 7 : window === '30d' ? 30 : 1;
   return native.getTopUsageApps(days, limit);
 }
 

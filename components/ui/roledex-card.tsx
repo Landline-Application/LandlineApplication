@@ -2,7 +2,7 @@ import React from 'react';
 
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 
 interface RolodexCardProps {
   title: string;
@@ -40,19 +40,19 @@ const styles = StyleSheet.create({
 
   tab: {
     alignSelf: 'center',
-    backgroundColor: COLORS.tabBg,
+    backgroundColor: COLORS.secondary,
     paddingVertical: 6,
     paddingHorizontal: 24,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: COLORS.tabBorder,
+    borderColor: COLORS.muted,
     marginBottom: -1,
     zIndex: 2,
   },
   tabText: {
-    color: COLORS.textPrimary,
+    color: COLORS.secondaryForeground,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1.5,
@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: COLORS.surface.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.surface.border,
     zIndex: 1,
     overflow: 'hidden',
   },

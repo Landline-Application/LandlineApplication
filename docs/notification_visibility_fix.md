@@ -36,7 +36,7 @@ Test on a real Android phone - notifications will appear normally.
 ```bash
 # Open notification settings for the app
 adb shell am start -a android.settings.APP_NOTIFICATION_SETTINGS \
-  --es android.provider.extra.APP_PACKAGE com.anonymous.LandlineApplication
+  --es android.provider.extra.APP_PACKAGE com.outersnail.Landline
 ```
 
 Make sure:
@@ -71,7 +71,7 @@ Should show: `importance=4` and notification details
 adb shell dumpsys notification | grep "Current Notification List" -A20 | grep LandlineApplication
 ```
 
-Should show: `NotificationRecord(...pkg=com.anonymous.LandlineApplication...)`
+Should show: `NotificationRecord(...pkg=com.outersnail.Landline...)`
 
 ### View notification in shade
 
