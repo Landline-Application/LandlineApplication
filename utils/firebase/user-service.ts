@@ -4,9 +4,18 @@ import {
   type FirebaseFirestoreTypes,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   setDoc,
 } from '@react-native-firebase/firestore';
+
+/** Stored under `users/{uid}.preferences` — merged on update. */
+export interface UserPreferences {
+  autoReplyEnabled?: boolean;
+  notificationRetentionDays?: number;
+  /** Hours between “Still in Landline Mode?” reminders while mode is on. */
+  landlineReminderIntervalHours?: number;
+}
 
 export interface UserDocument {
   uid: string;
@@ -17,6 +26,7 @@ export interface UserDocument {
   updatedAt: FirebaseFirestoreTypes.FieldValue;
   /** Updated on every sign-in. Never touched by profile edits. */
   lastLogin: FirebaseFirestoreTypes.FieldValue;
+  preferences?: UserPreferences;
 }
 
 /**
@@ -71,4 +81,33 @@ export async function updateUserDisplayName(
 export async function deleteUserDocument(uid: string): Promise<void> {
   const ref = doc(usersCollection, uid);
   await deleteDoc(ref);
+}
+
+export async function getUserPreferences(uid: string): Promise<UserPreferences | null> {
+  const snap = await getDoc(doc(usersCollection, uid));
+  if (!snap.exists()) return null;
+  const data = snap.data() as Partial<UserDocument> | undefined;
+  const raw = data?.preferences;
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as UserPreferences;
+}
+
+/**
+ * Writes the full preferences object to Firestore.
+ * The caller (usePreferencesStore) owns the complete local state so no
+ * server-side read-then-write is needed — Firestore merge handles the rest.
+ */
+export async function mergeUserPreferences(
+  uid: string,
+  preferences: UserPreferences,
+): Promise<void> {
+  const ref = doc(usersCollection, uid);
+  await setDoc(
+    ref,
+    {
+      preferences,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }

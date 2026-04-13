@@ -15,8 +15,13 @@ export const STORAGE_KEYS = {
   GUIDED_SETUP_STEP: '@landline_guided_setup_step',
   GUIDED_SETUP_COMPLETED: '@landline_guided_setup_completed',
 
+  /** Device-local flag: user finished onboarding (see utils/onboarding-storage.ts) */
+  ONBOARDING_COMPLETE: '@landline_onboarding_complete',
+
+  // User preferences — persisted locally and synced to Firestore when authenticated
+  USER_PREFERENCES: '@landline_user_preferences',
+
   // Future keys can be added here as the app grows:
-  // USER_PREFERENCES: '@landline_user_preferences',
   // NOTIFICATION_SETTINGS: '@landline_notification_settings',
   // THEME_PREFERENCE: '@landline_theme',
   // LAST_SYNC_TIME: '@landline_last_sync',

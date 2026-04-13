@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 type ButtonType = 'google' | 'email' | 'phone';
@@ -53,10 +53,10 @@ export function ContinueWithSocials({
             <Ionicons
               name={config.icon}
               size={20}
-              color={config.filled ? COLORS.cardBg : COLORS.textPrimary}
+              color={config.filled ? COLORS.surface.card : COLORS.text.primary}
               style={styles.icon}
             />
-            <Text style={[styles.buttonText, config.filled && { color: COLORS.cardBg }]}>
+            <Text style={[styles.buttonText, config.filled && { color: COLORS.surface.card }]}>
               {config.text}
             </Text>
           </TouchableOpacity>
@@ -74,15 +74,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: COLORS.textPrimary,
+    borderColor: COLORS.text.primary,
     borderRadius: 8,
     backgroundColor: 'transparent',
   },
-  filledButton: { backgroundColor: COLORS.textPrimary },
+  filledButton: { backgroundColor: COLORS.text.primary },
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS.text.primary,
   },
   icon: {
     marginRight: 8,

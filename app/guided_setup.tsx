@@ -17,7 +17,7 @@ import { GuidedNotificationStep } from '@/components/guided-setup/GuidedNotifica
 import { GuidedReviewStep } from '@/components/guided-setup/GuidedReviewStep';
 import { G } from '@/components/guided-setup/theme';
 import { useAppSelection } from '@/components/app-selection/use-app-selection';
-import { COLORS } from '@/constants/colors';
+import { COLORS } from '@/constants/theme';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 
 const TOTAL_STEPS = 3;
@@ -152,13 +152,23 @@ export default function GuidedSetup() {
         Step {step} of {TOTAL_STEPS}
       </Text>
 
-      <Text style={styles.title}>{title}</Text>
+      <Text
+        style={[
+          styles.title,
+          Platform.select({
+            ios: { fontFamily: 'Courier' },
+            default: { fontFamily: 'monospace' },
+          }),
+        ]}
+      >
+        {title}
+      </Text>
       <Text style={styles.subtitle}>{body}</Text>
 
       {showAndroidStep1 &&
         (appListLoading ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color={COLORS.textPrimary} />
+            <ActivityIndicator size="large" color={G.primary} />
             <Text style={styles.loadingHint}>Loading your apps…</Text>
           </View>
         ) : (
@@ -177,7 +187,7 @@ export default function GuidedSetup() {
       {showAndroidStep2 &&
         (appListLoading ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color={COLORS.textPrimary} />
+            <ActivityIndicator size="large" color={G.primary} />
             <Text style={styles.loadingHint}>Loading…</Text>
           </View>
         ) : (
@@ -196,7 +206,7 @@ export default function GuidedSetup() {
       {showStep3 &&
         (appListLoading && Platform.OS === 'android' ? (
           <View style={styles.stepBody}>
-            <ActivityIndicator size="large" color={COLORS.textPrimary} />
+            <ActivityIndicator size="large" color={G.primary} />
             <Text style={styles.loadingHint}>Loading…</Text>
           </View>
         ) : (
@@ -294,10 +304,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: G.headline,
     letterSpacing: 0.5,
-    ...Platform.select({
-      ios: { fontFamily: 'Courier' },
-      default: { fontFamily: 'monospace' },
-    }),
   },
   subtitle: {
     fontSize: 15,
@@ -324,7 +330,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: G.primary,
-    shadowColor: COLORS.shadow,
+    shadowColor: COLORS.shadow.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,

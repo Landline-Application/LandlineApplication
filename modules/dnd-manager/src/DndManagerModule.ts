@@ -18,6 +18,8 @@ declare class DndManagerModule extends NativeModule<DndManagerModuleEvents> {
   getAppNotificationStatus(packageName: string): Promise<NotificationPermissionResult>;
   openAppNotificationSettings(packageName: string): Promise<boolean>;
   getInterruptionFilterConstants(): InterruptionFilterConstants;
+  setLandlineNotificationPolicy(): boolean;
+  restoreNotificationPolicy(): boolean;
 }
 
 export default requireNativeModule<DndManagerModule>('DndManager');

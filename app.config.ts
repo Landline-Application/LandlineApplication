@@ -1,96 +1,109 @@
+import fs from 'fs';
+import path from 'path';
+
 import { ConfigContext, ExpoConfig } from 'expo/config';
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
-  name: 'Landline',
-  slug: 'landline',
-  version: '0.1.0',
-  orientation: 'portrait',
-  icon: './assets/landline-icon.png',
-  scheme: 'landlineapplication',
-  userInterfaceStyle: 'automatic',
-  // Must stay true: react-native-reanimated 4 + react-native-worklets require New Architecture.
-  newArchEnabled: true,
+/** Committed stub so prebuild works without a real Firebase file; replace for production auth. */
+const PLACEHOLDER_GOOGLE_SERVICES = './config/google-services.placeholder.json';
 
-  android: {
-    adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/landline-icon.png',
-      backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/landline-icon.png',
+/**
+ * Prefer GOOGLE_SERVICES_JSON, then ./google-services.json (gitignored).
+ * Fall back to a committed placeholder: @react-native-firebase/app requires a path during prebuild.
+ */
+function resolveGoogleServicesFile(): string {
+  const envPath = process.env.GOOGLE_SERVICES_JSON?.trim();
+  const fromEnv = envPath && envPath.length > 0;
+  const candidate = fromEnv ? envPath! : path.join(process.cwd(), 'google-services.json');
+  if (fs.existsSync(candidate)) {
+    return fromEnv ? envPath! : './google-services.json';
+  }
+  return PLACEHOLDER_GOOGLE_SERVICES;
+}
+
+export default ({ config }: ConfigContext): ExpoConfig => {
+  return {
+    ...config,
+    name: 'Landline',
+    slug: 'landline',
+    version: '0.6.1',
+    orientation: 'portrait',
+    icon: './assets/landline-icon.png',
+    scheme: 'landlineapplication',
+    userInterfaceStyle: 'automatic',
+
+    android: {
+      adaptiveIcon: {
+        backgroundColor: '#E6F4FE',
+        foregroundImage: './assets/landline-icon.png',
+        backgroundImage: './assets/images/android-icon-background.png',
+        monochromeImage: './assets/landline-icon.png',
+      },
+      package: 'com.outersnail.Landline',
+      permissions: [
+        'android.permission.ACCESS_NOTIFICATION_POLICY',
+        'android.permission.BIND_APPWIDGET',
+        'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
+        'android.permission.CALL_PHONE',
+        'android.permission.POST_NOTIFICATIONS',
+        'android.permission.READ_CONTACTS',
+        'android.permission.READ_PHONE_STATE',
+        'android.permission.RECEIVE_SMS',
+        'android.permission.SEND_SMS',
+        'android.permission.WAKE_LOCK',
+      ],
+      googleServicesFile: resolveGoogleServicesFile(),
     },
-    edgeToEdgeEnabled: true,
-    package: 'com.outersnail.Landline',
-    permissions: [
-      'android.permission.ACCESS_NOTIFICATION_POLICY',
-      'android.permission.BIND_APPWIDGET',
-      'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
-      'android.permission.CALL_PHONE',
-      'android.permission.POST_NOTIFICATIONS',
-      'android.permission.READ_CONTACTS',
-      'android.permission.READ_PHONE_STATE',
-      'android.permission.RECEIVE_SMS',
-      'android.permission.SEND_SMS',
-      'android.permission.WAKE_LOCK',
-    ],
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
-  },
 
-  web: {
-    output: 'static',
-    favicon: './assets/images/favicon.png',
-  },
+    web: {
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+    },
 
-  plugins: [
-    '@react-native-firebase/app',
-    '@react-native-firebase/auth',
-    '@react-native-google-signin/google-signin',
-    'expo-router',
-    [
-      'expo-splash-screen',
-      {
-        image: './assets/images/splash-icon.png',
-        imageWidth: 200,
-        resizeMode: 'contain',
-        backgroundColor: '#ffffff',
-        dark: {
-          backgroundColor: '#000000',
+    plugins: [
+      '@react-native-firebase/app',
+      '@react-native-firebase/auth',
+      '@react-native-google-signin/google-signin',
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/landline-icon.png',
+          imageWidth: 200,
+          resizeMode: 'contain',
+          backgroundColor: '#ffffff',
+          dark: {
+            backgroundColor: '#000000',
+          },
         },
-      },
+      ],
+      'expo-web-browser',
+      ['expo-notifications', { icon: './assets/landline-icon.png', color: '#5D7052' }],
+      [
+        'expo-font',
+        {
+          fonts: [
+            'node_modules/@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf',
+            'node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf',
+            'node_modules/@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf',
+            'node_modules/@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf',
+            'node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf',
+          ],
+        },
+      ],
     ],
-    'expo-web-browser',
-    [
-      'expo-font',
-      {
-        fonts: [
-          'node_modules/@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf',
-          'node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf',
-          'node_modules/@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf',
-          'node_modules/@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf',
-          'node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf',
-        ],
-      },
-    ],
-  ],
 
-  experiments: {
-    typedRoutes: true,
-    // React Compiler can leave Fast Refresh stuck on "Reloading..." in dev; re-enable when stable.
-    reactCompiler: false,
-  },
-
-  extra: {
-    router: {},
-    eas: {
-      projectId: '9054e1e3-4810-4d81-acef-067671c365a8',
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true,
     },
-  },
 
-  owner: 'landline-application',
-});
+    extra: {
+      router: {},
+      eas: {
+        projectId: '9054e1e3-4810-4d81-acef-067671c365a8',
+      },
+    },
 
-
-
-
-
-
+    owner: 'landline-application',
+  };
+};

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Export Beta Signups - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Nunito:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fdfcf8;
+        --foreground: #2c2c24;
+        --primary: #5d7052;
+        --primary-foreground: #f3f4f1;
+        --secondary: #c18c5d;
+        --muted: #f0ebe5;
+        --muted-foreground: #78786c;
+        --border: #ded8cf;
+        --surface-card: #f9f8f5;
+        --success: #5d7052;
+        --error: #a85448;
+      }
+
+      body {
+        font-family:
+          'Nunito',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background-color: var(--bg);
+        color: var(--foreground);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 600px;
+      }
+
+      .card {
+        background-color: var(--surface-card);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 32px;
+      }
+
+      h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        color: var(--muted-foreground);
+        margin-bottom: 24px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--foreground);
+      }
+
+      input[type='password'],
+      input[type='email'] {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        font-size: 16px;
+        font-family: 'Nunito', sans-serif;
+        background: white;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+
+      .btn {
+        width: 100%;
+        height: 52px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        font-family: 'Nunito', sans-serif;
+      }
+
+      .btn-primary {
+        background-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .results {
+        margin-top: 24px;
+        display: none;
+      }
+
+      .results.show {
+        display: block;
+      }
+
+      .stats {
+        background: var(--muted);
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .stats-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .stats-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .download-btn {
+        background-color: var(--secondary);
+        color: white;
+        margin-bottom: 12px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 200px;
+        padding: 16px;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+        background: white;
+      }
+
+      .error {
+        color: var(--error);
+        margin-top: 12px;
+        padding: 12px;
+        background: #fdf2f0;
+        border-radius: 8px;
+        display: none;
+      }
+
+      .error.show {
+        display: block;
+      }
+
+      .source-breakdown {
+        margin-top: 12px;
+        padding: 12px;
+        background: white;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      .source-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+
+      .help {
+        background: var(--muted);
+        padding: 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--muted-foreground);
+      }
+
+      .help h3 {
+        color: var(--foreground);
+        margin-bottom: 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .help ol {
+        margin-left: 20px;
+      }
+
+      .help li {
+        margin-bottom: 6px;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Export Beta Signups</h1>
+        <p class="subtitle">Download your beta waitlist as CSV</p>
+
+        <!-- Login Form -->
+        <div id="loginSection">
+          <div class="form-group">
+            <label for="adminEmail">Admin Email</label>
+            <input
+              type="email"
+              id="adminEmail"
+              placeholder="admin@example.com"
+              onkeydown="if (event.key === 'Enter') authenticate();"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="adminPassword">Password</label>
+            <input
+              type="password"
+              id="adminPassword"
+              placeholder="Enter password"
+              onkeydown="if (event.key === 'Enter') authenticate();"
+            />
+          </div>
+
+          <button type="button" class="btn btn-primary" onclick="authenticate()">
+            Sign In & Access Data
+          </button>
+
+          <div class="error" id="error"></div>
+
+          <div class="help" style="margin-top: 20px">
+            <h3>How to Access:</h3>
+            <ol>
+              <li>Sign in with the authorized admin account</li>
+              <li>Only the specific admin user can view this data</li>
+              <li>Contact the project owner if you need access</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Data Export Section (hidden until authenticated) -->
+        <div class="results" id="results">
+          <div class="stats">
+            <div class="stats-row">
+              <span>Total Signups:</span>
+              <strong id="totalCount">0</strong>
+            </div>
+            <div class="source-breakdown" id="sourceBreakdown"></div>
+          </div>
+
+          <button type="button" class="btn download-btn" onclick="downloadCSV()">
+            Download CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signInWithEmailAndPassword,
+      } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
+      import {
+        collection,
+        getDocs,
+        getFirestore,
+        orderBy,
+        query,
+      } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js';
+
+      const firebaseConfig = {
+        apiKey: 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk',
+        authDomain: 'landline-application.firebaseapp.com',
+        projectId: 'landline-application',
+        storageBucket: 'landline-application.firebasestorage.app',
+        messagingSenderId: '188793229674',
+        appId: '1:188793229674:web:d7072321c8754ba8555513',
+        measurementId: 'G-L4ZGYDFXH7',
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      let signupData = [];
+
+      // Check auth state on load
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in, try to load data
+          loadData();
+        }
+      });
+
+      window.authenticate = async function () {
+        const email = document.getElementById('adminEmail').value;
+        const password = document.getElementById('adminPassword').value;
+        const errorEl = document.getElementById('error');
+
+        errorEl.classList.remove('show');
+
+        if (!email || !password) {
+          errorEl.textContent = 'Please enter email and password';
+          errorEl.classList.add('show');
+          return;
+        }
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          // Auth successful, loadData will be called by onAuthStateChanged
+        } catch (error) {
+          console.error('Auth error:', error);
+          if (error.code === 'auth/invalid-credential') {
+            errorEl.textContent = 'Invalid email or password';
+          } else if (error.code === 'permission-denied') {
+            errorEl.textContent = 'Access denied. You are not authorized to view this data.';
+          } else {
+            errorEl.textContent = 'Error: ' + error.message;
+          }
+          errorEl.classList.add('show');
+        }
+      };
+
+      async function loadData() {
+        try {
+          const q = query(collection(db, 'betaSignups'), orderBy('timestamp', 'desc'));
+          const snapshot = await getDocs(q);
+
+          signupData = [];
+          snapshot.forEach((doc) => {
+            signupData.push(doc.data());
+          });
+
+          // Show results
+          document.getElementById('results').classList.add('show');
+          document.getElementById('totalCount').textContent = signupData.length;
+
+          // Source breakdown
+          const sources = {};
+          signupData.forEach((s) => {
+            const src = s.source || 'Not specified';
+            sources[src] = (sources[src] || 0) + 1;
+          });
+
+          let breakdownHTML = '';
+          for (const [source, count] of Object.entries(sources)) {
+            breakdownHTML += `<div class="source-item"><span>${source}:</span><strong>${count}</strong></div>`;
+          }
+          document.getElementById('sourceBreakdown').innerHTML = breakdownHTML;
+        } catch (error) {
+          console.error('Error loading data:', error);
+          alert('Error loading data: ' + error.message);
+        }
+      }
+
+      window.downloadCSV = function () {
+        let csv = 'Email,Source,Sign Up Date\n';
+        signupData.forEach((s) => {
+          const email = s.email || '';
+          const source = s.source || '';
+          const date = s.timestamp ? new Date(s.timestamp.toDate()).toISOString() : '';
+          csv += `"${email}","${source}","${date}"\n`;
+        });
+
+        downloadFile(csv, 'beta-signups.csv', 'text/csv');
+      };
+
+      function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>

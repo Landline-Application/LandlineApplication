@@ -51,17 +51,46 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
-        // Opens the app's system notification settings. Returns true if we could launch it.
+        // Requests POST_NOTIFICATIONS via runtime dialog on Android 13+.
+        // Older versions return true immediately (no runtime permission needed).
         AsyncFunction("requestPostPermission") {
             val ctx = appContext.reactContext ?: return@AsyncFunction false
             if (Build.VERSION.SDK_INT < 33) return@AsyncFunction true
 
-            ctx.startActivity(
-                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-            true
+            val alreadyGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (alreadyGranted) return@AsyncFunction true
+
+            try {
+                val activity = appContext.activityProvider?.currentActivity
+                if (activity != null) {
+                    activity.requestPermissions(
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        1001
+                    )
+                    true
+                } else {
+                    // No activity available — fall back to settings
+                    ctx.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                    true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback to settings
+                try {
+                    ctx.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (_: Exception) { }
+                true
+            }
         }
 
         // Create/update a notification channel (Android O+). Returns true if OK.
@@ -70,7 +99,10 @@ class NotificationApiManagerModule : Module() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 if (nm.getNotificationChannel(id) == null) {
-                    nm.createNotificationChannel(NotificationChannel(id, name, importance))
+                    val channel = NotificationChannel(id, name, importance).apply {
+                        lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                    }
+                    nm.createNotificationChannel(channel)
                 }
             }
             true
@@ -95,14 +127,13 @@ class NotificationApiManagerModule : Module() {
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
             NotificationManagerCompat.from(ctx).notify(notificationId, builder.build())
             true
         }
 
-        // ============================================================
-        // NOTIFICATION LISTENER SERVICE (for Landline Mode)
-        // ============================================================
+        // Notification Listener Service (for Landline Mode)
 
         /**
          * Check if Notification Listener permission is granted
@@ -136,6 +167,49 @@ class NotificationApiManagerModule : Module() {
         }
 
         /**
+         * Check if SMS runtime permission is granted (RECEIVE_SMS + SEND_SMS).
+         */
+        Function("hasSmsPermission") {
+            val ctx = appContext.reactContext ?: return@Function false
+            val receiveGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.RECEIVE_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+            val sendGranted = ContextCompat.checkSelfPermission(
+                ctx, Manifest.permission.SEND_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+            receiveGranted && sendGranted
+        }
+
+        /**
+         * Request SMS runtime permissions (RECEIVE_SMS + SEND_SMS)
+         * via the standard Android permission dialog.
+         */
+        AsyncFunction("requestSmsNotificationPermission") {
+            val ctx = appContext.reactContext ?: return@AsyncFunction false
+            val activity = appContext.activityProvider?.currentActivity
+            if (activity == null) return@AsyncFunction false
+
+            val permissions = arrayOf(
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.SEND_SMS
+            )
+
+            val alreadyGranted = permissions.all {
+                ContextCompat.checkSelfPermission(ctx, it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (alreadyGranted) return@AsyncFunction true
+
+            try {
+                val requestCode = 1002
+                activity.requestPermissions(permissions, requestCode)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        /**
          * Set Landline mode active/inactive
          * When active, notifications will be logged by the NotificationListenerService
          */
@@ -155,7 +229,7 @@ class NotificationApiManagerModule : Module() {
             prefs.getBoolean("is_landline_mode_active", false)
         }
 
-        // --- Notification whitelist (Landline Mode): allowed apps + emergency phone digits ---
+        // Notification whitelist (Landline Mode): allowed apps + emergency phone digits
 
         Function("isNotificationFilterEnabled") {
             val ctx = appContext.reactContext ?: return@Function false
@@ -199,6 +273,8 @@ class NotificationApiManagerModule : Module() {
                 .filter { it.length >= 7 }
                 .toSet()
             prefs.edit().putStringSet("emergency_phone_digits", normalized).apply()
+            // Clear cache so the listener picks up changes immediately
+            LandlineNotificationListenerService.clearEmergencyContactsCache()
             true
         }
 
@@ -239,7 +315,11 @@ class NotificationApiManagerModule : Module() {
                         "title" to (parts[3] as Any),
                         "text" to (parts[4] as Any),
                         "postTime" to (parts[5].toLongOrNull() as Any?),
-                        "id" to (parts[6].toIntOrNull() as Any?)
+                        "id" to (parts[6].toIntOrNull() as Any?),
+                        // v2: autoReplied flag
+                        "autoReplied" to ((parts.getOrNull(7) == "1") as Any),
+                        // v3: the text of the reply that was sent (empty string for older entries)
+                        "replyText" to ((parts.getOrNull(8) ?: "") as Any)
                     )
                     notifications.add(notification)
                 }
@@ -291,9 +371,57 @@ class NotificationApiManagerModule : Module() {
             }
         }
 
-        // ============================================================
-        // AUTO-REPLY FUNCTIONALITY
-        // ============================================================
+        /**
+         * Delete notifications older than the specified cutoff timestamp
+         * Returns the number of deleted notifications
+         * Used for automatic retention cleanup
+         */
+        AsyncFunction("deleteNotificationsOlderThan") { cutoffTimestamp: Long ->
+            val ctx = appContext.reactContext ?: return@AsyncFunction 0
+            
+            try {
+                val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+                val logsString = prefs.getString("notification_logs", "") ?: ""
+                
+                if (logsString.isEmpty()) {
+                    return@AsyncFunction 0
+                }
+
+                // Parse and filter log entries
+                val lines = logsString.split("\n")
+                val validLines = mutableListOf<String>()
+                var deletedCount = 0
+                
+                for (line in lines) {
+                    if (line.isEmpty()) continue
+                    
+                    val parts = line.split("|")
+                    if (parts.size >= 7) {
+                        val postTime = parts[5].toLongOrNull() ?: 0L
+                        if (postTime >= cutoffTimestamp) {
+                            validLines.add(line)
+                        } else {
+                            deletedCount++
+                        }
+                    } else {
+                        // Keep malformed entries (can't determine age)
+                        validLines.add(line)
+                    }
+                }
+                
+                // Save back only valid notifications
+                val updatedLogs = validLines.joinToString("\n")
+                prefs.edit().putString("notification_logs", updatedLogs).apply()
+                
+                android.util.Log.d("NotificationApiManager", "Deleted $deletedCount old notifications")
+                deletedCount
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationApiManager", "Error deleting old notifications: ${e.message}", e)
+                0
+            }
+        }
+
+        // Auto-reply functionality
 
         /**
          * Check if auto-reply is currently enabled
@@ -392,9 +520,7 @@ class NotificationApiManagerModule : Module() {
             true
         }
 
-        // ============================================================
-        // EMERGENCY CONTACTS (JSON array; supports multiple)
-        // ============================================================
+        // Emergency contacts (JSON array; supports multiple)
 
         Function("setEmergencyContactsJson") { json: String ->
             val ctx = appContext.reactContext ?: return@Function false
@@ -404,6 +530,8 @@ class NotificationApiManagerModule : Module() {
                 .remove("emergency_contact_name")
                 .remove("emergency_contact_phone")
                 .apply()
+            // Clear the in-memory cache so the listener picks up the new contacts immediately
+            LandlineNotificationListenerService.clearEmergencyContactsCache()
             true
         }
 
@@ -487,20 +615,17 @@ class NotificationApiManagerModule : Module() {
          * Get list of active notifications (from the listener service)
          */
         Function("getActiveNotifications") {
-            val serviceInstance = LandlineNotificationListenerService::class.java
-                .getDeclaredField("serviceInstance")
-                .get(null) as? LandlineNotificationListenerService
+            val serviceInstance = LandlineNotificationListenerService.getInstance()
             
             val notifications = serviceInstance?.getActiveNotificationsList() ?: emptyArray()
             
             notifications.map { sbn ->
                 val notification = sbn.notification
-                val extras = notification.extras
                 
                 mapOf(
                     "packageName" to sbn.packageName,
-                    "title" to extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
-                    "text" to extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                    "title" to LandlineNotificationListenerService.extractNotificationTitle(notification),
+                    "text" to LandlineNotificationListenerService.extractNotificationText(notification),
                     "timestamp" to sbn.postTime,
                     "hasReplyAction" to (notification.actions?.any { action ->
                         action.remoteInputs?.any { it.allowFreeFormInput } == true

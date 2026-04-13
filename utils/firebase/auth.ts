@@ -6,7 +6,6 @@
  * User document operations live in user-service.ts.
  * Google auth lives in google-auth.ts.
  */
-import { auth, db, usersCollection } from '@/utils/firebase/app';
 import { deleteUserDocument } from '@/utils/firebase/user-service';
 import {
   EmailAuthProvider,
@@ -14,25 +13,26 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   signOut as firebaseSignOut,
+  linkWithCredential,
   onAuthStateChanged,
   reauthenticateWithCredential,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
 } from '@react-native-firebase/auth';
 
 export {
-  auth,
   createUserWithEmailAndPassword,
-  db,
   firebaseSignOut,
+  linkWithCredential,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
-  usersCollection,
 };
 export type { FirebaseAuthTypes };
 
