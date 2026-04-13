@@ -43,9 +43,17 @@ You agree to:
 
 The App is provided "as is" without any representations or warranties, express or implied. We make no representations or warranties in relation to the App or the information and materials provided.
 
+You expressly acknowledge and agree that by enabling and using the App's functionality to divert, suppress, filter, or log notifications, calls, or messages, you assume full and sole responsibility for any and all missed, delayed, or unseen communications, including but not limited to text messages, phone calls, application alerts, or emergency notifications.
+
+You further agree that Landline and its suppliers shall have no liability whatsoever for any consequences resulting from such missed or delayed notifications, including but not limited to personal, financial, professional, medical, or legal impacts. By using the App, you voluntarily accept all risks associated with the diversion or suppression of notifications and expressly waive any and all claims against Landline arising from or related to missed notifications.
+
 7. LIMITATIONS
 
-In no event shall Landline or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the App.
+In no event shall Landline or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, business interruption, or loss of opportunity) arising out of the use of or inability to use the App, even if Landline or an authorized representative has been notified orally or in writing of the possibility of such damage.
+
+Without limiting the foregoing, you specifically agree that Landline shall have no liability for any damages, losses, or consequences arising from or related to missed, delayed, filtered, diverted, or suppressed notifications, phone calls, messages, or alerts of any kind, including but not limited to emergency communications, time-sensitive information, or critical personal or business matters.
+
+To the fullest extent permitted by applicable law, you waive any and all claims against Landline arising from such missed or altered communications, and agree that your sole remedy for dissatisfaction with the App is to discontinue its use.
 
 8. ACCURACY OF MATERIALS
 
