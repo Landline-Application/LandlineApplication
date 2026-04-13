@@ -22,5 +22,18 @@ service cloud.firestore {
       // No update or delete allowed
       allow update, delete: if false;
     }
+
+    // User feedback — anyone can submit (authenticated or anonymous), no one can read/update/delete
+    match /feedback/{docId} {
+      allow create: if request.resource.data.category is string
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() > 0
+                    && request.resource.data.message.size() <= 2000;
+
+      // Admin read access only
+      allow read: if request.auth != null && request.auth.token.email == 'admin@landline.app';
+
+      allow update, delete: if false;
+    }
   }
 }

@@ -495,6 +495,29 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/feedback');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="feedback" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Send Feedback</Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    Report bugs, request features, or share thoughts
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
           </Card>
         </View>
 
