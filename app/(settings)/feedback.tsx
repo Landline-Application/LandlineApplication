@@ -101,7 +101,7 @@ export default function FeedbackScreen() {
       >
         {/* Category Picker */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>What's this about?</Text>
+          <Text style={styles.sectionLabel}>{"What's this about?"}</Text>
           <View style={styles.categoryRow}>
             {CATEGORIES.map(({ key, label, icon }) => {
               const isSelected = category === key;
