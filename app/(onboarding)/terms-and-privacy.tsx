@@ -22,12 +22,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TermsAndPrivacyScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [acknowledgedRisk, setAcknowledgedRisk] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState<'terms' | 'privacy' | null>(null);
   const insets = useSafeAreaInsets();
 
   const handleAgree = async () => {
-    if (!agreedToTerms) return;
+    if (!agreedToTerms || !acknowledgedRisk) return;
 
     setIsLoading(true);
     try {
@@ -124,6 +125,22 @@ export default function TermsAndPrivacyScreen() {
                 </Text>
               </Text>
             </Pressable>
+
+            {/* Acknowledgment of Risk checkbox */}
+            <Pressable
+              onPress={() => setAcknowledgedRisk(!acknowledgedRisk)}
+              style={styles.checkboxRow}
+            >
+              <View style={[styles.checkbox, acknowledgedRisk && styles.checkboxChecked]}>
+                {acknowledgedRisk && <MaterialIcons name="check" size={20} color="#fff" />}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                I understand and agree that by using this App, notifications, calls, and messages may
+                be delayed, diverted, or not shown to me in real time. I accept full responsibility
+                for any missed or delayed communications, including emergencies, and I agree that
+                Landline is not liable for any resulting consequences.
+              </Text>
+            </Pressable>
           </ScrollView>
 
           {/* Enter button */}
@@ -132,7 +149,7 @@ export default function TermsAndPrivacyScreen() {
               label="Enter Landline"
               onPress={handleAgree}
               variant="primary"
-              disabled={!agreedToTerms || isLoading}
+              disabled={!agreedToTerms || !acknowledgedRisk || isLoading}
               loading={isLoading}
               style={styles.enterButton}
             />
