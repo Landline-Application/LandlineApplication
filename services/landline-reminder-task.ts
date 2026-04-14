@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
-import * as TaskManager from 'expo-task-manager';
 import { BackgroundNotificationTaskResult } from 'expo-notifications';
+import * as TaskManager from 'expo-task-manager';
 
 import {
   LANDLINE_REMINDER_BG_TASK_NAME,

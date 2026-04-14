@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -8,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
-import { haptics } from '@/services/haptics';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
@@ -22,6 +30,7 @@ import {
   setInterruptionFilter,
 } from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { haptics } from '@/services/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DebugToolsScreen() {

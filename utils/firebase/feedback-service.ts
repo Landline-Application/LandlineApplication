@@ -1,6 +1,10 @@
-import { addDoc, collection, getFirestore, serverTimestamp } from '@react-native-firebase/firestore';
-
 import { isFirebaseConfigured } from '@/utils/firebase/app';
+import {
+  addDoc,
+  collection,
+  getFirestore,
+  serverTimestamp,
+} from '@react-native-firebase/firestore';
 
 export interface FeedbackPayload {
   category: string;

@@ -15,9 +15,9 @@ import {
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
-import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { haptics } from '@/services/haptics';
@@ -65,9 +65,11 @@ export default function FeedbackScreen() {
       });
 
       haptics.success();
-      Alert.alert('Thank you!', 'Your feedback has been submitted. We appreciate you taking the time to help us improve.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        'Thank you!',
+        'Your feedback has been submitted. We appreciate you taking the time to help us improve.',
+        [{ text: 'OK', onPress: () => router.back() }],
+      );
     } catch (error) {
       console.error('Feedback submission error:', error);
       Alert.alert('Could not send', 'Something went wrong. Please try again or email us directly.');
