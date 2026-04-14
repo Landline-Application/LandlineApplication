@@ -1,5 +1,3 @@
-import '@/services/landline-reminder-task';
-
 import { useEffect, useRef, useState } from 'react';
 
 import { LogBox, Platform, Text } from 'react-native';
@@ -16,8 +14,13 @@ import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { initLandlineReminderSubsystem } from '@/services/landline-mode-reminder';
+import '@/services/landline-reminder-task';
 import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
-import { hasCompletedOnboarding, migrateFromOldAcceptance } from '@/utils/onboarding-storage';
+import {
+  hasAcceptedCurrentLegal,
+  hasCompletedOnboarding,
+  migrateFromOldAcceptance,
+} from '@/utils/onboarding-storage';
 import {
   Fraunces_600SemiBold,
   Fraunces_700Bold,
@@ -199,13 +202,19 @@ function NavigationGate() {
       initialRouteDone.current = true;
 
       const completed = await hasCompletedOnboarding();
+      const legalOk = await hasAcceptedCurrentLegal();
       const inOnboarding = segments[0] === '(onboarding)';
+      const inLegalUpdate = segments[0] === 'legal-update';
 
       if (!completed) {
         if (!inOnboarding) {
           router.replace('/setup-walkthrough');
         }
-      } else if (inOnboarding) {
+      } else if (!legalOk) {
+        if (!inLegalUpdate) {
+          router.replace('/legal-update');
+        }
+      } else if (inOnboarding || inLegalUpdate) {
         router.replace('/(tabs)');
       }
     }
@@ -227,6 +236,7 @@ function NavigationGate() {
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="debug/tools" options={{ headerShown: false }} />
       <Stack.Screen name="debug/landline" options={{ headerShown: false }} />
+      <Stack.Screen name="legal-update" options={{ headerShown: false }} />
     </Stack>
   );
 }
