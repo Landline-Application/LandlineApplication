@@ -1,5 +1,3 @@
-import '@/services/landline-reminder-task';
-
 import { useEffect, useRef, useState } from 'react';
 
 import { LogBox, Platform, Text } from 'react-native';
@@ -16,8 +14,13 @@ import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { initLandlineReminderSubsystem } from '@/services/landline-mode-reminder';
+import '@/services/landline-reminder-task';
 import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
-import { hasCompletedOnboarding, migrateFromOldAcceptance } from '@/utils/onboarding-storage';
+import {
+  hasAcceptedCurrentLegal,
+  hasCompletedOnboarding,
+  migrateFromOldAcceptance,
+} from '@/utils/onboarding-storage';
 import {
   Fraunces_600SemiBold,
   Fraunces_700Bold,
@@ -198,14 +201,20 @@ function NavigationGate() {
       initialRouteDone.current = true;
 
       const completed = await hasCompletedOnboarding();
-      const group = segments[0] as string | undefined;
+      const legalOk = await hasAcceptedCurrentLegal();
+      const group = String(segments[0] ?? '');
       const inOnboarding = group === '(onboarding)';
+      const inLegalUpdate = group === 'legal-update';
 
       if (!completed) {
         if (!inOnboarding) {
           router.replace('/setup-walkthrough' as Href);
         }
-      } else if (inOnboarding) {
+      } else if (!legalOk) {
+        if (!inLegalUpdate) {
+          router.replace('/legal-update' as Href);
+        }
+      } else if (inOnboarding || inLegalUpdate) {
         router.replace('/(tabs)' as Href);
       }
     }
@@ -228,6 +237,7 @@ function NavigationGate() {
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="debug/tools" options={{ headerShown: false }} />
       <Stack.Screen name="debug/landline" options={{ headerShown: false }} />
+      <Stack.Screen name="legal-update" options={{ headerShown: false }} />
     </Stack>
   );
 }

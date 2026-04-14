@@ -1,7 +1,7 @@
+import { ConfigContext, ExpoConfig } from 'expo/config';
+
 import fs from 'fs';
 import path from 'path';
-
-import { ConfigContext, ExpoConfig } from 'expo/config';
 
 /** Committed stub so prebuild works without a real Firebase file; replace for production auth. */
 const PLACEHOLDER_GOOGLE_SERVICES = './config/google-services.placeholder.json';

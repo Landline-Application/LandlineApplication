@@ -145,7 +145,9 @@ Runs the build on your machine using your local Android SDK. Requires `ANDROID_H
 # If you need a different environment change -e
 eas build:version:set -p android -e production
 
-eas build --platform android --profile production --local
+# If you choose local, google-services.json IS REQUIRED, replace /PATH with your project path.
+GOOGLE_SERVICES_JSON=/PATH/google-services.json \
+        eas build --platform android --profile production --local
 ```
 
 The `.aab` output will be written to the project root. This does **not** count against your monthly EAS build quota.

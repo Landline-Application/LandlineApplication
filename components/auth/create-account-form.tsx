@@ -8,9 +8,9 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import {
+  PASSWORD_MIN_LENGTH,
   getPasswordRequirements,
   isSignupPasswordValid,
-  PASSWORD_MIN_LENGTH,
 } from '@/utils/password-requirements';
 import { Ionicons } from '@expo/vector-icons';
 

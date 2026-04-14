@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Alert,
@@ -14,41 +14,53 @@ import {
 import { router } from 'expo-router';
 
 import { Blob, Button, Card, Page } from '@/components/onboarding/onboarding-primitives';
-import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
-import { PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
+import { type LegalDocKey, PRIVACY_POLICY, TERMS_OF_USE } from '@/constants/legal-content';
 import { COLORS, Fonts } from '@/constants/theme';
+import { changedLegalDocs, markLegalAccepted } from '@/utils/onboarding-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function TermsAndPrivacyScreen() {
+const DOC_LABELS: Record<LegalDocKey, string> = {
+  tos: 'Terms of Service',
+  privacy: 'Privacy Policy',
+  riskAck: 'Acknowledgment of Risk',
+};
+
+export default function LegalUpdateScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [acknowledgedRisk, setAcknowledgedRisk] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState<'terms' | 'privacy' | null>(null);
+  const [changed, setChanged] = useState<LegalDocKey[]>([]);
   const insets = useSafeAreaInsets();
 
+  useEffect(() => {
+    changedLegalDocs().then(setChanged);
+  }, []);
+
+  const needsTos = changed.includes('tos') || changed.includes('privacy');
+  const needsRisk = changed.includes('riskAck');
+
   const handleAgree = async () => {
-    if (!agreedToTerms || !acknowledgedRisk) return;
+    if (needsTos && !agreedToTerms) return;
+    if (needsRisk && !acknowledgedRisk) return;
 
     setIsLoading(true);
     try {
-      // Completion is persisted when the user reaches the main app (permissions or alternate paths).
-      router.replace('/permissions');
+      await markLegalAccepted();
+      router.replace('/(tabs)');
     } catch {
-      Alert.alert('Error', 'Failed to continue. Please try again.');
+      Alert.alert('Error', 'Failed to save your acceptance. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const canContinue = (!needsTos || agreedToTerms) && (!needsRisk || acknowledgedRisk);
+
   return (
     <>
-      <Page
-        style={{
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-        }}
-      >
+      <Page style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <Blob
           color={COLORS.primary}
           size={240}
@@ -67,85 +79,83 @@ export default function TermsAndPrivacyScreen() {
         />
 
         <View style={styles.container}>
-          <OnboardingProgress total={3} current={1} labels={['Account', 'Legal', 'Permissions']} />
-
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Almost there</Text>
-            <Text style={styles.subtitle}>Review our privacy commitments before you begin.</Text>
+            <Text style={styles.title}>We&apos;ve updated our policies</Text>
+            <Text style={styles.subtitle}>
+              Please review and accept the updated documents to continue using Landline.
+            </Text>
 
-            {/* Privacy summary card */}
             <Card shapeVariant={0} style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>We respect your privacy</Text>
-
-              {[
-                {
-                  icon: 'lock-outline' as const,
-                  text: 'Notifications stored locally on your device',
-                },
-                { icon: 'block' as const, text: 'We never sell your data' },
-                { icon: 'security' as const, text: 'Cloud backups use end-to-end encryption' },
-                { icon: 'public' as const, text: 'Compliant with GDPR and CCPA' },
-              ].map((item, i) => (
-                <View key={i} style={styles.bulletRow}>
-                  <MaterialIcons name={item.icon} size={20} color={COLORS.primary} />
-                  <Text style={styles.bulletText}>{item.text}</Text>
-                </View>
-              ))}
+              <Text style={styles.summaryTitle}>What changed</Text>
+              {changed.length === 0 ? (
+                <Text style={styles.bulletText}>Loading…</Text>
+              ) : (
+                changed.map((k) => (
+                  <View key={k} style={styles.bulletRow}>
+                    <MaterialIcons name="fiber-new" size={20} color={COLORS.primary} />
+                    <Text style={styles.bulletText}>{DOC_LABELS[k]}</Text>
+                  </View>
+                ))
+              )}
             </Card>
 
-            {/* Agreement checkbox */}
-            <Pressable onPress={() => setAgreedToTerms(!agreedToTerms)} style={styles.checkboxRow}>
-              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                {agreedToTerms && <MaterialIcons name="check" size={20} color="#fff" />}
-              </View>
-              <Text style={styles.checkboxLabel}>
-                I agree to the{' '}
-                <Text
-                  style={styles.link}
-                  onPress={(e: GestureResponderEvent) => {
-                    e.stopPropagation?.();
-                    setShowModal('terms');
-                  }}
-                >
-                  Terms of Service
+            {needsTos && (
+              <Pressable
+                onPress={() => setAgreedToTerms(!agreedToTerms)}
+                style={styles.checkboxRow}
+              >
+                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                  {agreedToTerms && <MaterialIcons name="check" size={20} color="#fff" />}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I agree to the{' '}
+                  <Text
+                    style={styles.link}
+                    onPress={(e: GestureResponderEvent) => {
+                      e.stopPropagation?.();
+                      setShowModal('terms');
+                    }}
+                  >
+                    Terms of Service
+                  </Text>
+                  {' and '}
+                  <Text
+                    style={styles.link}
+                    onPress={(e: GestureResponderEvent) => {
+                      e.stopPropagation?.();
+                      setShowModal('privacy');
+                    }}
+                  >
+                    Privacy Policy
+                  </Text>
                 </Text>
-                {' and '}
-                <Text
-                  style={styles.link}
-                  onPress={(e: GestureResponderEvent) => {
-                    e.stopPropagation?.();
-                    setShowModal('privacy');
-                  }}
-                >
-                  Privacy Policy
-                </Text>
-              </Text>
-            </Pressable>
+              </Pressable>
+            )}
 
-            {/* Acknowledgment of Risk checkbox */}
-            <Pressable
-              onPress={() => setAcknowledgedRisk(!acknowledgedRisk)}
-              style={styles.checkboxRow}
-            >
-              <View style={[styles.checkbox, acknowledgedRisk && styles.checkboxChecked]}>
-                {acknowledgedRisk && <MaterialIcons name="check" size={20} color="#fff" />}
-              </View>
-              <Text style={styles.checkboxLabel}>
-                I understand and agree that by using this App, notifications, calls, and messages may
-                be delayed, diverted, or not shown to me in real time. I accept full responsibility
-                for any missed or delayed communications, including emergencies, and I agree that
-                Landline is not liable for any resulting consequences.
-              </Text>
-            </Pressable>
+            {needsRisk && (
+              <Pressable
+                onPress={() => setAcknowledgedRisk(!acknowledgedRisk)}
+                style={styles.checkboxRow}
+              >
+                <View style={[styles.checkbox, acknowledgedRisk && styles.checkboxChecked]}>
+                  {acknowledgedRisk && <MaterialIcons name="check" size={20} color="#fff" />}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I understand and agree that by using this App, notifications, calls, and messages
+                  may be delayed, diverted, or not shown to me in real time. I accept full
+                  responsibility for any missed or delayed communications, including emergencies,
+                  and I agree that Landline is not liable for any resulting consequences.
+                </Text>
+              </Pressable>
+            )}
           </ScrollView>
 
-          {/* Enter button */}
           <View style={styles.bottomBar}>
             <Button
-              label="Enter Landline"
+              label="Continue"
               onPress={handleAgree}
               variant="primary"
-              disabled={!agreedToTerms || !acknowledgedRisk || isLoading}
+              disabled={!canContinue || isLoading}
               loading={isLoading}
               style={styles.enterButton}
             />
@@ -153,7 +163,6 @@ export default function TermsAndPrivacyScreen() {
         </View>
       </Page>
 
-      {/* Full text modal */}
       <Modal
         visible={showModal !== null}
         onDismiss={() => setShowModal(null)}
@@ -165,13 +174,11 @@ export default function TermsAndPrivacyScreen() {
             <Text style={styles.modalTitle}>
               {showModal === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
             </Text>
-
             <ScrollView style={styles.modalScroll}>
               <Text style={styles.modalBody}>
                 {showModal === 'terms' ? TERMS_OF_USE : PRIVACY_POLICY}
               </Text>
             </ScrollView>
-
             <Button
               label="Close"
               onPress={() => setShowModal(null)}
@@ -186,14 +193,8 @@ export default function TermsAndPrivacyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    zIndex: 2,
-  },
-  content: {
-    flex: 1,
-  },
+  container: { flex: 1, paddingHorizontal: 24, zIndex: 2 },
+  content: { flex: 1 },
   title: {
     fontFamily: Fonts?.serifBold ?? 'Fraunces_700Bold',
     fontSize: 30,
@@ -208,11 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     lineHeight: 24,
   },
-
-  // Summary card
-  summaryCard: {
-    marginBottom: 28,
-  },
+  summaryCard: { marginBottom: 28 },
   summaryTitle: {
     fontFamily: Fonts?.serif ?? 'Fraunces_600SemiBold',
     fontSize: 20,
@@ -232,8 +229,6 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 22,
   },
-
-  // Checkbox
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -252,10 +247,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 1,
   },
-  checkboxChecked: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
+  checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   checkboxLabel: {
     flex: 1,
     fontFamily: Fonts?.sans ?? 'Nunito_400Regular',
@@ -268,16 +260,8 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     textDecorationLine: 'underline',
   },
-
-  // Bottom
-  bottomBar: {
-    paddingVertical: 16,
-  },
-  enterButton: {
-    width: '100%',
-  },
-
-  // Modal
+  bottomBar: { paddingVertical: 16 },
+  enterButton: { width: '100%' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(44, 44, 36, 0.6)',
@@ -297,17 +281,12 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     marginBottom: 16,
   },
-  modalScroll: {
-    maxHeight: '70%',
-    marginBottom: 16,
-  },
+  modalScroll: { maxHeight: '70%', marginBottom: 16 },
   modalBody: {
     fontFamily: Fonts?.sans ?? 'Nunito_400Regular',
     color: COLORS.accentForeground,
     fontSize: 14,
     lineHeight: 22,
   },
-  closeButton: {
-    width: '100%',
-  },
+  closeButton: { width: '100%' },
 });
