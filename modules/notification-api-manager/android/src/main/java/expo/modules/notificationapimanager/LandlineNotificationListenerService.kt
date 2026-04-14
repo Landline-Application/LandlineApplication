@@ -358,8 +358,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
             loggedNotificationContent[sbn.key] = contentKey
 
-            // Auto-reply for non-emergency notifications only
-            val autoReplied = if (autoReplyEnabled && !isEmergencyContactNotification) {
+            // Auto-reply only to emergency contacts — they get a response so they know
+            // the user is in Landline Mode; non-emergency contacts are silently suppressed.
+            val autoReplied = if (autoReplyEnabled && isEmergencyContactNotification) {
                 handleAutoReplyIfNeeded(sbn, notification, packageName)
             } else {
                 false
