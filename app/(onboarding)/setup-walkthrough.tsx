@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 
 import { Blob, Button, Card, Page } from '@/components/onboarding/onboarding-primitives';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
-import { COLORS, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
+import { COLORS, Fonts, Shadows, Spacing } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

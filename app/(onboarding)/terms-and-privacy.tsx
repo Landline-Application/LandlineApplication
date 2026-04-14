@@ -67,11 +67,7 @@ export default function TermsAndPrivacyScreen() {
         />
 
         <View style={styles.container}>
-          <OnboardingProgress
-            total={3}
-            current={1}
-            labels={['Account', 'Legal', 'Permissions']}
-          />
+          <OnboardingProgress total={3} current={1} labels={['Account', 'Legal', 'Permissions']} />
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Almost there</Text>

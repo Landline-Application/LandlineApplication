@@ -1,14 +1,15 @@
 import { Platform } from 'react-native';
 
-import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager from '@/modules/notification-api-manager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { EventSubscription } from 'expo-modules-core';
 import type { NotificationResponse } from 'expo-notifications';
+
+import * as DndManager from '@/modules/dnd-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import {
   getReminderIntervalHoursAsync,
   isValidReminderIntervalHours,
 } from '@/utils/landline-reminder-interval';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -127,7 +128,9 @@ export async function scheduleLandlineReminderAt(triggerAt: Date): Promise<void>
 }
 
 /** First reminder after `sessionStartMs + interval`. */
-export async function scheduleLandlineReminderFromSessionStart(sessionStartMs: number): Promise<void> {
+export async function scheduleLandlineReminderFromSessionStart(
+  sessionStartMs: number,
+): Promise<void> {
   const hours = await getReminderIntervalHoursAsync();
   const at = new Date(sessionStartMs + hours * 60 * 60 * 1000);
   await scheduleLandlineReminderAt(at);
@@ -283,7 +286,10 @@ export async function initLandlineReminderSubsystem(): Promise<void> {
     try {
       await Notifications.registerTaskAsync(LANDLINE_REMINDER_BG_TASK_NAME);
     } catch (e) {
-      console.warn('Landline reminder: registerTaskAsync failed (actions may not work when app is killed)', e);
+      console.warn(
+        'Landline reminder: registerTaskAsync failed (actions may not work when app is killed)',
+        e,
+      );
     }
 
     responseSubscription?.remove();

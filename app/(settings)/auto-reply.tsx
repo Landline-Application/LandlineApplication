@@ -88,8 +88,6 @@ export default function AutoReplyScreen() {
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
 
-  
-
   async function handleToggle(value: boolean) {
     if (!hasPermission) {
       Alert.alert(
@@ -114,8 +112,6 @@ export default function AutoReplyScreen() {
     }
   }
 
-  
-
   async function handleRequestPermission() {
     try {
       await requestPermission();
@@ -128,8 +124,6 @@ export default function AutoReplyScreen() {
     }
   }
 
-  
-
   async function handleApplyTemplate(templateMessage: string, label: string) {
     haptics.light();
     try {
@@ -138,8 +132,6 @@ export default function AutoReplyScreen() {
       Alert.alert('Error', `Could not apply "${label}" template.`);
     }
   }
-
-  
 
   async function handleSaveCustomMessage() {
     const trimmed = customMessage.trim();
@@ -159,8 +151,6 @@ export default function AutoReplyScreen() {
     }
   }
 
-  
-
   async function handleApplyPreset(packages: string[], label: string) {
     haptics.light();
     try {
@@ -169,8 +159,6 @@ export default function AutoReplyScreen() {
       Alert.alert('Error', `Could not apply "${label}" filter.`);
     }
   }
-
-  
 
   return (
     <View style={styles.container}>
