@@ -1,9 +1,9 @@
 import { getApp, getApps } from '@react-native-firebase/app';
 import { getAuth } from '@react-native-firebase/auth';
 import {
+  type FirebaseFirestoreTypes,
   collection,
   getFirestore,
-  type FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 
 /**

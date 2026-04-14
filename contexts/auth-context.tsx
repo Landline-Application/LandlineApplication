@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { AppState } from 'react-native';
 
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
+import * as FirebaseApp from '@/utils/firebase/app';
 import {
   type FirebaseAuthTypes,
   createUserWithEmailAndPassword,
@@ -14,10 +15,9 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
 } from '@/utils/firebase/auth';
-import * as FirebaseApp from '@/utils/firebase/app';
-import { getApps } from '@react-native-firebase/app';
 import { getGoogleCredential } from '@/utils/firebase/google-auth';
 import { upsertUserDocument } from '@/utils/firebase/user-service';
+import { getApps } from '@react-native-firebase/app';
 import {
   EmailAuthProvider,
   getIdToken,

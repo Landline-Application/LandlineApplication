@@ -272,8 +272,6 @@ export default function EmergencyContactsScreen() {
     router.back();
   };
 
-  
-
   if (Platform.OS !== 'android') {
     return (
       <View style={styles.container}>
@@ -304,8 +302,6 @@ export default function EmergencyContactsScreen() {
     );
   }
 
-  
-
   if (loading) {
     return (
       <View style={styles.container}>
@@ -329,8 +325,6 @@ export default function EmergencyContactsScreen() {
       </View>
     );
   }
-
-  
 
   return (
     <View style={styles.container}>
