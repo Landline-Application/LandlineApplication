@@ -501,7 +501,18 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
-                router.push('/feedback');
+                if (isAuthenticated) {
+                  router.push('/feedback');
+                } else {
+                  Alert.alert(
+                    'Sign in required',
+                    'Please sign in to send feedback so we can follow up with you.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Sign In', onPress: () => router.push('/auth/sign-in') },
+                    ],
+                  );
+                }
               }}
               activeOpacity={0.7}
             >

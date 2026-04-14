@@ -165,9 +165,7 @@ export default function FeedbackScreen() {
         <View style={styles.infoBox}>
           <MaterialIcons name="info-outline" size={16} color={COLORS.text.muted} />
           <Text style={styles.infoText}>
-            {user
-              ? 'Your account info will be attached so we can follow up if needed.'
-              : "Feedback is anonymous. Create an account if you'd like us to follow up."}
+            Your account info will be attached so we can follow up if needed.
           </Text>
         </View>
 
