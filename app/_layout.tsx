@@ -37,7 +37,6 @@ import {
 } from '@expo-google-fonts/nunito';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, type Theme, ThemeProvider } from '@react-navigation/native';
-import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const lightTheme: Theme = {

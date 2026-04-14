@@ -1,27 +1,25 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
-import { Dimensions, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Pressable,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Motion, Shadows } from '@/constants/theme';
 import { haptics } from '@/services/haptics';
-import Reanimated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withDecay,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
 // One full rotation per 12 s → 30 deg/s
 const SPIN_DURATION_MS = 12000;
-const SPIN_DEG_PER_S = 360 / (SPIN_DURATION_MS / 1000);
 
 export interface RotaryDialButtonProps {
   active: boolean;
@@ -36,8 +34,9 @@ export const RotaryDialButton = ({
   disabled = false,
   style,
 }: RotaryDialButtonProps) => {
-  const scale = useSharedValue(1);
-  const rotationDeg = useSharedValue(0);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotationAnim = useRef(new Animated.Value(0)).current;
+  const spinRef = useRef<Animated.CompositeAnimation | null>(null);
 
   const dialSize = width * 0.82;
   const dialCenter = dialSize / 2;
@@ -58,43 +57,82 @@ export const RotaryDialButton = ({
   );
 
   useEffect(() => {
+    const run = (fn: (deg: number) => void) => {
+      rotationAnim.stopAnimation((raw) => {
+        const deg = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+        fn(deg);
+      });
+    };
+
+    spinRef.current?.stop?.();
+    spinRef.current = null;
+
     if (active) {
-      const current = rotationDeg.value;
-      const target = current + 360 * 6000;
-      const durationMs = ((target - current) / 360) * SPIN_DURATION_MS;
-      rotationDeg.value = withTiming(target, {
-        duration: durationMs,
-        easing: Easing.linear,
+      run((start) => {
+        rotationAnim.setValue(start);
+        const delta = 360 * 6000;
+        const durationMs = (delta / 360) * SPIN_DURATION_MS;
+        const spin = Animated.timing(rotationAnim, {
+          toValue: start + delta,
+          duration: durationMs,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        });
+        spinRef.current = spin;
+        spin.start();
       });
     } else {
-      cancelAnimation(rotationDeg);
-      rotationDeg.value = withDecay({
-        velocity: SPIN_DEG_PER_S,
-        deceleration: 0.997,
+      run((start) => {
+        rotationAnim.setValue(start);
+        const coast = Animated.timing(rotationAnim, {
+          toValue: start + 90,
+          duration: 2800,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        });
+        spinRef.current = coast;
+        coast.start();
       });
     }
 
     return () => {
-      cancelAnimation(rotationDeg);
+      spinRef.current?.stop?.();
+      spinRef.current = null;
+      rotationAnim.stopAnimation();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [active, rotationAnim]);
 
-  const pressableStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const pressableStyle = {
+    transform: [{ scale: scaleAnim }],
+  };
 
-  const holeLayerStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationDeg.value}deg` }],
-  }));
+  const holeRotate = rotationAnim.interpolate({
+    inputRange: [0, 360],
+    outputRange: ['0deg', '360deg'],
+    extrapolate: 'extend',
+  });
+
+  const holeLayerStyle = {
+    transform: [{ rotate: holeRotate }],
+  };
 
   const handlePressIn = () => {
     if (disabled) return;
-    scale.value = withSpring(Motion.scalePress, { damping: 25, stiffness: 300 });
+    Animated.spring(scaleAnim, {
+      toValue: Motion.scalePress,
+      damping: 25,
+      stiffness: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 25, stiffness: 300 });
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      damping: 25,
+      stiffness: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePress = async () => {
@@ -113,7 +151,7 @@ export const RotaryDialButton = ({
         end={{ x: 1, y: 1 }}
         style={styles.dialBase}
       >
-        <Reanimated.View style={[styles.pressable, pressableStyle]}>
+        <Animated.View style={[styles.pressable, pressableStyle]}>
           <Pressable
             onPress={handlePress}
             onPressIn={handlePressIn}
@@ -128,7 +166,7 @@ export const RotaryDialButton = ({
             <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
           </View>
 
-          <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
+          <Animated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
             {holes.map((hole) => (
               <View
                 key={hole.id}
@@ -146,8 +184,8 @@ export const RotaryDialButton = ({
                 />
               </View>
             ))}
-          </Reanimated.View>
-        </Reanimated.View>
+          </Animated.View>
+        </Animated.View>
       </LinearGradient>
     </View>
   );
