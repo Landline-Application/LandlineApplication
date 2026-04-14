@@ -20,7 +20,6 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import { rescheduleLandlineReminderAfterIntervalChange } from '@/services/landline-mode-reminder';
-import { LANDLINE_REMINDER_INTERVAL_OPTIONS } from '@/utils/landline-reminder-interval';
 import {
   RETENTION_OPTIONS,
   type RetentionDays,
@@ -29,6 +28,7 @@ import {
   getRetentionLabel,
   setRetentionPeriod,
 } from '@/services/notification-retention';
+import { LANDLINE_REMINDER_INTERVAL_OPTIONS } from '@/utils/landline-reminder-interval';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PreferencesScreen() {

@@ -65,11 +65,7 @@ export default function PermissionsScreen() {
       <Blob color={COLORS.primary} size={200} top={-40} right={-60} opacity={0.06} shapeIndex={1} />
 
       <View style={styles.container}>
-        <OnboardingProgress
-          total={3}
-          current={2}
-          labels={['Account', 'Legal', 'Permissions']}
-        />
+        <OnboardingProgress total={3} current={2} labels={['Account', 'Legal', 'Permissions']} />
 
         <View style={styles.header}>
           <Text style={styles.title}>A few things first</Text>

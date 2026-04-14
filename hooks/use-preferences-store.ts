@@ -18,7 +18,6 @@
  *      • remote is null/empty    → keep local, push local state up (first install)
  */
 import * as FirebaseApp from '@/utils/firebase/app';
-import { getApps } from '@react-native-firebase/app';
 import { getUserPreferences, mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { UserPreferences } from '@/utils/firebase/user-service';
 import {
@@ -28,6 +27,7 @@ import {
 } from '@/utils/landline-reminder-interval';
 import { STORAGE_KEYS } from '@/utils/storage/storage-keys';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApps } from '@react-native-firebase/app';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
