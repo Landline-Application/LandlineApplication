@@ -4,12 +4,34 @@ import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { EventSubscription } from 'expo-modules-core';
-import * as Notifications from 'expo-notifications';
 import type { NotificationResponse } from 'expo-notifications';
 import {
   getReminderIntervalHoursAsync,
   isValidReminderIntervalHours,
 } from '@/utils/landline-reminder-interval';
+
+type NotificationsModule = typeof import('expo-notifications');
+
+let cachedNotifications: NotificationsModule | null | undefined;
+
+/** Lazy-load so a dev client built before expo-notifications was linked does not crash the whole bundle. */
+function getNotifications(): NotificationsModule | null {
+  if (cachedNotifications !== undefined) {
+    return cachedNotifications;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedNotifications = require('expo-notifications') as NotificationsModule;
+    return cachedNotifications;
+  } catch (e) {
+    console.warn(
+      '[Landline] expo-notifications native module missing. Rebuild the dev client: pnpm android',
+      e,
+    );
+    cachedNotifications = null;
+    return null;
+  }
+}
 
 export const LANDLINE_REMINDER_BG_TASK_NAME = 'LANDLINE_REMINDER_BACKGROUND';
 
@@ -37,6 +59,8 @@ function isLandlineReminderData(data: Record<string, unknown> | undefined): bool
 }
 
 async function ensurePostNotificationPermission(): Promise<boolean> {
+  const Notifications = getNotifications();
+  if (!Notifications) return false;
   try {
     const { status } = await Notifications.getPermissionsAsync();
     if (status === 'granted') return true;
@@ -48,6 +72,8 @@ async function ensurePostNotificationPermission(): Promise<boolean> {
 }
 
 export async function cancelLandlineModeReminderScheduled(): Promise<void> {
+  const Notifications = getNotifications();
+  if (!Notifications) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(LANDLINE_REMINDER_NOTIFICATION_ID);
   } catch {
@@ -68,6 +94,9 @@ function clampFutureTriggerDate(at: Date): Date {
  */
 export async function scheduleLandlineReminderAt(triggerAt: Date): Promise<void> {
   if (Platform.OS !== 'android') return;
+
+  const Notifications = getNotifications();
+  if (!Notifications) return;
 
   try {
     const ok = await ensurePostNotificationPermission();
@@ -135,10 +164,10 @@ async function applyLandlineReminderAction(actionIdentifier: string): Promise<vo
     await turnOffLandlineModeFromReminder();
     return;
   }
-  if (
-    actionIdentifier === ACTION_LANDLINE_KEEP_ON ||
-    actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
-  ) {
+  const Notifications = getNotifications();
+  const defaultTap =
+    Notifications != null && actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER;
+  if (actionIdentifier === ACTION_LANDLINE_KEEP_ON || defaultTap) {
     if (!NotificationApiManager.isLandlineModeActive()) {
       await cancelLandlineModeReminderScheduled();
       return;
@@ -168,6 +197,8 @@ export async function handleLandlineReminderTaskPayload(data: unknown): Promise<
 
 export async function ensureLandlineReminderScheduledIfNeeded(): Promise<void> {
   if (Platform.OS !== 'android') return;
+  const Notifications = getNotifications();
+  if (!Notifications) return;
   try {
     if (!NotificationApiManager.isLandlineModeActive()) return;
 
@@ -197,7 +228,7 @@ export async function rescheduleLandlineReminderAfterIntervalChange(
   await scheduleLandlineReminderAt(new Date(Date.now() + hours * 60 * 60 * 1000));
 }
 
-async function configureCategoryAndChannel(): Promise<void> {
+async function configureCategoryAndChannel(Notifications: NotificationsModule): Promise<void> {
   await Notifications.setNotificationChannelAsync(LANDLINE_REMINDER_CHANNEL_ID, {
     name: 'Landline Mode reminders',
     importance: Notifications.AndroidImportance.HIGH,
@@ -223,6 +254,9 @@ async function configureCategoryAndChannel(): Promise<void> {
 export async function initLandlineReminderSubsystem(): Promise<void> {
   if (Platform.OS !== 'android' || subsystemInitialized) return;
 
+  const Notifications = getNotifications();
+  if (!Notifications) return;
+
   try {
     Notifications.setNotificationHandler({
       handleNotification: async (notification) => {
@@ -244,7 +278,7 @@ export async function initLandlineReminderSubsystem(): Promise<void> {
       },
     });
 
-    await configureCategoryAndChannel();
+    await configureCategoryAndChannel(Notifications);
 
     try {
       await Notifications.registerTaskAsync(LANDLINE_REMINDER_BG_TASK_NAME);
