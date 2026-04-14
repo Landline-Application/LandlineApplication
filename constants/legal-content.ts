@@ -1,3 +1,16 @@
+/**
+ * Version each legal document independently. Bump the integer for any
+ * user-visible wording change — users with a stored version below current
+ * will be routed through `/legal-update` to re-consent.
+ */
+export const LEGAL_DOC_VERSIONS = {
+  tos: 1,
+  privacy: 1,
+  riskAck: 1,
+} as const;
+
+export type LegalDocKey = keyof typeof LEGAL_DOC_VERSIONS;
+
 export const TERMS_OF_USE = `TERMS OF USE
 
 Last Updated: ${new Date().toLocaleDateString()}
