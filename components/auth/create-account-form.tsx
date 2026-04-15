@@ -90,7 +90,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       await signUp(email, password);
       Alert.alert(
         'Verify Your Email',
-        'A verification link has been sent to your email address. Please check your inbox and spam folder.',
+        'A verification link has been sent to your email address. Please check your email inbox and spam folder.',
         [{ text: 'OK', onPress: onSuccess }],
       );
     } catch (error: unknown) {
