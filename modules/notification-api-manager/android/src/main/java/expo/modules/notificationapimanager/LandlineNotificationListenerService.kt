@@ -536,17 +536,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     ) {
         val prefs = getSharedPreferences("landline_notifications", MODE_PRIVATE)
         val existingLogs = prefs.getString("notification_logs", "") ?: ""
-        
-        // Create notification JSON entry
-        val notificationData = mapOf(
-            KEY_PACKAGE_NAME to packageName,
-            KEY_APP_NAME to appName,
-            KEY_TITLE to title,
-            KEY_TEXT to text,
-            KEY_TIMESTAMP to timestamp,
-            KEY_ID to notificationId
-        )
-        
+
         // Sanitize fields to avoid breaking the line-based format
         val sanitizedTitle = title.replace("\n", " ").replace("|", " ")
         val sanitizedText = text.replace("\n", " ").replace("|", " ")
@@ -563,24 +553,6 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         
         // Save to SharedPreferences (temporary solution)
         prefs.edit().putString("notification_logs", updatedLogs).apply()
-        
-        // Also broadcast the notification for real-time updates
-        broadcastNotification(notificationData)
-    }
-
-    /**
-     * Broadcast notification event for real-time UI updates
-     */
-    private fun broadcastNotification(notificationData: Map<String, Any>) {
-        val intent = Intent("com.landlineapp.NOTIFICATION_RECEIVED").apply {
-            putExtra(KEY_PACKAGE_NAME, notificationData[KEY_PACKAGE_NAME] as String)
-            putExtra(KEY_APP_NAME, notificationData[KEY_APP_NAME] as String)
-            putExtra(KEY_TITLE, notificationData[KEY_TITLE] as String)
-            putExtra(KEY_TEXT, notificationData[KEY_TEXT] as String)
-            putExtra(KEY_TIMESTAMP, notificationData[KEY_TIMESTAMP] as Long)
-            putExtra(KEY_ID, notificationData[KEY_ID] as Int)
-        }
-        sendBroadcast(intent)
     }
     
     // Auto-Reply Functionality
