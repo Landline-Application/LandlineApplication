@@ -28,6 +28,8 @@ LandlineApplication/
 
 > **CI / EAS Build:** The app config reads `process.env.GOOGLE_SERVICES_JSON ?? './google-services.json'`. In CI or EAS Build environments, set the `GOOGLE_SERVICES_JSON` environment variable to the path of the file instead of placing it in the project root.
 
+> **Google Sign-In:** The `app.config.ts` also requires `GOOGLE_WEB_CLIENT_ID` in `.env.local`. Without it the app throws an error on startup. Find this in Firebase Console → Authentication → Sign-in method → Google → Web client ID.
+
 ---
 
 ## 3. After adding the file

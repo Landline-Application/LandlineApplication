@@ -25,16 +25,26 @@ This file contains the Firebase configuration and must be obtained from a team m
 2. Or request access to the Firebase Console project from the project owner
 3. Place the file at: `LandlineApplication/google-services.json`
 
-### 2. Environment Variable (Optional)
+### 2. Environment Variables (Required)
 
-For local builds with EAS, you can set the path:
+All secrets and deployment IDs are configured via `.env.local` (gitignored). Copy from `.env.example`:
 
 ```bash
-# In .env.local (not committed)
-GOOGLE_SERVICES_JSON=/absolute/path/to/google-services.json
+cp .env.example .env.local
 ```
 
-The `app.config.ts` will use this environment variable if set, otherwise falls back to `./google-services.json`.
+| Variable               | Required | Description                                                                                         |
+| ---------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `GOOGLE_SERVICES_JSON` | Yes      | Absolute path to `google-services.json`                                                             |
+| `GOOGLE_WEB_CLIENT_ID` | Yes      | Google OAuth 2.0 web client ID for from Firebase Console → Authentication → Sign-in method → Google |
+
+```bash
+# .env.local (not committed)
+GOOGLE_SERVICES_JSON=/absolute/path/to/google-services.json
+GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+The `app.config.ts` reads these at runtime. If `GOOGLE_WEB_CLIENT_ID` is missing, the app throws an error on startup.
 
 ## Firebase Services Used
 
