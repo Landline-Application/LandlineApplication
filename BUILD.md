@@ -20,11 +20,27 @@ You can follow the official [Expo environment setup guide](https://docs.expo.dev
    cd LandlineApplication
    ```
 
-2. Set up your `google-services.json` by adding its **absolute path** to `.env.local`:
+2. Set up environment variables in `.env.local` (copy from `.env.example`):
 
    ```bash
-   # .env.local — must be a hardcoded absolute path, not relative
+   cp .env.example .env.local
+   ```
+
+   Fill in the values:
+
+   | Variable               | Required       | Description                                            |
+   | ---------------------- | -------------- | ------------------------------------------------------ |
+   | `GOOGLE_SERVICES_JSON` | Yes            | Absolute path to `google-services.json`                |
+   | `GOOGLE_WEB_CLIENT_ID` | Yes            | Google OAuth 2.0 web client ID (from Firebase Console) |
+   | `EAS_PROJECT_ID`       | For EAS builds | Expo project ID (from Expo dashboard)                  |
+   | `EXPO_OWNER`           | For EAS builds | Expo organization slug                                 |
+
+   ```bash
+   # .env.local example
    GOOGLE_SERVICES_JSON=/absolute/path/to/google-services.json
+   GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+   EAS_PROJECT_ID=9054e1e3-4810-4cc2a8
+   EXPO_OWNER=landline-application
    ```
 
 3. Install dependencies using pnpm:
@@ -146,6 +162,7 @@ Runs the build on your machine using your local Android SDK. Requires `ANDROID_H
 eas build:version:set -p android -e production
 
 # If you choose local, google-services.json IS REQUIRED, replace /PATH with your project path.
+# Ensure .env.local is configured (see Step 2).
 GOOGLE_SERVICES_JSON=/PATH/google-services.json \
         eas build --platform android --profile production --local
 ```
