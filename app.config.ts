@@ -102,6 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       eas: {
         projectId: '9054e1e3-4810-4d81-acef-067671c365a8',
       },
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },
 
     owner: 'landline-application',

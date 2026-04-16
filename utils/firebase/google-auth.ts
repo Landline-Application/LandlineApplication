@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 import * as FirebaseApp from '@/utils/firebase/app';
 import { deleteUserDocument } from '@/utils/firebase/user-service';
 import {
@@ -9,8 +11,15 @@ import {
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId;
+if (!googleWebClientId) {
+  throw new Error(
+    'GOOGLE_WEB_CLIENT_ID is not configured. Set it in .env.local and restart the dev server.',
+  );
+}
+
 GoogleSignin.configure({
-  webClientId: '188793229674-8d9c9m7k0gq0lk56604n4a8d01mrc2kg.apps.googleusercontent.com',
+  webClientId: googleWebClientId as string,
 });
 
 async function getGoogleIdToken(): Promise<string> {
