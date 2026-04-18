@@ -11,6 +11,8 @@ import android.content.SharedPreferences
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -42,7 +44,19 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         private const val KEY_NOTIFICATION_FILTER_ENABLED = "notification_filter_enabled"
         private const val KEY_ALLOWED_NOTIFICATION_PACKAGES = "allowed_notification_packages"
         private const val KEY_EMERGENCY_PHONE_DIGITS = "emergency_phone_digits"
-        
+
+        /** Second incoming call from the same number within this window rings through like an emergency. */
+        private const val KEY_REPEAT_CALL_BYPASS_ENABLED = "repeat_call_bypass_enabled"
+        private const val KEY_REPEAT_CALL_BYPASS_WINDOW_MS = "repeat_call_bypass_window_ms"
+        private const val DEFAULT_REPEAT_CALL_WINDOW_MS = 7L * 60L * 1000L
+
+        /**
+         * After repeat-call bypass, temporarily allow calls from any sender under PRIORITY DND
+         * (matches relaxed policy), then restore starred-only calls. Must stay within
+         * [NotificationManager.Policy] limits.
+         */
+        private const val REPEAT_BYPASS_DND_RELAX_DURATION_MS = 180_000L
+
         // Auto-reply preferences
         private const val AUTO_REPLY_PREFS_NAME = "auto_reply_prefs"
         private const val KEY_AUTO_REPLY_ENABLED = "auto_reply_enabled"
@@ -70,6 +84,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         @JvmStatic
         fun clearEmergencyContactsCache() {
             serviceInstance?.cachedEmergencyContacts = null
+        }
+
+        @JvmStatic
+        fun clearRepeatCallBypassTracking() {
+            serviceInstance?.clearRepeatCallTracking()
+            serviceInstance?.cancelRepeatBypassDndRelaxation()
         }
 
         /**
@@ -204,6 +224,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     // originating app reposts the same notification we cancel it again without
     // re-logging (avoiding the "second-message shows as normal DND notification" bug).
     private val cancelledNotificationKeys = mutableSetOf<String>()
+
+    /** Normalized caller digits (last 10 when available) -> postTime of last suppressed incoming call. */
+    private val repeatCallFirstAttemptAt = mutableMapOf<String, Long>()
+    private val repeatCallTrackingLock = Any()
+
+    /** Temporarily relax DND notification policy so non-starred callers can ring after repeat-call bypass. */
+    private val dndRelaxHandler = Handler(Looper.getMainLooper())
+    private var dndRestoreLandlinePolicyRunnable: Runnable? = null
     
     private var rebindAttemptCount = 0
     private val rebindHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -228,8 +256,93 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
         rebindHandler.removeCallbacksAndMessages(null)
+        cancelRepeatBypassDndRelaxation()
+        clearRepeatCallTracking()
         serviceInstance = null
         Log.d(TAG, "LandlineNotificationListenerService destroyed")
+    }
+
+    internal fun clearRepeatCallTracking() {
+        synchronized(repeatCallTrackingLock) {
+            repeatCallFirstAttemptAt.clear()
+        }
+    }
+
+    /**
+     * Cancels a pending post–repeat-call policy restore. Does not change the current policy;
+     * [NotificationApiManagerModule] / JS is responsible for restoring when Landline ends.
+     */
+    internal fun cancelRepeatBypassDndRelaxation() {
+        dndRestoreLandlinePolicyRunnable?.let { dndRelaxHandler.removeCallbacks(it) }
+        dndRestoreLandlinePolicyRunnable = null
+    }
+
+    /** Matches [DndManagerModule.setLandlineNotificationPolicy]: PRIORITY DND, calls starred only. */
+    private fun buildLandlineStarredCallsNotificationPolicy(): NotificationManager.Policy {
+        return NotificationManager.Policy(
+            NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES or
+                NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS,
+            NotificationManager.Policy.PRIORITY_SENDERS_STARRED,
+            NotificationManager.Policy.PRIORITY_SENDERS_ANY
+        )
+    }
+
+    /**
+     * Under INTERRUPTION_FILTER_PRIORITY, treat phone calls from any sender as priority
+     * so the second ring can break through until we restore starred-only policy.
+     */
+    private fun buildRepeatBypassRelaxedCallNotificationPolicy(): NotificationManager.Policy {
+        return NotificationManager.Policy(
+            NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES or
+                NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
+                NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS,
+            NotificationManager.Policy.PRIORITY_SENDERS_ANY,
+            NotificationManager.Policy.PRIORITY_SENDERS_ANY
+        )
+    }
+
+    private fun scheduleTemporaryDndRelaxationForRepeatCallBypass() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return
+        }
+        val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        if (!nm.isNotificationPolicyAccessGranted) {
+            Log.w(TAG, "Repeat-call DND relax skipped: notification policy access not granted")
+            return
+        }
+        if (!isLandlineModeActive()) {
+            return
+        }
+        try {
+            nm.setNotificationPolicy(buildRepeatBypassRelaxedCallNotificationPolicy())
+            Log.d(TAG, "DND notification policy: calls from any sender (repeat-call bypass)")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to apply relaxed notification policy for repeat-call", e)
+            return
+        }
+        dndRestoreLandlinePolicyRunnable?.let { dndRelaxHandler.removeCallbacks(it) }
+        val restore = Runnable {
+            dndRestoreLandlinePolicyRunnable = null
+            if (!isLandlineModeActive()) {
+                Log.d(TAG, "DND policy restore skipped: Landline mode is off")
+                return@Runnable
+            }
+            val nmRestore =
+                applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    ?: return@Runnable
+            if (!nmRestore.isNotificationPolicyAccessGranted) {
+                return@Runnable
+            }
+            try {
+                nmRestore.setNotificationPolicy(buildLandlineStarredCallsNotificationPolicy())
+                Log.d(TAG, "DND notification policy restored: calls from starred contacts only")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to restore Landline notification policy after repeat-call relax", e)
+            }
+        }
+        dndRestoreLandlinePolicyRunnable = restore
+        dndRelaxHandler.postDelayed(restore, REPEAT_BYPASS_DND_RELAX_DURATION_MS)
     }
 
     override fun onListenerConnected() {
@@ -272,6 +385,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         // If Landline Mode is off, skip all processing (both logging and auto-reply require it)
         if (!landlineModeActive) {
             Log.d(TAG, "Landline mode is off, skipping")
+            cancelRepeatBypassDndRelaxation()
             return
         }
 
@@ -306,6 +420,17 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             val appName = getAppName(packageName)
             val isEmergencyContactNotification = isFromEmergencyContact(title, text)
 
+            val isCallNotification =
+                notification.category == Notification.CATEGORY_CALL
+            val repeatCallerKey =
+                if (isCallNotification) extractCallerDigitKeyForCall(title, text) else null
+            val isRepeatCallBypass =
+                !isEmergencyContactNotification &&
+                    repeatCallerKey != null &&
+                    shouldBypassViaRepeatCall(repeatCallerKey, sbn.postTime)
+            val deliverNotificationUntouched =
+                isEmergencyContactNotification || isRepeatCallBypass
+
             // Compute content key early so we can use it in the repost check below.
             // Including postTime means two messages with identical text but different
             // post times are treated as distinct events and both get logged.
@@ -316,9 +441,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             // If this key was previously cancelled (non-emergency repost), decide whether
             // to cancel again silently or to treat this as a genuinely new message.
             if (cancelledNotificationKeys.contains(sbn.key)) {
-                if (isEmergencyContactNotification) {
-                    // Emergency contact - remove from cancelled set so it shows normally.
-                    Log.d(TAG, "Emergency contact repost - removing cancel suppression for ${sbn.key}")
+                if (deliverNotificationUntouched) {
+                    // Emergency or repeat-call bypass — remove from cancelled set so it shows normally.
+                    Log.d(TAG, "Bypass repost - removing cancel suppression for ${sbn.key}")
                     cancelledNotificationKeys.remove(sbn.key)
                     // Fall through to log and let it show (do not cancel below).
                 } else if (loggedNotificationContent[sbn.key] == contentKey) {
@@ -346,8 +471,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             // notification twice in quick succession for unrelated reasons.
             if (loggedNotificationContent[sbn.key] == contentKey) {
                 Log.d(TAG, "Already logged key ${sbn.key} with same content, skipping duplicate")
-                // Still cancel if it's a non-emergency duplicate
-                if (!isEmergencyContactNotification) {
+                // Still cancel if it's a non-bypass duplicate
+                if (!deliverNotificationUntouched) {
                     try {
                         cancelNotification(sbn.key)
                     } catch (e: Exception) {
@@ -366,6 +491,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 false
             }
 
+            if (isEmergencyContactNotification && repeatCallerKey != null) {
+                synchronized(repeatCallTrackingLock) {
+                    repeatCallFirstAttemptAt.remove(repeatCallerKey)
+                }
+            }
+
             val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
             logNotification(
                 packageName = packageName,
@@ -379,13 +510,19 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             )
             Log.d(TAG, "Logged notification from $appName: $title")
 
-            // Emergency contacts: leave the original notification completely untouched.
-            // The DND policy allows messages from any sender, so the SMS app's own
-            // notification will show and ring normally through the shade. We have already
-            // logged it above — nothing else to do.
-            // Non-emergency: cancel and track the key so reposts are also suppressed.
-            if (isEmergencyContactNotification) {
-                Log.d(TAG, "Emergency contact - leaving notification untouched so it shows normally")
+            // Emergency contacts and repeat-call bypass: leave the original notification
+            // completely untouched so the system can ring/show the call.
+            // Otherwise: cancel and track the key so reposts are also suppressed.
+            if (deliverNotificationUntouched) {
+                if (isRepeatCallBypass) {
+                    synchronized(repeatCallTrackingLock) {
+                        repeatCallerKey?.let { repeatCallFirstAttemptAt.remove(it) }
+                    }
+                    scheduleTemporaryDndRelaxationForRepeatCallBypass()
+                    Log.d(TAG, "Repeat-call bypass — leaving incoming call notification untouched; relaxed DND call policy temporarily")
+                } else {
+                    Log.d(TAG, "Emergency contact - leaving notification untouched so it shows normally")
+                }
             } else {
                 Log.d(TAG, "Non-emergency - cancelling from shade")
                 cancelledNotificationKeys.add(sbn.key)
@@ -393,6 +530,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                     cancelNotification(sbn.key)
                 } catch (e: Exception) {
                     Log.w(TAG, "Could not cancel non-emergency notification", e)
+                }
+                if (isCallNotification && repeatCallerKey != null) {
+                    synchronized(repeatCallTrackingLock) {
+                        repeatCallFirstAttemptAt[repeatCallerKey] = sbn.postTime
+                    }
+                    Log.d(TAG, "Recorded suppressed call for repeat-call bypass (caller key len=${repeatCallerKey.length})")
                 }
             }
 
@@ -418,6 +561,33 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         // the protection against same-content reposts by the SMS app.
         // The set is cleared when a new unique message arrives (different contentKey),
         // meaning a genuine new SMS always gets logged and processed correctly.
+    }
+
+    /**
+     * Last 10 digits when available, else full digit string; null if we cannot identify the caller
+     * (private / withheld numbers often have too few digits — repeat-call bypass does not apply).
+     */
+    private fun extractCallerDigitKeyForCall(title: String, text: String): String? {
+        val digits = normalizeDigits(title + text)
+        if (digits.length < 7) return null
+        return if (digits.length >= 10) digits.takeLast(10) else digits
+    }
+
+    private fun shouldBypassViaRepeatCall(callerKey: String, eventTime: Long): Boolean {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (!prefs.getBoolean(KEY_REPEAT_CALL_BYPASS_ENABLED, true)) {
+            return false
+        }
+        val windowMs = prefs.getLong(KEY_REPEAT_CALL_BYPASS_WINDOW_MS, DEFAULT_REPEAT_CALL_WINDOW_MS)
+            .coerceIn(60_000L, 60L * 60L * 1000L)
+        synchronized(repeatCallTrackingLock) {
+            val prev = repeatCallFirstAttemptAt[callerKey] ?: return false
+            if (eventTime - prev > windowMs) {
+                repeatCallFirstAttemptAt.remove(callerKey)
+                return false
+            }
+            return true
+        }
     }
 
     /**

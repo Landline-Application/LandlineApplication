@@ -217,6 +217,9 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.edit().putBoolean("is_landline_mode_active", isActive).apply()
+            if (!isActive) {
+                LandlineNotificationListenerService.clearRepeatCallBypassTracking()
+            }
             true
         }
 
@@ -284,6 +287,36 @@ class NotificationApiManagerModule : Module() {
             val packages = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
             val emergency = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
             packages.isNotEmpty() || emergency.isNotEmpty()
+        }
+
+        // Repeat-call bypass: second incoming call from the same number within a time window rings through.
+
+        Function("isRepeatCallBypassEnabled") {
+            val ctx = appContext.reactContext ?: return@Function true
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.getBoolean("repeat_call_bypass_enabled", true)
+        }
+
+        Function("setRepeatCallBypassEnabled") { enabled: Boolean ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("repeat_call_bypass_enabled", enabled).apply()
+            true
+        }
+
+        Function("getRepeatCallBypassWindowMs") {
+            val ctx = appContext.reactContext ?: return@Function 7L * 60L * 1000L
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.getLong("repeat_call_bypass_window_ms", 7L * 60L * 1000L)
+                .coerceIn(60_000L, 60L * 60L * 1000L)
+        }
+
+        Function("setRepeatCallBypassWindowMs") { windowMs: Long ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val clamped = windowMs.coerceIn(60_000L, 60L * 60L * 1000L)
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putLong("repeat_call_bypass_window_ms", clamped).apply()
+            true
         }
 
         /**

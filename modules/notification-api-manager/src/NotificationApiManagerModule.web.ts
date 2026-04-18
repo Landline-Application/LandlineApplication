@@ -69,6 +69,19 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return false;
   }
 
+  isRepeatCallBypassEnabled() {
+    return true;
+  }
+  setRepeatCallBypassEnabled() {
+    return false;
+  }
+  getRepeatCallBypassWindowMs() {
+    return 7 * 60 * 1000;
+  }
+  setRepeatCallBypassWindowMs() {
+    return false;
+  }
+
   // Auto-Reply (Web stubs - not supported)
   isAutoReplyEnabled() {
     return false;
