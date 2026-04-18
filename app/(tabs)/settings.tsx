@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 
 import { AppAttentionCard } from '@/components/settings/app-attention-card';
 import { Button } from '@/components/ui/button';
@@ -495,6 +495,32 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+
+            {Platform.OS === 'android' && (
+              <>
+                <View style={styles.itemDivider} />
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    router.push('/repeat-call-bypass' as Href);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                    <View style={styles.menuItemIcon}>
+                      <MaterialIcons name="phone-callback" size={22} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.menuItemContent}>
+                      <Text style={styles.menuItemTitle}>Repeat-call bypass</Text>
+                      <Text style={styles.menuItemSubtitle}>
+                        Let a second call from the same number through within a short window
+                      </Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
 
             <View style={styles.itemDivider} />
 
