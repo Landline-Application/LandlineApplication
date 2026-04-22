@@ -514,12 +514,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             // completely untouched so the system can ring/show the call.
             // Otherwise: cancel and track the key so reposts are also suppressed.
             if (deliverNotificationUntouched) {
-                if (isRepeatCallBypass) {
+                if (isEmergencyContactNotification && isCallNotification) {
+                    scheduleTemporaryDndRelaxationForRepeatCallBypass()
+                    Log.d(TAG, "Emergency contact call — leaving notification untouched; relaxed DND call policy temporarily")
+                } else if (isRepeatCallBypass) {
                     synchronized(repeatCallTrackingLock) {
                         repeatCallerKey?.let { repeatCallFirstAttemptAt.remove(it) }
                     }
-                    scheduleTemporaryDndRelaxationForRepeatCallBypass()
-                    Log.d(TAG, "Repeat-call bypass — leaving incoming call notification untouched; relaxed DND call policy temporarily")
+                    Log.d(TAG, "Repeat-call bypass — leaving incoming call notification untouched")
                 } else {
                     Log.d(TAG, "Emergency contact - leaving notification untouched so it shows normally")
                 }
