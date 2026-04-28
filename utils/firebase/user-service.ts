@@ -83,6 +83,30 @@ export async function deleteUserDocument(uid: string): Promise<void> {
   await deleteDoc(ref);
 }
 
+// ---------------------------------------------------------------------------
+// Anonymous account migration
+// ---------------------------------------------------------------------------
+
+/**
+ * Copies preferences (and any other anonymous Firestore data) from the
+ * anonymous user document into the real authenticated user document.
+ *
+ * Strategy: anonymous data wins if it exists; otherwise existing data is
+ * left untouched.
+ */
+export async function migrateAnonymousUserData(
+  anonymousUid: string,
+  realUid: string,
+): Promise<void> {
+  const anonPrefs = await getUserPreferences(anonymousUid);
+  if (!anonPrefs || Object.keys(anonPrefs).length === 0) {
+    // Nothing to migrate — the real account already has its own data.
+    return;
+  }
+
+  await mergeUserPreferences(realUid, anonPrefs);
+}
+
 export async function getUserPreferences(uid: string): Promise<UserPreferences | null> {
   const snap = await getDoc(doc(usersCollection, uid));
   if (!snap.exists()) return null;
