@@ -36,6 +36,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "LandlineNotifListener"
         private const val PREFS_NAME = "landline_mode_prefs"
+        private const val CONTACTS_PREFS_NAME = "landline_contacts_prefs"
         private const val KEY_LANDLINE_MODE = "is_landline_mode_active"
 
         /** When enabled and at least one app or emergency number is set, non-matching notifications are cancelled. */
@@ -218,14 +219,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         serviceInstance = this
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        getSharedPreferences(CONTACTS_PREFS_NAME, MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
         Log.d(TAG, "LandlineNotificationListenerService created")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        getSharedPreferences(CONTACTS_PREFS_NAME, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(emergencyContactsPrefsListener)
         rebindHandler.removeCallbacksAndMessages(null)
         serviceInstance = null
@@ -446,7 +447,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
 
         val allowedPackages = prefs.getStringSet(KEY_ALLOWED_NOTIFICATION_PACKAGES, emptySet()) ?: emptySet()
-        val emergencyDigits = prefs.getStringSet(KEY_EMERGENCY_PHONE_DIGITS, emptySet()) ?: emptySet()
+        val contactsPrefs = getSharedPreferences(CONTACTS_PREFS_NAME, MODE_PRIVATE)
+        val emergencyDigits = contactsPrefs.getStringSet(KEY_EMERGENCY_PHONE_DIGITS, emptySet()) ?: emptySet()
 
         if (allowedPackages.isEmpty() && emergencyDigits.isEmpty()) {
             return false
@@ -726,7 +728,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
 
     private fun loadEmergencyContacts(): List<EmergencyContactEntry> {
         cachedEmergencyContacts?.let { return it }
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val prefs = getSharedPreferences(CONTACTS_PREFS_NAME, MODE_PRIVATE)
         val json = prefs.getString("emergency_contacts_json", null)
         val result: List<EmergencyContactEntry>
         if (!json.isNullOrBlank()) {
