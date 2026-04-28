@@ -328,8 +328,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             
             Log.d(TAG, "Extracted - Title: '$title', Text: '${text.take(100)}...'")
             
-            // Skip if notification is from our own app or system notifications
-            if (shouldSkipNotification(packageName, title, text)) {
+            // Skip if notification is from our own app, system notifications, or navigation
+            if (shouldSkipNotification(packageName, title, text, notification)) {
                 return
             }
 
@@ -523,7 +523,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    private fun shouldSkipNotification(packageName: String, title: String, text: String): Boolean {
+    private fun shouldSkipNotification(packageName: String, title: String, text: String, notification: android.app.Notification): Boolean {
         // Prevent the emergency alert we post from being processed/logged again.
         if (title.startsWith("Emergency Contact:")) {
             return true
@@ -536,6 +536,14 @@ class LandlineNotificationListenerService : NotificationListenerService() {
 
         // Skip pure system UI notifications
         if (packageName == "android" || packageName == "com.android.systemui") {
+            return true
+        }
+
+        // Skip navigation notifications (e.g. Google Maps turn-by-turn directions).
+        // Apps that correctly declare CATEGORY_NAVIGATION are automatically excluded;
+        // users can manually manage unsupported apps via the notification filter later.
+        if (notification.category == android.app.Notification.CATEGORY_NAVIGATION) {
+            Log.d(TAG, "Skipping navigation notification from $packageName")
             return true
         }
 
