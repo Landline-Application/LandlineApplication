@@ -319,7 +319,11 @@ class NotificationApiManagerModule : Module() {
                         // v2: autoReplied flag
                         "autoReplied" to ((parts.getOrNull(7) == "1") as Any),
                         // v3: the text of the reply that was sent (empty string for older entries)
-                        "replyText" to ((parts.getOrNull(8) ?: "") as Any)
+                        "replyText" to ((parts.getOrNull(8) ?: "") as Any),
+                        // v4: group chat fields (false/"" for older entries)
+                        "isGroupChat" to ((parts.getOrNull(9) == "1") as Any),
+                        "groupName" to ((parts.getOrNull(10) ?: "") as Any),
+                        "groupSender" to ((parts.getOrNull(11) ?: "") as Any)
                     )
                     notifications.add(notification)
                 }
