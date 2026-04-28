@@ -190,6 +190,43 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             return trimmed.equals("Sensitive notification content hidden", ignoreCase = true) ||
                    trimmed.equals("Content hidden", ignoreCase = true)
         }
+
+        /**
+         * Returns true if the notification is from a group conversation.
+         * Uses MessagingStyle.isGroupConversation (set by WhatsApp, Signal, Telegram,
+         * Google Messages, etc.) and falls back to checking for a non-blank
+         * EXTRA_CONVERSATION_TITLE which apps also set for named group threads.
+         */
+        fun isGroupConversation(notification: Notification): Boolean {
+            val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+            if (style != null) {
+                if (style.isGroupConversation) return true
+                if (!style.conversationTitle.isNullOrBlank()) return true
+            }
+            val extras = notification.extras ?: return false
+            return !extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE).isNullOrBlank()
+        }
+
+        /**
+         * Extracts group metadata from a notification.
+         * Returns a Pair of (groupName, senderName).
+         * Both may be blank if the information is not available.
+         */
+        fun extractGroupInfo(notification: Notification): Pair<String, String> {
+            val extras = notification.extras
+
+            // Group name: prefer MessagingStyle conversationTitle, fall back to extra
+            val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+            val groupName = (style?.conversationTitle?.toString()?.takeIf { it.isNotBlank() }
+                ?: extras?.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()
+                ?: "").trim()
+
+            // Sender: the person on the last MessagingStyle message
+            val senderName = (style?.messages?.lastOrNull()?.person?.name?.toString()
+                ?: "").trim()
+
+            return Pair(groupName, senderName)
+        }
     }
     
     private val repliedNotifications = mutableSetOf<String>()
@@ -367,6 +404,8 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
 
             val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
+            val isGroupChat = isGroupConversation(notification)
+            val (groupName, groupSender) = if (isGroupChat) extractGroupInfo(notification) else Pair("", "")
             logNotification(
                 packageName = packageName,
                 appName = appName,
@@ -375,7 +414,10 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                 timestamp = timestamp,
                 notificationId = notificationId,
                 autoReplied = autoReplied,
-                replyText = replyText
+                replyText = replyText,
+                isGroupChat = isGroupChat,
+                groupName = groupName,
+                groupSender = groupSender
             )
             Log.d(TAG, "Logged notification from $appName: $title")
 
@@ -532,7 +574,10 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         timestamp: Long,
         notificationId: Int,
         autoReplied: Boolean = false,
-        replyText: String = ""
+        replyText: String = "",
+        isGroupChat: Boolean = false,
+        groupName: String = "",
+        groupSender: String = ""
     ) {
         val prefs = getSharedPreferences("landline_notifications", MODE_PRIVATE)
         val existingLogs = prefs.getString("notification_logs", "") ?: ""
@@ -541,9 +586,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         val sanitizedTitle = title.replace("\n", " ").replace("|", " ")
         val sanitizedText = text.replace("\n", " ").replace("|", " ")
         val sanitizedReplyText = replyText.replace("\n", " ").replace("|", " ")
+        val sanitizedGroupName = groupName.replace("\n", " ").replace("|", " ")
+        val sanitizedGroupSender = groupSender.replace("\n", " ").replace("|", " ")
 
-        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied|replyText
-        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}|$sanitizedReplyText"
+        // Format: timestamp|packageName|appName|title|text|postTime|id|autoReplied|replyText|isGroupChat|groupName|groupSender
+        val logEntry = "${System.currentTimeMillis()}|$packageName|$appName|$sanitizedTitle|$sanitizedText|$timestamp|$notificationId|${if (autoReplied) "1" else "0"}|$sanitizedReplyText|${if (isGroupChat) "1" else "0"}|$sanitizedGroupName|$sanitizedGroupSender"
         
         val updatedLogs = if (existingLogs.isEmpty()) {
             logEntry
@@ -577,6 +624,13 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         // Check if app is allowed for auto-reply
         if (!isAppAllowedForAutoReply(packageName)) {
             Log.d(TAG, "App $packageName not in auto-reply allowed list")
+            return false
+        }
+
+        // Skip auto-reply for group conversations — sending a generic reply to a group
+        // chat would be disruptive and expose the user's Landline Mode to everyone.
+        if (isGroupConversation(notification)) {
+            Log.d(TAG, "Skipping auto-reply for group conversation from $packageName")
             return false
         }
         
