@@ -32,7 +32,7 @@ export function PhoneLoginForm({
   footerLinkLabel,
   footerLinkRoute,
 }: PhoneLoginFormProps) {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, isOperationInProgress } = useAuth();
   const {
     detectedCountry,
     phoneInput,
@@ -43,12 +43,14 @@ export function PhoneLoginForm({
   } = usePhoneAuth({ onSuccess });
 
   const handleGoogleSignIn = async () => {
+    if (isOperationInProgress) return;
     try {
       await signInWithGoogle();
       if (onSuccess) onSuccess();
       else router.replace('/(tabs)');
     } catch (error: unknown) {
-      if ((error as { code?: string })?.code !== 'SIGN_IN_CANCELLED') {
+      const code = (error as { code?: string })?.code;
+      if (code !== 'SIGN_IN_CANCELLED' && code !== 'auth/operation-in-progress') {
         Alert.alert(
           'Google Sign-In Failed',
           (error as Error)?.message || 'An unexpected error occurred.',
