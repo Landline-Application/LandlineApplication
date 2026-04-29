@@ -19,6 +19,7 @@ import { router, useFocusEffect } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -44,8 +45,18 @@ function parseStoredContacts(): EmergencyEntry[] {
   return NotificationApiManager.getEmergencyPhoneNumbers().map((p) => ({ name: '', phone: p }));
 }
 
+const D_BG = '#5f5f5f';
+const D_SURFACE = '#4a4a4a';
+const D_SURFACE_IN = '#3d3d3d';
+const D_BORDER = '#3a3a3a';
+const D_FG = '#FFFFFF';
+const D_SOFT = '#E0E0E0';
+const D_MUTED = '#A8A8A8';
+const D_ACCENT = '#B8C4A8';
+
 export default function EmergencyContactsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [loading, setLoading] = useState(true);
 
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyEntry[]>(parseStoredContacts);
@@ -274,24 +285,26 @@ export default function EmergencyContactsScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
+        <View
+          style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
+        >
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+            <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Emergency Contacts</Text>
+            <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centerContainer}>
-          <MaterialIcons name="phone-android" size={48} color={COLORS.text.muted} />
-          <Text style={styles.unsupportedTitle}>Android Only</Text>
-          <Text style={styles.unsupportedText}>
+          <MaterialIcons name="phone-android" size={48} color={isDark ? D_MUTED : COLORS.text.muted} />
+          <Text style={[styles.unsupportedTitle, isDark && { color: D_FG }]}>Android Only</Text>
+          <Text style={[styles.unsupportedText, isDark && { color: D_SOFT }]}>
             Emergency contacts are only available on Android.
           </Text>
           <TouchableOpacity style={styles.unsupportedButton} onPress={() => router.back()}>
@@ -304,37 +317,41 @@ export default function EmergencyContactsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
+        <View
+          style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
+        >
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+            <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Emergency Contacts</Text>
+            <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading…</Text>
+          <ActivityIndicator size="large" color={isDark ? D_ACCENT : COLORS.primary} />
+          <Text style={[styles.loadingText, isDark && { color: D_SOFT }]}>Loading…</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View
+        style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
+      >
         <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+          <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Emergency Contacts</Text>
+          <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -346,11 +363,19 @@ export default function EmergencyContactsScreen() {
       >
         {/* ── Description Card ── */}
         <View style={styles.section}>
-          <View style={styles.descriptionCard}>
-            <MaterialIcons name="phone-in-talk" size={20} color={COLORS.primary} />
+          <View
+            style={[
+              styles.descriptionCard,
+              isDark && {
+                backgroundColor: 'rgba(93, 112, 82, 0.18)',
+                borderColor: 'rgba(184, 196, 168, 0.35)',
+              },
+            ]}
+          >
+            <MaterialIcons name="phone-in-talk" size={20} color={isDark ? D_ACCENT : COLORS.primary} />
             <View style={styles.descriptionTextContainer}>
-              <Text style={styles.descriptionTitle}>Emergency Contacts</Text>
-              <Text style={styles.descriptionText}>
+              <Text style={[styles.descriptionTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
+              <Text style={[styles.descriptionText, isDark && { color: D_SOFT }]}>
                 When Landline Mode is active, these contacts can reach you with sound. All other
                 notifications will be logged silently.
               </Text>
@@ -360,40 +385,73 @@ export default function EmergencyContactsScreen() {
 
         {/* ── Contact List ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Emergency Numbers</Text>
+          <Text style={[styles.sectionLabel, isDark && { color: D_ACCENT }]}>Emergency Numbers</Text>
 
           {/* Add from Contacts Button */}
           <TouchableOpacity
-            style={styles.addFromContactsButton}
+            style={[
+              styles.addFromContactsButton,
+              isDark && {
+                backgroundColor: 'rgba(93, 112, 82, 0.15)',
+                borderColor: D_ACCENT,
+              },
+            ]}
             onPress={openContactPicker}
             activeOpacity={0.8}
           >
-            <MaterialIcons name="contact-phone" size={20} color={COLORS.primary} />
-            <Text style={styles.addFromContactsText}>Add from contacts</Text>
+            <MaterialIcons name="contact-phone" size={20} color={isDark ? D_ACCENT : COLORS.primary} />
+            <Text style={[styles.addFromContactsText, isDark && { color: D_ACCENT }]}>
+              Add from contacts
+            </Text>
           </TouchableOpacity>
 
           {/* Contact List */}
           {emergencyContacts.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <MaterialIcons name="contact-phone" size={32} color={COLORS.text.muted} />
-              <Text style={styles.emptyTitle}>No emergency contacts</Text>
-              <Text style={styles.emptyText}>
+            <View
+              style={[
+                styles.emptyCard,
+                isDark && {
+                  backgroundColor: D_SURFACE,
+                  borderColor: D_BORDER,
+                  shadowColor: 'transparent',
+                  elevation: 0,
+                },
+              ]}
+            >
+              <MaterialIcons name="contact-phone" size={32} color={isDark ? D_MUTED : COLORS.text.muted} />
+              <Text style={[styles.emptyTitle, isDark && { color: D_FG }]}>No emergency contacts</Text>
+              <Text style={[styles.emptyText, isDark && { color: D_MUTED }]}>
                 Add phone numbers that can ring through when Landline Mode is on.
               </Text>
             </View>
           ) : (
-            <View style={styles.card}>
+            <View
+              style={[
+                styles.card,
+                isDark && {
+                  backgroundColor: D_SURFACE,
+                  borderColor: D_BORDER,
+                  shadowColor: 'transparent',
+                  elevation: 0,
+                },
+              ]}
+            >
               {emergencyContacts.map((entry, index) => (
                 <View
                   key={entry.phone}
                   style={[
                     styles.contactRow,
                     index === emergencyContacts.length - 1 && styles.contactRowLast,
+                    isDark && { borderBottomColor: D_BORDER },
                   ]}
                 >
                   <View style={styles.contactInfo}>
-                    {entry.name ? <Text style={styles.contactName}>{entry.name}</Text> : null}
-                    <Text style={styles.contactNumber}>{entry.phone}</Text>
+                    {entry.name ? (
+                      <Text style={[styles.contactName, isDark && { color: D_FG }]}>{entry.name}</Text>
+                    ) : null}
+                    <Text style={[styles.contactNumber, isDark && { color: D_SOFT }]}>
+                      {entry.phone}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={styles.removeButton}
@@ -409,12 +467,19 @@ export default function EmergencyContactsScreen() {
 
           {/* Manual Add */}
           <View style={styles.manualAddSection}>
-            <Text style={styles.cardSectionTitle}>Add Manually</Text>
+            <Text style={[styles.cardSectionTitle, isDark && { color: D_MUTED }]}>Add Manually</Text>
             <View style={styles.manualAddRow}>
               <TextInput
-                style={styles.addInput}
+                style={[
+                  styles.addInput,
+                  isDark && {
+                    backgroundColor: D_SURFACE_IN,
+                    borderColor: D_BORDER,
+                    color: D_FG,
+                  },
+                ]}
                 placeholder="Enter phone number (min 7 digits)"
-                placeholderTextColor={COLORS.text.muted}
+                placeholderTextColor={isDark ? D_MUTED : COLORS.text.muted}
                 value={newPhone}
                 onChangeText={setNewPhone}
                 keyboardType="phone-pad"
@@ -439,9 +504,9 @@ export default function EmergencyContactsScreen() {
         </View>
 
         {/* ── Info Footer ── */}
-        <View style={styles.infoBox}>
-          <MaterialIcons name="info-outline" size={16} color={COLORS.text.muted} />
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, isDark && { backgroundColor: D_SURFACE, borderWidth: 1, borderColor: D_BORDER }]}>
+          <MaterialIcons name="info-outline" size={16} color={isDark ? D_MUTED : COLORS.text.muted} />
+          <Text style={[styles.infoText, isDark && { color: D_MUTED }]}>
             Calls from emergency contacts will ring if the contact is starred in your Android
             Contacts app. Text messages will ring based on number matching.
           </Text>
@@ -458,20 +523,32 @@ export default function EmergencyContactsScreen() {
         onRequestClose={() => setContactPickerVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select contact</Text>
+          <View
+            style={[styles.modalContent, isDark && { backgroundColor: D_BG }]}
+          >
+            <View
+              style={[styles.modalHeader, isDark && { borderBottomColor: D_BORDER }]}
+            >
+              <Text style={[styles.modalTitle, isDark && { color: D_FG }]}>Select contact</Text>
               <TouchableOpacity onPress={() => setContactPickerVisible(false)}>
-                <Text style={styles.modalCancel}>Cancel</Text>
+                <Text style={[styles.modalCancel, isDark && { color: D_ACCENT }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchContainer}>
-              <MaterialIcons name="search" size={20} color={COLORS.text.muted} />
+            <View
+              style={[
+                styles.searchContainer,
+                isDark && {
+                  backgroundColor: D_SURFACE_IN,
+                  borderColor: D_BORDER,
+                },
+              ]}
+            >
+              <MaterialIcons name="search" size={20} color={isDark ? D_MUTED : COLORS.text.muted} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, isDark && { color: D_FG }]}
                 placeholder="Search contacts"
-                placeholderTextColor={COLORS.text.muted}
+                placeholderTextColor={isDark ? D_MUTED : COLORS.text.muted}
                 value={contactSearch}
                 onChangeText={setContactSearch}
                 autoFocus
@@ -487,24 +564,28 @@ export default function EmergencyContactsScreen() {
                   onPress={() => onPickContact(item)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.contactAvatar}>
-                    <Text style={styles.contactAvatarText}>
+                  <View style={[styles.contactAvatar, isDark && { backgroundColor: D_ACCENT }]}>
+                    <Text style={[styles.contactAvatarText, isDark && { color: '#1a1a1a' }]}>
                       {(item.name ?? '?')[0].toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.contactItemInfo}>
-                    <Text style={styles.contactItemName}>{item.name ?? 'Unknown'}</Text>
-                    <Text style={styles.contactItemNumber}>
+                    <Text style={[styles.contactItemName, isDark && { color: D_FG }]}>
+                      {item.name ?? 'Unknown'}
+                    </Text>
+                    <Text style={[styles.contactItemNumber, isDark && { color: D_SOFT }]}>
                       {item.phoneNumbers?.[0]?.number ?? ''}
                     </Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={24} color={COLORS.text.muted} />
+                  <MaterialIcons name="chevron-right" size={24} color={isDark ? D_MUTED : COLORS.text.muted} />
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={() => (
+                <View style={[styles.separator, isDark && { backgroundColor: D_BORDER }]} />
+              )}
               ListEmptyComponent={
                 <View style={styles.modalEmptyState}>
-                  <Text style={styles.modalEmptyText}>No contacts found</Text>
+                  <Text style={[styles.modalEmptyText, isDark && { color: D_MUTED }]}>No contacts found</Text>
                 </View>
               }
             />

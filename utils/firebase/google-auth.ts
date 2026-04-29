@@ -3,26 +3,35 @@ import Constants from 'expo-constants';
 import * as FirebaseApp from '@/utils/firebase/app';
 import { deleteUserDocument } from '@/utils/firebase/user-service';
 import {
-  type FirebaseAuthTypes,
-  GoogleAuthProvider,
-  deleteUser,
-  reauthenticateWithCredential,
-  signInWithCredential,
+    type FirebaseAuthTypes,
+    GoogleAuthProvider,
+    deleteUser,
+    reauthenticateWithCredential,
+    signInWithCredential,
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
-const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId;
-if (!googleWebClientId) {
-  throw new Error(
-    'GOOGLE_WEB_CLIENT_ID is not configured. Set it in .env.local and restart the dev server.',
-  );
+let isGoogleSigninConfigured = false;
+
+function ensureGoogleSigninConfigured() {
+  if (isGoogleSigninConfigured) return;
+
+  const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId;
+  if (!googleWebClientId) {
+    throw new Error(
+      'GOOGLE_WEB_CLIENT_ID is not configured. Set it in .env.local and restart the dev server.',
+    );
+  }
+
+  GoogleSignin.configure({
+    webClientId: String(googleWebClientId),
+  });
+
+  isGoogleSigninConfigured = true;
 }
 
-GoogleSignin.configure({
-  webClientId: googleWebClientId as string,
-});
-
 async function getGoogleIdToken(): Promise<string> {
+  ensureGoogleSigninConfigured();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   const response = await GoogleSignin.signIn();
   const idToken = response.data?.idToken;

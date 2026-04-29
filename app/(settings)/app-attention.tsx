@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,9 +27,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type LoggedNotification = {
   timestamp?: number;
   packageName?: string;
+  appName?: string;
 };
 
 type AppAttentionRow = AppUsageSummary & { notificationCount: number };
+type AppAttentionMetric = 'screenTime' | 'notifications';
 
 function getWindowMs(window: UsageWindow): number {
   switch (window) {
@@ -62,8 +65,10 @@ function countLoggedNotificationsByPackage(
 
 export default function AppAttentionScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [hasUsagePermission, setHasUsagePermission] = useState(false);
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
+  const [selectedMetric, setSelectedMetric] = useState<AppAttentionMetric>('screenTime');
   const [allApps, setAllApps] = useState<AppAttentionRow[]>([]);
   const [usageLoading, setUsageLoading] = useState(false);
 
@@ -90,10 +95,25 @@ export default function AppAttentionScreen() {
         logs = [];
       }
       const notifCounts = countLoggedNotificationsByPackage(logs, windowMs);
-      const merged: AppAttentionRow[] = usage.map((app) => ({
-        ...app,
-        notificationCount: notifCounts.get(app.packageName) ?? 0,
-      }));
+      const usageByPackage = new Map(usage.map((app) => [app.packageName, app] as const));
+      const notificationOnlyApps = Array.from(notifCounts.entries())
+        .filter(([packageName, count]) => count > 0 && !usageByPackage.has(packageName))
+        .map(([packageName, notificationCount]) => {
+          const matchingLog = logs.find((log) => log.packageName === packageName && log.appName);
+          return {
+            packageName,
+            appName: matchingLog?.appName?.trim() || packageName,
+            totalTimeMs: 0,
+            notificationCount,
+          };
+        });
+      const merged: AppAttentionRow[] = [
+        ...usage.map((app) => ({
+          ...app,
+          notificationCount: notifCounts.get(app.packageName) ?? 0,
+        })),
+        ...notificationOnlyApps,
+      ];
       setAllApps(merged);
     } catch (error) {
       console.error('Failed to load app usage data', error);
@@ -146,8 +166,33 @@ export default function AppAttentionScreen() {
     () => (allApps.length > 0 ? Math.max(...allApps.map((a) => a.totalTimeMs)) : 1),
     [allApps],
   );
+  const maxNotificationCount = useMemo(
+    () => (allApps.length > 0 ? Math.max(...allApps.map((a) => a.notificationCount)) : 1),
+    [allApps],
+  );
+  const displayedApps = useMemo(() => {
+    const apps = [...allApps];
+    if (selectedMetric === 'notifications') {
+      return apps.sort((a, b) => {
+        if (b.notificationCount !== a.notificationCount) {
+          return b.notificationCount - a.notificationCount;
+        }
+        return b.totalTimeMs - a.totalTimeMs;
+      });
+    }
+    return apps.sort((a, b) => {
+      if (b.totalTimeMs !== a.totalTimeMs) {
+        return b.totalTimeMs - a.totalTimeMs;
+      }
+      return b.notificationCount - a.notificationCount;
+    });
+  }, [allApps, selectedMetric]);
 
   const windows: UsageWindow[] = ['24h', '7d', '30d'];
+  const metrics: Array<{ key: AppAttentionMetric; label: string }> = [
+    { key: 'screenTime', label: 'Screen time' },
+    { key: 'notifications', label: 'Notifications' },
+  ];
 
   // Generate a consistent color for an app based on its name
   const getAppIconColor = useCallback((appName: string) => {
@@ -168,19 +213,43 @@ export default function AppAttentionScreen() {
     return colors[Math.abs(hash) % colors.length];
   }, []);
 
+  const darkUi = isDark
+    ? {
+        bg: '#5f5f5f',
+        surface: '#4a4a4a',
+        surfaceAlt: '#4f4f4f',
+        border: '#3a3a3a',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#F3F3F3',
+        textMuted: '#E0E0E0',
+      }
+    : null;
+
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.container, isDark && { backgroundColor: darkUi?.bg }]}>
+        <View
+          style={[
+            styles.header,
+            { paddingTop: insets.top },
+            isDark && { borderBottomColor: darkUi?.border },
+          ]}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={24}
+              color={isDark ? darkUi?.textPrimary : COLORS.foreground}
+            />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>App Attention</Text>
+          <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]}>
+            App Attention
+          </Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centerContainer}>
@@ -193,17 +262,23 @@ export default function AppAttentionScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+    <View style={[styles.container, isDark && { backgroundColor: darkUi?.bg }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top },
+          isDark && { borderBottomColor: darkUi?.border },
+        ]}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+          <MaterialIcons name="arrow-back" size={24} color={isDark ? darkUi?.textPrimary : COLORS.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>App Attention</Text>
+        <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]}>App Attention</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -219,7 +294,7 @@ export default function AppAttentionScreen() {
         <Card variant="elevated" padding="lg" style={styles.controlsCard}>
           {/* Section header row */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionLabel}>Usage Access</Text>
+            <Text style={[styles.sectionLabel, isDark && { color: darkUi?.textMuted }]}>Usage Access</Text>
             <View style={styles.usageStatusChip}>
               <StatusIndicator
                 active={hasUsagePermission}
@@ -227,7 +302,7 @@ export default function AppAttentionScreen() {
                 showGlow={false}
                 color={hasUsagePermission ? COLORS.success : COLORS.error}
               />
-              <Text style={styles.usageStatusText}>
+              <Text style={[styles.usageStatusText, isDark && { color: darkUi?.textMuted }]}>
                 {hasUsagePermission ? 'Granted' : 'Not granted'}
               </Text>
             </View>
@@ -237,7 +312,7 @@ export default function AppAttentionScreen() {
             <View style={styles.permissionBanner}>
               <View style={styles.permissionBannerInner}>
                 <MaterialIcons name="bar-chart" size={18} color={COLORS.secondary} />
-                <Text style={styles.permissionBannerText}>
+                <Text style={[styles.permissionBannerText, isDark && { color: darkUi?.textSecondary }]}>
                   Enable Usage Access to see screen time data for all your apps.
                 </Text>
               </View>
@@ -259,14 +334,25 @@ export default function AppAttentionScreen() {
                     return (
                       <Pressable
                         key={w}
-                        style={[styles.segmentChip, active && styles.segmentChipActive]}
+                        style={[
+                          styles.segmentChip,
+                          active && styles.segmentChipActive,
+                          isDark && !active && {
+                            borderColor: darkUi?.border,
+                            backgroundColor: darkUi?.surfaceAlt,
+                          },
+                        ]}
                         onPress={() => handleChangeUsageWindow(w)}
                         accessibilityRole="button"
                         accessibilityState={{ selected: active }}
                         accessibilityLabel={`Show ${w} data`}
                       >
                         <Text
-                          style={[styles.segmentChipText, active && styles.segmentChipTextActive]}
+                          style={[
+                            styles.segmentChipText,
+                            active && styles.segmentChipTextActive,
+                            isDark && !active && { color: darkUi?.textSecondary },
+                          ]}
                         >
                           {w}
                         </Text>
@@ -281,18 +367,59 @@ export default function AppAttentionScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Refresh usage data"
                 >
-                  <MaterialIcons name="refresh" size={22} color={COLORS.text.secondary} />
+                  <MaterialIcons
+                    name="refresh"
+                    size={22}
+                    color={isDark ? darkUi?.textSecondary : COLORS.text.secondary}
+                  />
                 </TouchableOpacity>
+              </View>
+              <View style={styles.metricRow}>
+                <View style={styles.metricGroup}>
+                  {metrics.map((metric) => {
+                    const active = selectedMetric === metric.key;
+                    return (
+                      <Pressable
+                        key={metric.key}
+                        style={[
+                          styles.segmentChip,
+                          active && styles.segmentChipActive,
+                          isDark && !active && {
+                            borderColor: darkUi?.border,
+                            backgroundColor: darkUi?.surfaceAlt,
+                          },
+                        ]}
+                        onPress={() => setSelectedMetric(metric.key)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`Show apps by ${metric.label.toLowerCase()}`}
+                      >
+                        <Text
+                          style={[
+                            styles.segmentChipText,
+                            active && styles.segmentChipTextActive,
+                            isDark && !active && { color: darkUi?.textSecondary },
+                          ]}
+                        >
+                          {metric.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
 
               {usageLoading ? (
                 <View style={styles.loadingRow}>
                   <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={styles.loadingLabel}>Loading all apps…</Text>
+                  <Text style={[styles.loadingLabel, isDark && { color: darkUi?.textSecondary }]}>
+                    Loading all apps…
+                  </Text>
                 </View>
               ) : (
-                <Text style={styles.summaryText}>
-                  Showing {allApps.length} app{allApps.length === 1 ? '' : 's'} by screen time
+                <Text style={[styles.summaryText, isDark && { color: darkUi?.textSecondary }]}>
+                  Showing {displayedApps.length} app{displayedApps.length === 1 ? '' : 's'} by{' '}
+                  {selectedMetric === 'screenTime' ? 'screen time' : 'notifications'}
                 </Text>
               )}
             </>
@@ -301,19 +428,33 @@ export default function AppAttentionScreen() {
 
         {/* App List */}
         {hasUsagePermission && !usageLoading && (
-          <Card variant="outlined" padding="lg" style={styles.listCard}>
-            {allApps.length === 0 ? (
-              <Text style={styles.emptyText}>
+          <Card
+            variant="outlined"
+            padding="lg"
+            style={StyleSheet.flatten([
+              styles.listCard,
+              isDark && { borderColor: darkUi?.border, backgroundColor: darkUi?.surface },
+            ])}
+          >
+            {displayedApps.length === 0 ? (
+              <Text style={[styles.emptyText, isDark && { color: darkUi?.textMuted }]}>
                 No usage data found for this range yet. Keep using your apps and tap refresh.
               </Text>
             ) : (
               <View style={styles.listContainer}>
-                {allApps.map((app, index) => {
+                {displayedApps.map((app) => {
+                  const progressValue =
+                    selectedMetric === 'screenTime' ? app.totalTimeMs : app.notificationCount;
+                  const progressMax =
+                    selectedMetric === 'screenTime' ? maxDurationMs : maxNotificationCount;
                   const barWidth =
-                    `${Math.round((app.totalTimeMs / maxDurationMs) * 100)}%` as `${number}%`;
+                    `${Math.round((progressValue / Math.max(progressMax, 1)) * 100)}%` as `${number}%`;
                   const iconColor = getAppIconColor(app.appName);
                   return (
-                    <View key={app.packageName} style={styles.listItem}>
+                    <View
+                      key={app.packageName}
+                      style={[styles.listItem, isDark && { borderBottomColor: `${darkUi?.border}80` }]}
+                    >
                       {/* Leading element — app icon */}
                       {app.iconUri ? (
                         <Image
@@ -331,28 +472,50 @@ export default function AppAttentionScreen() {
 
                       {/* Headline + supporting text + progress bar */}
                       <View style={styles.listItemContent}>
-                        <Text style={styles.listItemHeadline} numberOfLines={1}>
+                        <Text
+                          style={[styles.listItemHeadline, isDark && { color: darkUi?.textPrimary }]}
+                          numberOfLines={1}
+                        >
                           {app.appName}
                         </Text>
-                        <Text style={styles.listItemSupporting} numberOfLines={1}>
+                        <Text
+                          style={[styles.listItemSupporting, isDark && { color: darkUi?.textMuted }]}
+                          numberOfLines={1}
+                        >
                           {app.packageName}
                         </Text>
                         {/* Thin progress bar (relative to max) */}
-                        <View style={styles.progressTrack}>
+                        <View
+                          style={[styles.progressTrack, isDark && { backgroundColor: darkUi?.border }]}
+                        >
                           <View style={[styles.progressFill, { width: barWidth }]} />
                         </View>
                       </View>
 
-                      {/* Trailing — screen time + notification chip */}
+                      {/* Trailing — primary metric + secondary detail */}
                       <View style={styles.listItemTrailing}>
                         <Text style={styles.trailingDuration}>
-                          {formatDuration(app.totalTimeMs)}
+                          {selectedMetric === 'screenTime'
+                            ? formatDuration(app.totalTimeMs)
+                            : `${app.notificationCount} ${
+                                app.notificationCount === 1 ? 'notif' : 'notifs'
+                              }`}
                         </Text>
-                        {app.notificationCount > 0 && (
+                        {selectedMetric === 'screenTime' ? (
+                          app.notificationCount > 0 && (
+                            <View style={styles.notifChip}>
+                              <Text style={styles.notifChipText}>
+                                {app.notificationCount}{' '}
+                                {app.notificationCount === 1 ? 'notif' : 'notifs'}
+                              </Text>
+                            </View>
+                          )
+                        ) : (
                           <View style={styles.notifChip}>
                             <Text style={styles.notifChipText}>
-                              {app.notificationCount}{' '}
-                              {app.notificationCount === 1 ? 'notif' : 'notifs'}
+                              {app.totalTimeMs > 0
+                                ? formatDuration(app.totalTimeMs)
+                                : 'No screen time'}
                             </Text>
                           </View>
                         )}
@@ -502,10 +665,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     gap: Spacing.sm,
   },
+  metricRow: {
+    marginBottom: Spacing.md,
+  },
   segmentGroup: {
     flexDirection: 'row',
     gap: Spacing.xs,
     flex: 1,
+  },
+  metricGroup: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    flexWrap: 'wrap',
   },
   segmentChip: {
     paddingHorizontal: Spacing.md,

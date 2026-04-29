@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import { rescheduleLandlineReminderAfterIntervalChange } from '@/services/landline-mode-reminder';
@@ -33,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
 
   // Retention — read directly from store (reactive to changes)
   const retentionDays = usePreferencesStore(
@@ -101,10 +103,33 @@ export default function PreferencesScreen() {
     return hours === 1 ? 'Every hour' : `Every ${hours} hours`;
   }
 
+  const d = isDark
+    ? {
+        bg: '#5f5f5f',
+        border: '#3a3a3a',
+        text: '#FFFFFF',
+        sub: '#E8E8E8',
+      }
+    : null;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top },
+        isDark && { backgroundColor: '#5f5f5f' },
+      ]}
+    >
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isDark && {
+            backgroundColor: d?.bg,
+            borderBottomColor: d?.border,
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => {
             haptics.light();
@@ -116,9 +141,14 @@ export default function PreferencesScreen() {
           hitSlop={12}
         >
           <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={[styles.backButtonText, isDark && { color: COLORS.primary }]}>
+            Back
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} accessibilityRole="header">
+        <Text
+          style={[styles.headerTitle, isDark && { color: d?.text }]}
+          accessibilityRole="header"
+        >
           General settings
         </Text>
         <View style={styles.headerSpacer} />
@@ -130,7 +160,7 @@ export default function PreferencesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Data</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: COLORS.primary }]}>Data</Text>
 
           {/* Notification Retention */}
           <TouchableOpacity
@@ -143,15 +173,23 @@ export default function PreferencesScreen() {
             <Card variant="elevated" padding="md" style={styles.prefCard}>
               <View style={styles.prefRow}>
                 <View style={styles.prefTextBlock}>
-                  <Text style={styles.prefTitle}>Notification Retention</Text>
-                  <Text style={styles.prefSubtitle}>
+                  <Text style={[styles.prefTitle, isDark && { color: d?.text }]}>Notification Retention</Text>
+                  <Text style={[styles.prefSubtitle, isDark && { color: d?.sub }]}>
                     Auto-delete logged notifications after a set period.{' '}
-                    <Text style={styles.nextCleanup}>{nextCleanupText}</Text>
+                    <Text style={[styles.nextCleanup, isDark && { color: '#FFD54F' }]}>
+                      {nextCleanupText}
+                    </Text>
                   </Text>
                 </View>
                 <View style={styles.retentionValueContainer}>
-                  <Text style={styles.retentionValue}>{getRetentionLabel(retentionDays)}</Text>
-                  <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                  <Text style={[styles.retentionValue, isDark && { color: COLORS.primary }]}>
+                    {getRetentionLabel(retentionDays)}
+                  </Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={isDark ? d?.sub ?? COLORS.text.muted : COLORS.text.muted}
+                  />
                 </View>
               </View>
             </Card>
@@ -160,7 +198,9 @@ export default function PreferencesScreen() {
 
         {Platform.OS === 'android' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Landline Mode</Text>
+            <Text style={[styles.sectionHeader, isDark && { color: COLORS.primary }]}>
+              Landline Mode
+            </Text>
 
             <TouchableOpacity
               onPress={() => {
@@ -172,17 +212,21 @@ export default function PreferencesScreen() {
               <Card variant="elevated" padding="md" style={styles.prefCard}>
                 <View style={styles.prefRow}>
                   <View style={styles.prefTextBlock}>
-                    <Text style={styles.prefTitle}>Session reminder</Text>
-                    <Text style={styles.prefSubtitle}>
+                    <Text style={[styles.prefTitle, isDark && { color: d?.text }]}>Session reminder</Text>
+                    <Text style={[styles.prefSubtitle, isDark && { color: d?.sub }]}>
                       Local notification while Landline Mode is on: “Still in Landline Mode?” with
                       options to keep it on or turn it off.
                     </Text>
                   </View>
                   <View style={styles.retentionValueContainer}>
-                    <Text style={styles.retentionValue}>
+                    <Text style={[styles.retentionValue, isDark && { color: COLORS.primary }]}>
                       {reminderIntervalLabel(landlineReminderIntervalHours)}
                     </Text>
-                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={20}
+                      color={isDark ? d?.sub ?? COLORS.text.muted : COLORS.text.muted}
+                    />
                   </View>
                 </View>
               </Card>
@@ -200,8 +244,8 @@ export default function PreferencesScreen() {
       >
         <View style={styles.modalOverlay}>
           <Card variant="elevated" padding="lg" style={styles.retentionModalContent}>
-            <Text style={styles.modalTitle}>Notification Retention</Text>
-            <Text style={styles.modalBody}>
+            <Text style={[styles.modalTitle, isDark && { color: d?.text }]}>Notification Retention</Text>
+            <Text style={[styles.modalBody, isDark && { color: d?.sub }]}>
               Choose how long to keep logged notifications before they are automatically deleted.
             </Text>
 
@@ -211,7 +255,15 @@ export default function PreferencesScreen() {
                 return (
                   <TouchableOpacity
                     key={option.value}
-                    style={[styles.retentionOption, isSelected && styles.retentionOptionSelected]}
+                    style={[
+                      styles.retentionOption,
+                      isSelected && styles.retentionOptionSelected,
+                      isDark &&
+                        !isSelected && {
+                          backgroundColor: '#3d3d3d',
+                          borderWidth: 0,
+                        },
+                    ]}
                     onPress={() => {
                       haptics.light();
                       setSelectedRetentionOption(option.value);
@@ -230,6 +282,7 @@ export default function PreferencesScreen() {
                       style={[
                         styles.retentionOptionText,
                         isSelected && styles.retentionOptionTextSelected,
+                        isDark && !isSelected && { color: d?.text },
                       ]}
                     >
                       {option.label}
@@ -239,8 +292,8 @@ export default function PreferencesScreen() {
               })}
             </ScrollView>
 
-            <View style={styles.retentionModalFooter}>
-              <Text style={styles.retentionPreviewText}>
+            <View style={[styles.retentionModalFooter, isDark && { borderTopColor: d?.border }]}>
+              <Text style={[styles.retentionPreviewText, isDark && { color: d?.sub }]}>
                 {'Next cleanup: '}
                 {formatNextCleanupRelative(selectedRetentionOption, new Date())}
               </Text>
@@ -274,8 +327,8 @@ export default function PreferencesScreen() {
       >
         <View style={styles.modalOverlay}>
           <Card variant="elevated" padding="lg" style={styles.retentionModalContent}>
-            <Text style={styles.modalTitle}>Session reminder</Text>
-            <Text style={styles.modalBody}>
+            <Text style={[styles.modalTitle, isDark && { color: d?.text }]}>Session reminder</Text>
+            <Text style={[styles.modalBody, isDark && { color: d?.sub }]}>
               How long can Landline Mode stay on before we ask if you still want it? You can snooze
               from the notification.
             </Text>
@@ -286,7 +339,15 @@ export default function PreferencesScreen() {
                 return (
                   <TouchableOpacity
                     key={hours}
-                    style={[styles.retentionOption, isSelected && styles.retentionOptionSelected]}
+                    style={[
+                      styles.retentionOption,
+                      isSelected && styles.retentionOptionSelected,
+                      isDark &&
+                        !isSelected && {
+                          backgroundColor: '#3d3d3d',
+                          borderWidth: 0,
+                        },
+                    ]}
                     onPress={() => {
                       haptics.light();
                       setSelectedReminderHours(hours);
@@ -305,6 +366,7 @@ export default function PreferencesScreen() {
                       style={[
                         styles.retentionOptionText,
                         isSelected && styles.retentionOptionTextSelected,
+                        isDark && !isSelected && { color: d?.text },
                       ]}
                     >
                       {reminderIntervalLabel(hours)}

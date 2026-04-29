@@ -3,9 +3,15 @@ import React from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS, Fonts, Radius, Shadows } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { Permission } from './usePermissions';
+
+const D_SURFACE = '#4a4a4a';
+const D_BORDER = '#3a3a3a';
+const D_TEXT_SOFT = '#E0E0E0';
+const D_FG = '#FFFFFF';
 
 interface PermissionCardsProps {
   permissions: Permission[];
@@ -18,6 +24,8 @@ export function PermissionCards({
   isLoading,
   onRequestPermission,
 }: PermissionCardsProps) {
+  const { isDark } = useAppTheme();
+
   const handleRequestPermission = async (permission: Permission) => {
     try {
       await onRequestPermission(permission);
@@ -40,16 +48,33 @@ export function PermissionCards({
     <View style={styles.container}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Checking permissions...</Text>
+          <Text style={[styles.loadingText, isDark && { color: D_TEXT_SOFT }]}>Checking permissions...</Text>
         </View>
       ) : (
         <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
           {permissions.map((permission) => {
             const isGranted = permission.status === 'granted';
+            const nameStyle = [
+              styles.permissionName,
+              isDark && { color: D_FG },
+            ];
+            const descStyle = [
+              styles.permissionDescription,
+              isDark && { color: D_TEXT_SOFT },
+            ];
             return (
               <View
                 key={permission.id}
-                style={[styles.permissionCard, isGranted && styles.permissionCardGranted]}
+                style={[
+                  styles.permissionCard,
+                  !isDark && isGranted && styles.permissionCardGranted,
+                  isDark && {
+                    backgroundColor: isGranted ? 'rgba(93, 112, 82, 0.22)' : D_SURFACE,
+                    borderColor: isGranted ? 'rgba(93, 112, 82, 0.45)' : D_BORDER,
+                    shadowColor: 'transparent',
+                    elevation: 0,
+                  },
+                ]}
               >
                 {/* Icon + info */}
                 <View style={styles.cardHeader}>
@@ -57,34 +82,41 @@ export function PermissionCards({
                     <MaterialIcons
                       name={isGranted ? 'check' : (permission.icon as any)}
                       size={24}
-                      color={isGranted ? '#fff' : COLORS.primary}
+                      color={isGranted ? '#fff' : isDark ? '#B8C4A8' : COLORS.primary}
                     />
                   </View>
                   <View style={styles.permissionInfo}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.permissionName}>{permission.name}</Text>
+                      <Text style={nameStyle}>{permission.name}</Text>
                       {permission.isRequired && !isGranted && (
                         <View style={styles.requiredBadge}>
                           <Text style={styles.requiredText}>Required</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.permissionDescription}>{permission.description}</Text>
+                    <Text style={descStyle}>{permission.description}</Text>
                   </View>
                 </View>
 
                 {/* Why needed + grant button */}
                 {!isGranted && (
                   <>
-                    <Text style={styles.whyNeeded}>{permission.whyNeeded}</Text>
+                    <Text style={[styles.whyNeeded, isDark && { color: D_TEXT_SOFT }]}>
+                      {permission.whyNeeded}
+                    </Text>
                     <Pressable
                       onPress={() => handleRequestPermission(permission)}
                       style={({ pressed }) => [
                         styles.grantButton,
+                        isDark && { borderColor: '#FFF' },
                         pressed && { transform: [{ scale: 0.97 }], opacity: 0.8 },
                       ]}
                     >
-                      <Text style={styles.grantButtonText}>Grant Access</Text>
+                      <Text
+                        style={[styles.grantButtonText, isDark && { color: '#FFF' as const }]}
+                      >
+                        Grant Access
+                      </Text>
                     </Pressable>
                   </>
                 )}
@@ -94,8 +126,12 @@ export function PermissionCards({
 
           {/* Info note */}
           <View style={styles.infoNote}>
-            <MaterialIcons name="info-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.infoText}>
+            <MaterialIcons
+              name="info-outline"
+              size={20}
+              color={isDark ? '#B8C4A8' : COLORS.primary}
+            />
+            <Text style={[styles.infoText, isDark && { color: D_TEXT_SOFT }]}>
               You can change these anytime in your device settings.
             </Text>
           </View>

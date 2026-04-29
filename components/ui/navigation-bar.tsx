@@ -18,6 +18,7 @@ import { Animated, Pressable, StyleSheet, Text, View, type ViewStyle } from 'rea
 import * as Haptics from 'expo-haptics';
 
 import { COLORS, Shadows, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,6 +47,7 @@ function NavItem({
   accessibilityLabel,
   testID,
 }: NavItemProps) {
+  const { isDark } = useAppTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const indicatorScaleAnim = React.useRef(new Animated.Value(focused ? 1 : 0.8)).current;
   const indicatorOpacityAnim = React.useRef(new Animated.Value(focused ? 1 : 0)).current;
@@ -88,7 +90,7 @@ function NavItem({
   };
 
   const activeColor = COLORS.primary;
-  const inactiveColor = COLORS.text.muted;
+  const inactiveColor = isDark ? '#E0E0E0' : COLORS.text.muted;
   const indicatorBg = COLORS.primary + '22'; // ~13% opacity tint
 
   return (
@@ -144,6 +146,7 @@ function NavItem({
 }
 
 export function NavigationBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   const visibleRoutes = state.routes.filter((route) => {
@@ -157,6 +160,7 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
     <View
       style={[
         styles.container,
+        isDark && { backgroundColor: '#4f4f4f' },
         {
           paddingBottom: insets.bottom,
           height: NAV_BAR_HEIGHT + insets.bottom,

@@ -17,6 +17,8 @@ object TestNotificationHelper {
     private const val CHANNEL_ID = "test_messages"
     private const val CHANNEL_NAME = "Test Messages"
     private const val KEY_TEXT_REPLY = "key_text_reply"
+    private const val LOG_PREFS_NAME = "landline_notifications"
+    private const val LOG_KEY = "notification_logs"
     
     fun createTestNotification(context: Context, senderName: String, message: String): Int {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -71,8 +73,33 @@ object TestNotificationHelper {
             .build()
         
         notificationManager.notify(notificationId, notification)
+        appendNotificationLog(context, senderName, message, notificationId)
         
         return notificationId
+    }
+
+    private fun appendNotificationLog(
+        context: Context,
+        senderName: String,
+        message: String,
+        notificationId: Int
+    ) {
+        val prefs = context.getSharedPreferences(LOG_PREFS_NAME, Context.MODE_PRIVATE)
+        val existingLogs = prefs.getString(LOG_KEY, "") ?: ""
+        val now = System.currentTimeMillis()
+        val packageName = context.packageName
+        val appName = "Test Messages"
+        val sanitizedTitle = senderName.replace("\n", " ").replace("|", " ")
+        val sanitizedText = message.replace("\n", " ").replace("|", " ")
+
+        val logEntry = "$now|$packageName|$appName|$sanitizedTitle|$sanitizedText|$now|$notificationId|0|"
+        val updatedLogs = if (existingLogs.isEmpty()) {
+            logEntry
+        } else {
+            "$existingLogs\n$logEntry"
+        }
+
+        prefs.edit().putString(LOG_KEY, updatedLogs).apply()
     }
     
     private fun createNotificationChannel(context: Context, notificationManager: NotificationManager) {

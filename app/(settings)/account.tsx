@@ -18,6 +18,12 @@ import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useAppTheme } from '@/contexts/theme-context';
+
+const D_BG = '#5f5f5f';
+const D_BORDER = '#3a3a3a';
+const D_SURFACE = '#4a4a4a';
+const D_INPUT = '#3d3d3d';
 import { haptics } from '@/services/haptics';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
 import { deleteAccountWithGoogle } from '@/utils/firebase/google-auth';
@@ -26,6 +32,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AccountSettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
+  const d = isDark ? { text: '#FFFFFF', sub: '#E8E8E8', muted: '#D0D0D0' } : null;
   const { user, refreshUser, signOut } = useAuth();
 
   // Profile state
@@ -155,9 +163,18 @@ export default function AccountSettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top },
+          isDark && {
+            backgroundColor: D_BG,
+            borderBottomColor: D_BORDER,
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => {
             haptics.light();
@@ -165,9 +182,9 @@ export default function AccountSettingsScreen() {
           }}
           style={styles.backButton}
         >
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+          <MaterialIcons name="arrow-back" size={24} color={d?.text ?? COLORS.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account Settings</Text>
+        <Text style={[styles.headerTitle, isDark && { color: d?.text }]}>Account Settings</Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
 
@@ -185,15 +202,21 @@ export default function AccountSettingsScreen() {
             </View>
             <View style={styles.accountInfo}>
               {user?.displayName ? (
-                <Text style={styles.accountDisplayName} numberOfLines={1}>
+                <Text
+                  style={[styles.accountDisplayName, isDark && { color: d?.text }]}
+                  numberOfLines={1}
+                >
                   {user.displayName}
                 </Text>
               ) : (
-                <Text style={styles.accountDisplayNameMuted} numberOfLines={1}>
+                <Text
+                  style={[styles.accountDisplayNameMuted, isDark && { color: d?.sub }]}
+                  numberOfLines={1}
+                >
                   Anonymous User
                 </Text>
               )}
-              <Text style={styles.accountEmail} numberOfLines={1}>
+              <Text style={[styles.accountEmail, isDark && { color: d?.muted }]} numberOfLines={1}>
                 {user?.email || user?.phoneNumber || 'No email associated'}
               </Text>
             </View>
@@ -202,15 +225,22 @@ export default function AccountSettingsScreen() {
 
         {/* Display Name Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Profile</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: COLORS.primary }]}>Profile</Text>
           <Card variant="elevated" padding="lg" style={styles.card}>
-            <Text style={styles.inputLabel}>Display Name</Text>
+            <Text style={[styles.inputLabel, isDark && { color: d?.muted }]}>Display Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[
+                styles.textInput,
+                isDark && {
+                  backgroundColor: D_INPUT,
+                  borderColor: D_BORDER,
+                  color: d?.text,
+                },
+              ]}
               value={displayNameInput}
               onChangeText={setDisplayNameInput}
               placeholder="e.g. Alex M."
-              placeholderTextColor={COLORS.text.muted}
+              placeholderTextColor={isDark ? '#999' : COLORS.text.muted}
               editable={!savingDisplayName}
               maxLength={80}
             />
@@ -227,7 +257,7 @@ export default function AccountSettingsScreen() {
 
         {/* Security Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Security</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: COLORS.primary }]}>Security</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             {isEmailUser && (
               <>
@@ -243,10 +273,14 @@ export default function AccountSettingsScreen() {
                       <MaterialIcons name="lock" size={22} color={COLORS.primary} />
                     </View>
                     <View style={styles.menuItemContent}>
-                      <Text style={styles.menuItemTitle}>Change Password</Text>
-                      <Text style={styles.menuItemSubtitle}>Update your account password</Text>
+                      <Text style={[styles.menuItemTitle, isDark && { color: d?.text }]}>
+                        Change Password
+                      </Text>
+                      <Text style={[styles.menuItemSubtitle, isDark && { color: d?.muted }]}>
+                        Update your account password
+                      </Text>
                     </View>
-                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                    <MaterialIcons name="chevron-right" size={20} color={d?.muted ?? COLORS.text.muted} />
                   </View>
                 </TouchableOpacity>
                 <View style={styles.itemDivider} />
@@ -269,7 +303,9 @@ export default function AccountSettingsScreen() {
                   <Text style={[styles.menuItemTitle, { color: COLORS.error }]}>
                     Delete Account
                   </Text>
-                  <Text style={styles.menuItemSubtitle}>Permanently remove your account</Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: d?.muted }]}>
+                    Permanently remove your account
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -287,27 +323,33 @@ export default function AccountSettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <Card variant="elevated" padding="lg" style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete Account</Text>
-            <Text style={styles.modalBody}>
+            <Text style={[styles.modalTitle, isDark && { color: d?.text }]}>Delete Account</Text>
+            <Text style={[styles.modalBody, isDark && { color: d?.sub }]}>
               This is permanent. Your account cannot be recovered once deleted.
             </Text>
 
             {isEmailUser ? (
               <View style={styles.confirmBox}>
-                <Text style={styles.confirmLabel}>
+                <Text style={[styles.confirmLabel, isDark && { color: d?.sub }]}>
                   Type <Text style={styles.confirmHighlight}>DELETE</Text> to confirm:
                 </Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={[
+                    styles.modalInput,
+                    isDark && { backgroundColor: D_INPUT, borderColor: D_BORDER, color: d?.text },
+                  ]}
                   value={confirmationText}
                   onChangeText={setConfirmationText}
                   placeholder="DELETE"
                   autoCapitalize="characters"
                   autoCorrect={false}
                 />
-                <Text style={styles.confirmLabel}>Password:</Text>
+                <Text style={[styles.confirmLabel, isDark && { color: d?.sub }]}>Password:</Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={[
+                    styles.modalInput,
+                    isDark && { backgroundColor: D_INPUT, borderColor: D_BORDER, color: d?.text },
+                  ]}
                   value={deletePassword}
                   onChangeText={setDeletePassword}
                   placeholder="Password"
@@ -316,7 +358,7 @@ export default function AccountSettingsScreen() {
                 />
               </View>
             ) : (
-              <Text style={styles.modalTextExtra}>
+              <Text style={[styles.modalTextExtra, isDark && { color: d?.sub }]}>
                 You will be asked to sign in with Google to confirm.
               </Text>
             )}
@@ -356,6 +398,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.surface.border,
   },
   backButton: {
     width: 40,

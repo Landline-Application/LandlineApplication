@@ -2,13 +2,11 @@ import { Platform } from 'react-native';
 
 import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager, {
-  isNotificationFilterEffective,
-} from '@/modules/notification-api-manager';
+import NotificationApiManager from '@/modules/notification-api-manager';
 import {
-  cancelLandlineModeReminderScheduled,
-  ensureLandlineReminderScheduledIfNeeded,
-  scheduleLandlineReminderFromSessionStart,
+    cancelLandlineModeReminderScheduled,
+    ensureLandlineReminderScheduledIfNeeded,
+    scheduleLandlineReminderFromSessionStart,
 } from '@/services/landline-mode-reminder';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';

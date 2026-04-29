@@ -7,11 +7,11 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
-import { COLORS } from '@/constants/theme';
+import { applyThemeColors, COLORS } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { ThemeContextProvider, useAppTheme } from '@/contexts/theme-context';
 import { useAppState } from '@/hooks/use-app-state';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { initLandlineReminderSubsystem } from '@/services/landline-mode-reminder';
 import '@/services/landline-reminder-task';
@@ -43,31 +43,6 @@ import { DarkTheme, DefaultTheme, type Theme, ThemeProvider } from '@react-navig
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-const lightTheme: Theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: COLORS.primary,
-    background: COLORS.background,
-    card: COLORS.surface.card,
-    text: COLORS.text.primary,
-    border: COLORS.border,
-    notification: COLORS.secondary,
-  },
-};
-
-const darkTheme: Theme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: COLORS.dark.primary,
-    background: COLORS.dark.background,
-    card: COLORS.dark.card,
-    text: COLORS.dark.text.primary,
-    border: COLORS.dark.border,
-  },
-};
-
 LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 SplashScreen.preventAutoHideAsync();
@@ -80,8 +55,6 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -104,12 +77,51 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? darkTheme : lightTheme}>
-          <NavigationGate />
-          <StatusBar style="auto" />
-        </ThemeProvider>
+        <ThemeContextProvider>
+          <RootThemeProvider>
+            <NavigationGate />
+            <StatusBar style="auto" />
+          </RootThemeProvider>
+        </ThemeContextProvider>
       </AuthProvider>
     </SafeAreaProvider>
+  );
+}
+
+function RootThemeProvider({ children }: { children: React.ReactNode }) {
+  const { isDark, isHydrated } = useAppTheme();
+  if (!isHydrated) {
+    return null;
+  }
+  applyThemeColors(isDark);
+  const activeTheme: Theme = isDark
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          primary: COLORS.dark.primary,
+          background: COLORS.dark.background,
+          card: COLORS.dark.card,
+          text: COLORS.dark.text.primary,
+          border: COLORS.dark.border,
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          primary: COLORS.primary,
+          background: COLORS.background,
+          card: COLORS.surface.card,
+          text: COLORS.text.primary,
+          border: COLORS.border,
+          notification: COLORS.secondary,
+        },
+      };
+  return (
+    <ThemeProvider key={isDark ? 'dark' : 'light'} value={activeTheme}>
+      {children}
+    </ThemeProvider>
   );
 }
 
