@@ -46,6 +46,11 @@ type NotificationApiNativeModule = {
   getEmergencyPhoneNumbers(): string[];
   setEmergencyPhoneNumbers(phoneNumbers: string[]): boolean;
   isNotificationFilterConfigured(): boolean;
+  // Repeat-call bypass (Android incoming call notifications)
+  isRepeatCallBypassEnabled(): boolean;
+  setRepeatCallBypassEnabled(enabled: boolean): boolean;
+  getRepeatCallBypassWindowMs(): number;
+  setRepeatCallBypassWindowMs(windowMs: number): boolean;
   // Auto-Reply
   isAutoReplyEnabled(): boolean;
   setAutoReplyEnabled(enabled: boolean): boolean;
@@ -160,6 +165,26 @@ export function setEmergencyPhoneNumbers(phoneNumbers: string[]) {
 export function isNotificationFilterConfigured() {
   const fn = Native.isNotificationFilterConfigured;
   return typeof fn === 'function' ? fn.call(Native) : false;
+}
+
+export function isRepeatCallBypassEnabled() {
+  const fn = Native.isRepeatCallBypassEnabled;
+  return typeof fn === 'function' ? fn.call(Native) : true;
+}
+
+export function setRepeatCallBypassEnabled(enabled: boolean) {
+  const fn = Native.setRepeatCallBypassEnabled;
+  return typeof fn === 'function' ? fn.call(Native, enabled) : false;
+}
+
+export function getRepeatCallBypassWindowMs() {
+  const fn = Native.getRepeatCallBypassWindowMs;
+  return typeof fn === 'function' ? fn.call(Native) : 7 * 60 * 1000;
+}
+
+export function setRepeatCallBypassWindowMs(windowMs: number) {
+  const fn = Native.setRepeatCallBypassWindowMs;
+  return typeof fn === 'function' ? fn.call(Native, windowMs) : false;
 }
 
 /** True when notification permissions are on and at least one bypass app or emergency number is set. */
@@ -284,6 +309,10 @@ export default {
   setEmergencyPhoneNumbers,
   isNotificationFilterConfigured,
   isNotificationFilterEffective,
+  isRepeatCallBypassEnabled,
+  setRepeatCallBypassEnabled,
+  getRepeatCallBypassWindowMs,
+  setRepeatCallBypassWindowMs,
   isAutoReplyEnabled,
   setAutoReplyEnabled,
   setReplyMessage,
