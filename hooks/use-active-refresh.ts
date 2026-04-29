@@ -34,8 +34,8 @@ export function useActiveRefresh(
   useEffect(() => {
     if (isActive) {
       try {
-        const { refreshInterval } = useLandlineStore.getState();
-        hasStoreAutoRefreshRef.current = refreshInterval != null;
+        const { isAutoRefreshing } = useLandlineStore.getState();
+        hasStoreAutoRefreshRef.current = isAutoRefreshing;
       } catch {
         hasStoreAutoRefreshRef.current = false;
       }
