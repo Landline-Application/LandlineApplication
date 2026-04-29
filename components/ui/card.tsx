@@ -3,6 +3,7 @@ import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 
 export interface CardProps {
   children: React.ReactNode;
@@ -26,22 +27,6 @@ const radiusValues: Record<string, number> = {
   xl: Radius.xl,
 };
 
-const variantStyles: Record<string, ViewStyle> = {
-  base: {
-    backgroundColor: COLORS.surface.base,
-    borderWidth: 0,
-  },
-  elevated: {
-    backgroundColor: COLORS.surface.elevated,
-    borderWidth: 0,
-  },
-  outlined: {
-    backgroundColor: COLORS.surface.base,
-    borderWidth: 1,
-    borderColor: COLORS.surface.border,
-  },
-};
-
 export const Card = ({
   children,
   variant = 'base',
@@ -50,7 +35,23 @@ export const Card = ({
   borderRadius = 'lg',
   style,
 }: CardProps) => {
+  const { isDark } = useAppTheme();
   const shadowStyle = shadow !== 'none' ? Shadows[shadow as keyof typeof Shadows] : undefined;
+  const variantStyles: Record<string, ViewStyle> = {
+    base: {
+      backgroundColor: isDark ? '#5f5f5f' : COLORS.surface.base,
+      borderWidth: 0,
+    },
+    elevated: {
+      backgroundColor: isDark ? '#4f4f4f' : COLORS.surface.elevated,
+      borderWidth: 0,
+    },
+    outlined: {
+      backgroundColor: isDark ? '#5f5f5f' : COLORS.surface.base,
+      borderWidth: 1,
+      borderColor: isDark ? '#3a3a3a' : COLORS.surface.border,
+    },
+  };
 
   return (
     <View

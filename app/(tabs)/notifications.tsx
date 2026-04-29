@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } fr
 import NotebookLogView from '@/components/notifications/notebook-log-view';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Spacing, TouchTargets } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -12,6 +13,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
+  const darkUi = isDark
+    ? {
+        bg: '#5f5f5f',
+        surface: '#4f4f4f',
+        border: '#3a3a3a',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#F3F3F3',
+        textMuted: '#E0E0E0',
+      }
+    : null;
   const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
 
   // Fast refresh (3s) while this screen is focused and Landline Mode is active
@@ -54,11 +66,17 @@ export default function NotificationsScreen() {
   }, [refreshNotifications]);
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, isDark && { backgroundColor: darkUi?.bg }]}>
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top },
+          isDark && { backgroundColor: darkUi?.bg, borderBottomColor: darkUi?.border },
+        ]}
+      >
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Log</Text>
+          <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]}>Log</Text>
           {isActive && (
             <View style={styles.livePill}>
               <View style={styles.liveDot} />
@@ -78,7 +96,13 @@ export default function NotificationsScreen() {
           <MaterialIcons
             name="delete-outline"
             size={22}
-            color={notifications.length === 0 ? COLORS.text.muted : COLORS.error}
+            color={
+              notifications.length === 0
+                ? isDark
+                  ? darkUi?.textMuted
+                  : COLORS.text.muted
+                : COLORS.error
+            }
           />
         </TouchableOpacity>
       </View>
@@ -87,13 +111,16 @@ export default function NotificationsScreen() {
       {isLoading && notifications.length === 0 ? (
         <View style={styles.loadingState}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading notifications…</Text>
+          <Text style={[styles.loadingText, isDark && { color: darkUi?.textSecondary }]}>
+            Loading notifications…
+          </Text>
         </View>
       ) : (
         <NotebookLogView
           notifications={notifications}
           onRefresh={loadNotifications}
           isActive={isActive}
+          isDark={isDark}
         />
       )}
     </View>

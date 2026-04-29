@@ -84,6 +84,93 @@ export const COLORS = {
   },
 };
 
+const DARK_MODE = {
+  background: '#424242',
+  foreground: '#FFFFFF',
+  primary: '#5D7052',
+  primaryForeground: '#F3F4F1',
+  secondary: '#C18C5D',
+  secondaryForeground: '#FFFFFF',
+  accent: '#3C4043',
+  accentForeground: '#E8EAED',
+  muted: '#4f4f4f',
+  mutedForeground: '#E0E0E0',
+  border: '#3a3a3a',
+  destructive: '#F28B82',
+  success: '#81C995',
+  error: '#F28B82',
+  warning: '#FBC02D',
+  info: '#5D7052',
+  text: {
+    primary: '#FFFFFF',
+    secondary: '#F3F3F3',
+    muted: '#E0E0E0',
+    onPrimary: '#F3F4F1',
+    onSecondary: '#FFFFFF',
+    onAccent: '#E8EAED',
+  },
+  surface: {
+    base: '#424242',
+    elevated: '#4f4f4f',
+    card: '#4a4a4a',
+    overlay: 'rgba(232, 234, 237, 0.05)',
+    border: '#3a3a3a',
+  },
+  shadow: {
+    primary: 'rgba(0, 0, 0, 0.35)',
+    secondary: 'rgba(0, 0, 0, 0.25)',
+    dark: 'rgba(0, 0, 0, 0.5)',
+  },
+  dark: {
+    background: '#424242',
+    surface: '#4f4f4f',
+    card: '#4a4a4a',
+    text: {
+      primary: '#FFFFFF',
+      secondary: '#F3F3F3',
+      muted: '#E0E0E0',
+    },
+    primary: '#5D7052',
+    border: '#3a3a3a',
+    divider: '#4f4f4f',
+    warning: '#FBC02D',
+    buttonDisabled: '#4f4f4f',
+    instagram: '#E1306C',
+    messages: '#00B4D8',
+    calls: '#FF6B6B',
+    voicemail: '#4ECDC4',
+    youtube: '#FF5252',
+    apps: '#B39DDB',
+    success: '#81C995',
+    error: '#F28B82',
+  },
+} as const;
+
+const LIGHT_COLORS_SNAPSHOT = JSON.parse(JSON.stringify(COLORS)) as typeof COLORS;
+
+function applyColorMap(target: Record<string, any>, source: Record<string, any>) {
+  Object.entries(source).forEach(([key, value]) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (!target[key] || typeof target[key] !== 'object') {
+        target[key] = {};
+      }
+      applyColorMap(target[key], value as Record<string, any>);
+      return;
+    }
+    target[key] = value;
+  });
+}
+
+/**
+ * Mutates shared design tokens so existing style modules use the selected palette
+ * after app reload.
+ */
+export function applyThemeColors(isDark: boolean) {
+  applyColorMap(COLORS as unknown as Record<string, any>, {
+    ...(isDark ? DARK_MODE : LIGHT_COLORS_SNAPSHOT),
+  });
+}
+
 // ===== SPACING SYSTEM (8px grid) =====
 export const Spacing = {
   xs: 4,

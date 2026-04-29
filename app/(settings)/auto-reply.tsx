@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { haptics } from '@/services/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,8 +69,30 @@ const APP_PRESETS: { label: string; description: string; packages: string[] }[] 
   },
 ];
 
+const DARK_SURFACE = '#4a4a4a';
+const DARK_BG = '#5f5f5f';
+const DARK_BORDER = '#3a3a3a';
+const DARK_ELEVATED = '#3d3d3d';
+
 export default function AutoReplyScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
+  /** Runtime dark styles — StyleSheet snapshots light COLORS at module load */
+  const d = isDark
+    ? {
+        header: {
+          backgroundColor: DARK_BG,
+          borderBottomColor: DARK_BORDER,
+        },
+        card: {
+          backgroundColor: DARK_SURFACE,
+          borderColor: DARK_BORDER,
+        },
+        text: '#FFFFFF',
+        sub: '#E8E8E8',
+        muted: '#C8C8C8',
+      }
+    : null;
 
   const {
     isEnabled,
@@ -161,19 +184,21 @@ export default function AutoReplyScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: DARK_BG }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.header, { paddingTop: insets.top }, d?.header]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+          <MaterialIcons name="arrow-back" size={24} color={d?.text ?? COLORS.foreground} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Auto-Reply</Text>
-          <Text style={styles.headerSubtitle}>Respond automatically while focused</Text>
+          <Text style={[styles.headerTitle, isDark && { color: d?.text }]}>Auto-Reply</Text>
+          <Text style={[styles.headerSubtitle, isDark && { color: d?.muted }]}>
+            Respond automatically while focused
+          </Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -185,7 +210,9 @@ export default function AutoReplyScreen() {
       >
         {/* ── Status / Enable section ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Auto-Reply</Text>
+          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
+            Auto-Reply
+          </Text>
 
           {/* Permission warning */}
           {!hasPermission && (
@@ -196,8 +223,10 @@ export default function AutoReplyScreen() {
             >
               <MaterialIcons name="warning" size={20} color={COLORS.warning} />
               <View style={styles.warningCardText}>
-                <Text style={styles.warningTitle}>Notification access required</Text>
-                <Text style={styles.warningBody}>
+                <Text style={[styles.warningTitle, isDark && { color: '#FFB74D' }]}>
+                  Notification access required
+                </Text>
+                <Text style={[styles.warningBody, isDark && { color: d?.sub }]}>
                   Tap to open Settings and enable Notification Access for Landline.
                 </Text>
               </View>
@@ -206,11 +235,13 @@ export default function AutoReplyScreen() {
           )}
 
           {/* Enable toggle row */}
-          <View style={styles.card}>
+          <View style={[styles.card, d?.card]}>
             <View style={styles.toggleRow}>
               <View style={styles.toggleRowContent}>
-                <Text style={styles.toggleLabel}>Enable Auto-Reply</Text>
-                <Text style={styles.toggleSubtitle}>
+                <Text style={[styles.toggleLabel, isDark && { color: d?.text }]}>
+                  Enable Auto-Reply
+                </Text>
+                <Text style={[styles.toggleSubtitle, isDark && { color: d?.muted }]}>
                   {isEnabled
                     ? 'Will auto-reply when Landline Mode is on'
                     : 'Disabled — no replies will be sent'}
@@ -228,32 +259,36 @@ export default function AutoReplyScreen() {
                   onValueChange={handleToggle}
                   disabled={!hasPermission && !isEnabled}
                   trackColor={{ false: COLORS.accent, true: `${COLORS.primary}80` }}
-                  thumbColor={isEnabled ? COLORS.primary : COLORS.text.muted}
+                  thumbColor={isEnabled ? COLORS.primary : isDark ? '#B0B0B0' : COLORS.text.muted}
                 />
               )}
             </View>
 
             {/* Status indicators */}
             <View style={styles.statusRow}>
-              <View style={styles.statusPill}>
+              <View
+                style={[styles.statusPill, isDark && { backgroundColor: DARK_ELEVATED, borderColor: DARK_BORDER }]}
+              >
                 <View
                   style={[
                     styles.statusDot,
                     { backgroundColor: hasPermission ? COLORS.success : COLORS.error },
                   ]}
                 />
-                <Text style={styles.statusText}>
+                <Text style={[styles.statusText, isDark && { color: d?.sub }]}>
                   {hasPermission ? 'Permission granted' : 'No permission'}
                 </Text>
               </View>
-              <View style={styles.statusPill}>
+              <View
+                style={[styles.statusPill, isDark && { backgroundColor: DARK_ELEVATED, borderColor: DARK_BORDER }]}
+              >
                 <View
                   style={[
                     styles.statusDot,
                     { backgroundColor: isServiceRunning ? COLORS.success : COLORS.text.muted },
                   ]}
                 />
-                <Text style={styles.statusText}>
+                <Text style={[styles.statusText, isDark && { color: d?.sub }]}>
                   {isServiceRunning ? 'Service running' : 'Service stopped'}
                 </Text>
               </View>
@@ -263,21 +298,26 @@ export default function AutoReplyScreen() {
 
         {/* ── Reply message ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Reply Message</Text>
+          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>Reply Message</Text>
 
           {/* Current message preview */}
           {!!message && (
-            <View style={styles.messagePreviewCard}>
+            <View
+              style={[
+                styles.messagePreviewCard,
+                isDark && { backgroundColor: `${COLORS.primary}22`, borderColor: `${COLORS.primary}40` },
+              ]}
+            >
               <MaterialIcons name="chat-bubble-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.messagePreviewText} numberOfLines={3}>
+              <Text style={[styles.messagePreviewText, isDark && { color: d?.text }]} numberOfLines={3}>
                 {message}
               </Text>
             </View>
           )}
 
           {/* Templates */}
-          <View style={styles.card}>
-            <Text style={styles.cardSectionTitle}>Quick Templates</Text>
+          <View style={[styles.card, d?.card]}>
+            <Text style={[styles.cardSectionTitle, isDark && { color: d?.muted }]}>Quick Templates</Text>
             {TEMPLATES.map((t) => {
               const isActive = message === t.message;
               return (
@@ -288,10 +328,19 @@ export default function AutoReplyScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.templateRowContent}>
-                    <Text style={[styles.templateLabel, isActive && styles.templateLabelActive]}>
+                    <Text
+                      style={[
+                        styles.templateLabel,
+                        isActive && styles.templateLabelActive,
+                        isDark && !isActive && { color: d?.text },
+                      ]}
+                    >
                       {t.label}
                     </Text>
-                    <Text style={styles.templatePreview} numberOfLines={1}>
+                    <Text
+                      style={[styles.templatePreview, isDark && { color: d?.muted }]}
+                      numberOfLines={1}
+                    >
                       {t.message}
                     </Text>
                   </View>
@@ -304,14 +353,21 @@ export default function AutoReplyScreen() {
           </View>
 
           {/* Custom message */}
-          <View style={styles.card}>
-            <Text style={styles.cardSectionTitle}>Custom Message</Text>
+          <View style={[styles.card, d?.card]}>
+            <Text style={[styles.cardSectionTitle, isDark && { color: d?.muted }]}>Custom Message</Text>
             <TextInput
-              style={styles.textInput}
+              style={[
+                styles.textInput,
+                isDark && {
+                  backgroundColor: DARK_ELEVATED,
+                  borderColor: DARK_BORDER,
+                  color: d?.text,
+                },
+              ]}
               value={customMessage}
               onChangeText={setCustomMessage}
               placeholder="Type your auto-reply message…"
-              placeholderTextColor={COLORS.text.muted}
+              placeholderTextColor={isDark ? '#999' : COLORS.text.muted}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -336,7 +392,9 @@ export default function AutoReplyScreen() {
 
         {/* ── App filter ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Reply to Apps</Text>
+          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
+            Reply to Apps
+          </Text>
           {APP_PRESETS.map((preset) => {
             const isActive =
               preset.packages.length === allowedApps.length &&
@@ -344,18 +402,34 @@ export default function AutoReplyScreen() {
             return (
               <TouchableOpacity
                 key={preset.label}
-                style={[styles.presetRow, isActive && styles.presetRowActive]}
+                style={[
+                  styles.presetRow,
+                  isActive && styles.presetRowActive,
+                  isDark && !isActive && { backgroundColor: DARK_SURFACE, borderColor: DARK_BORDER },
+                  isDark && isActive && {
+                    borderColor: COLORS.primary,
+                    backgroundColor: `${COLORS.primary}18`,
+                  },
+                ]}
                 onPress={() => handleApplyPreset(preset.packages, preset.label)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.presetRadio, isActive && styles.presetRadioActive]}>
+                <View style={[styles.presetRadio, isActive && styles.presetRadioActive, isDark && !isActive && { borderColor: DARK_BORDER }]}>
                   {isActive && <View style={styles.presetRadioInner} />}
                 </View>
                 <View style={styles.presetContent}>
-                  <Text style={[styles.presetLabel, isActive && styles.presetLabelActive]}>
+                  <Text
+                    style={[
+                      styles.presetLabel,
+                      isActive && styles.presetLabelActive,
+                      isDark && !isActive && { color: d?.text },
+                    ]}
+                  >
                     {preset.label}
                   </Text>
-                  <Text style={styles.presetDescription}>{preset.description}</Text>
+                  <Text style={[styles.presetDescription, isDark && { color: d?.muted }]}>
+                    {preset.description}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -363,9 +437,11 @@ export default function AutoReplyScreen() {
         </View>
 
         {/* ── Info footer ── */}
-        <View style={styles.infoBox}>
-          <MaterialIcons name="info-outline" size={16} color={COLORS.text.muted} />
-          <Text style={styles.infoText}>
+        <View
+          style={[styles.infoBox, isDark && { backgroundColor: DARK_SURFACE, borderWidth: 1, borderColor: DARK_BORDER }]}
+        >
+          <MaterialIcons name="info-outline" size={16} color={d?.muted ?? COLORS.text.muted} />
+          <Text style={[styles.infoText, isDark && { color: d?.muted }]}>
             Auto-Reply only works while Landline Mode is active. It sends your message to incoming
             notifications that support inline replies (e.g. WhatsApp, Messenger).
           </Text>

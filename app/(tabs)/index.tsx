@@ -20,6 +20,7 @@ import { SessionCard } from '@/components/home/session-card';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { SessionMode, useLandlineStore } from '@/hooks/use-landline-store';
 import { haptics } from '@/services/haptics';
@@ -55,6 +56,7 @@ interface NotificationSummary {
 // Redirect to landline screen as the main entry point
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   // Get state from Zustand store (FIXED: no broken dependencies)
   const {
     isActive,
@@ -184,6 +186,18 @@ export default function HomeScreen() {
     return s;
   }, [notifications]);
 
+  const darkUi = isDark
+    ? {
+        background: '#5f5f5f',
+        surface: '#4a4a4a',
+        elevated: '#4f4f4f',
+        border: '#3a3a3a',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#F3F3F3',
+        textMuted: '#E0E0E0',
+      }
+    : null;
+
   // Web fallback with mock UI
   if (Platform.OS === 'web') {
     return (
@@ -240,7 +254,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: darkUi?.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
@@ -248,8 +262,10 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Landline Mode</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]}>
+            Landline Mode
+          </Text>
+          <Text style={[styles.headerSubtitle, isDark && { color: darkUi?.textSecondary }]}>
             {isActive ? 'Your digital peace is active' : 'Take a break from notifications'}
           </Text>
         </View>
@@ -286,28 +302,45 @@ export default function HomeScreen() {
           {/* Notification Summary (when active or has notifications) */}
           {(isActive || notifications.length > 0) && (
             <TouchableOpacity onPress={handleViewNotifications} activeOpacity={0.7}>
-              <Card variant="elevated" style={styles.statusCard}>
+              <Card
+                variant="elevated"
+                style={[
+                  styles.statusCard,
+                  isDark && {
+                    backgroundColor: darkUi?.surface,
+                    borderColor: darkUi?.border,
+                  },
+                ]}
+              >
                 <View style={styles.statusCardHeader}>
                   <MaterialIcons
                     name="all-inbox"
                     size={18}
-                    color={COLORS.text.secondary}
+                    color={isDark ? darkUi?.textSecondary : COLORS.text.secondary}
                     style={styles.statusCardIcon}
                   />
-                  <Text style={styles.statusCardTitle}>Notifications</Text>
+                  <Text style={[styles.statusCardTitle, isDark && { color: darkUi?.textPrimary }]}>
+                    Notifications
+                  </Text>
                 </View>
                 <View style={styles.notificationBreakdown}>
                   <View style={styles.breakdownItem}>
                     <Text style={styles.breakdownValue}>{summary.messages}</Text>
-                    <Text style={styles.breakdownLabel}>Messages</Text>
+                    <Text style={[styles.breakdownLabel, isDark && { color: darkUi?.textMuted }]}>
+                      Messages
+                    </Text>
                   </View>
                   <View style={styles.breakdownItem}>
                     <Text style={styles.breakdownValue}>{summary.calls}</Text>
-                    <Text style={styles.breakdownLabel}>Calls</Text>
+                    <Text style={[styles.breakdownLabel, isDark && { color: darkUi?.textMuted }]}>
+                      Calls
+                    </Text>
                   </View>
                   <View style={styles.breakdownItem}>
                     <Text style={styles.breakdownValue}>{summary.apps}</Text>
-                    <Text style={styles.breakdownLabel}>Apps</Text>
+                    <Text style={[styles.breakdownLabel, isDark && { color: darkUi?.textMuted }]}>
+                      Apps
+                    </Text>
                   </View>
                 </View>
                 <Text style={styles.viewAllText}>Tap to view all →</Text>
@@ -317,14 +350,30 @@ export default function HomeScreen() {
         </View>
 
         {/* Recent Sessions Section */}
-        <View style={styles.recentSessionsSection}>
-          <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
-          <Text style={styles.recentSessionsPlaceholder}>No recent sessions</Text>
+        <View
+          style={[
+            styles.recentSessionsSection,
+            isDark && { backgroundColor: darkUi?.surface, borderColor: darkUi?.border },
+          ]}
+        >
+          <Text style={[styles.recentSessionsTitle, isDark && { color: darkUi?.textPrimary }]}>
+            Recent Sessions
+          </Text>
+          <Text style={[styles.recentSessionsPlaceholder, isDark && { color: darkUi?.textMuted }]}>
+            No recent sessions
+          </Text>
         </View>
 
         {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>How it works</Text>
+        <View
+          style={[
+            styles.infoSection,
+            isDark && { backgroundColor: darkUi?.surface, borderColor: darkUi?.border },
+          ]}
+        >
+          <Text style={[styles.infoTitle, isDark && { color: darkUi?.textPrimary }]}>
+            How it works
+          </Text>
           <View style={styles.infoItem}>
             <MaterialIcons
               name="move-to-inbox"
@@ -332,7 +381,9 @@ export default function HomeScreen() {
               color={COLORS.primary}
               style={styles.infoIcon}
             />
-            <Text style={styles.infoText}>Notifications are silently captured and logged</Text>
+            <Text style={[styles.infoText, isDark && { color: darkUi?.textSecondary }]}>
+              Notifications are silently captured and logged
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons
@@ -341,7 +392,9 @@ export default function HomeScreen() {
               color={COLORS.primary}
               style={styles.infoIcon}
             />
-            <Text style={styles.infoText}>Your phone stays silent - no sounds or vibrations</Text>
+            <Text style={[styles.infoText, isDark && { color: darkUi?.textSecondary }]}>
+              Your phone stays silent - no sounds or vibrations
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons
@@ -350,7 +403,9 @@ export default function HomeScreen() {
               color={COLORS.primary}
               style={styles.infoIcon}
             />
-            <Text style={styles.infoText}>Review all notifications later at your convenience</Text>
+            <Text style={[styles.infoText, isDark && { color: darkUi?.textSecondary }]}>
+              Review all notifications later at your convenience
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <MaterialIcons
@@ -359,7 +414,9 @@ export default function HomeScreen() {
               color={COLORS.primary}
               style={styles.infoIcon}
             />
-            <Text style={styles.infoText}>Emergency contacts can still reach you</Text>
+            <Text style={[styles.infoText, isDark && { color: darkUi?.textSecondary }]}>
+              Emergency contacts can still reach you
+            </Text>
           </View>
         </View>
       </ScrollView>
