@@ -19,7 +19,11 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
-import { isListenerEnabled, isServiceRunning } from '@/modules/auto-reply-manager';
+import {
+  isListenerEnabled,
+  isServiceRunning,
+  sendTestNotification,
+} from '@/modules/auto-reply-manager';
 import {
   getAllInstalledApps,
   getCurrentState,
@@ -150,15 +154,25 @@ export default function DebugToolsScreen() {
             />
             <Button
               label="Send test notification"
-              onPress={() => {
+              onPress={async () => {
                 if (!NotificationApiManager.hasPostPermission()) {
                   Alert.alert('Error', 'Enable notifications first');
                   return;
                 }
-                NotificationApiManager.createChannel('debug', 'Debug', 3);
-                const id = Date.now() % 100000;
-                NotificationApiManager.notify('Test', 'Debug notification', 'debug', id);
-                Alert.alert('Success', 'Test notification sent');
+
+                try {
+                  const result = await sendTestNotification(
+                    'John Doe',
+                    'Hey! Are you available to talk for a minute?',
+                  );
+
+                  Alert.alert(
+                    result.success ? 'Success' : 'Test notification unavailable',
+                    result.message,
+                  );
+                } catch (error) {
+                  Alert.alert('Error', `Failed to send test notification: ${error}`);
+                }
               }}
               variant="primary"
               fullWidth

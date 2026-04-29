@@ -6,11 +6,13 @@ import { router } from 'expo-router';
 
 import { Permission, PermissionCards, usePermissions } from '@/components/permissions';
 import { COLORS, Fonts, Radius, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CorePermissionsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [reqGranted, setReqGranted] = useState(0);
   const [reqTotal, setReqTotal] = useState(0);
 
@@ -39,21 +41,31 @@ export default function CorePermissionsScreen() {
   );
 
   const progress = reqTotal > 0 ? reqGranted / reqTotal : 0;
+  const d = isDark ? { text: '#FFFFFF', sub: '#E8E8E8', muted: '#D0D0D0' } : null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: '#5f5f5f' }]}>
       {/* Header with Back Arrow */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top },
+          isDark && { backgroundColor: '#5f5f5f', borderBottomColor: '#3a3a3a', borderBottomWidth: 1 },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={[
+            styles.backButton,
+            isDark && { backgroundColor: '#4a4a4a', borderWidth: 1, borderColor: '#3a3a3a' },
+          ]}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.foreground} />
+          <MaterialIcons name="arrow-back" size={24} color={d?.text ?? COLORS.foreground} />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Text style={styles.headerTitle}>Permissions</Text>
-          <Text style={styles.headerSubtitle}>System access settings</Text>
+          <Text style={[styles.headerTitle, isDark && { color: d?.text }]}>Permissions</Text>
+          <Text style={[styles.headerSubtitle, isDark && { color: d?.sub }]}>System access settings</Text>
         </View>
         <View style={styles.spacer} />
       </View>
@@ -61,10 +73,10 @@ export default function CorePermissionsScreen() {
       <View style={styles.content}>
         {/* Progress indicator */}
         <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
+          <View style={[styles.progressTrack, isDark && { backgroundColor: '#4a4a4a' }]}>
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
-          <Text style={styles.progressLabel}>
+          <Text style={[styles.progressLabel, isDark && { color: d?.sub }]}>
             {reqGranted} of {reqTotal} required permissions granted
           </Text>
         </View>
