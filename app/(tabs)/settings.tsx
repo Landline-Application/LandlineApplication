@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import { useAppTheme } from '@/contexts/theme-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
@@ -49,6 +50,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const { user, isAuthenticated, signOut } = useAuth();
   const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
   const { localDisplayName, setLocalDisplayName, reset: resetPreferences } = usePreferencesStore();
@@ -269,19 +271,21 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: '#5f5f5f' }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Manage your account and app data</Text>
+          <Text style={[styles.headerTitle, isDark && { color: '#FFFFFF' }]}>Settings</Text>
+          <Text style={[styles.headerSubtitle, isDark && { color: '#F3F3F3' }]}>
+            Manage your account and app data
+          </Text>
         </View>
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Account</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Account</Text>
 
           {isAuthenticated ? (
             <Card variant="elevated" padding="lg" style={styles.card}>
@@ -296,15 +300,18 @@ export default function SettingsScreen() {
                 </View>
                 <View style={styles.accountInfo}>
                   {user?.displayName ? (
-                    <Text style={styles.accountDisplayName} numberOfLines={1}>
+                    <Text style={[styles.accountDisplayName, isDark && { color: '#FFFFFF' }]} numberOfLines={1}>
                       {user.displayName}
                     </Text>
                   ) : (
-                    <Text style={styles.accountDisplayNameMuted} numberOfLines={1}>
+                    <Text
+                      style={[styles.accountDisplayNameMuted, isDark && { color: '#F3F3F3' }]}
+                      numberOfLines={1}
+                    >
                       Anonymous User
                     </Text>
                   )}
-                  <Text style={styles.accountEmail} numberOfLines={1}>
+                  <Text style={[styles.accountEmail, isDark && { color: '#E0E0E0' }]} numberOfLines={1}>
                     {user?.email || user?.phoneNumber || 'No email associated'}
                   </Text>
                 </View>
@@ -353,13 +360,15 @@ export default function SettingsScreen() {
                       <MaterialIcons name="edit" size={18} color={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.localNameHint}>
+                  <Text style={[styles.localNameHint, isDark && { color: '#E0E0E0' }]}>
                     Saved on this device. Create an account to sync across devices.
                   </Text>
                 </View>
               ) : (
                 <View style={styles.localNameSection}>
-                  <Text style={styles.localNameLabel}>What should we call you?</Text>
+                  <Text style={[styles.localNameLabel, isDark && { color: '#FFFFFF' }]}>
+                    What should we call you?
+                  </Text>
                   <TextInput
                     style={styles.localNameInput}
                     value={displayNameDraft}
@@ -397,8 +406,8 @@ export default function SettingsScreen() {
 
               <View style={styles.localNameDivider} />
 
-              <Text style={styles.unauthTitle}>Join Landline</Text>
-              <Text style={styles.unauthSubtitle}>
+              <Text style={[styles.unauthTitle, isDark && { color: '#FFFFFF' }]}>Join Landline</Text>
+              <Text style={[styles.unauthSubtitle, isDark && { color: '#F3F3F3' }]}>
                 Create an account to sync your settings and access features across devices.
               </Text>
               <View style={styles.unauthButtons}>
@@ -422,7 +431,7 @@ export default function SettingsScreen() {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Preferences</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Preferences</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -436,8 +445,12 @@ export default function SettingsScreen() {
                   <MaterialIcons name="tune" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>General settings</Text>
-                  <Text style={styles.menuItemSubtitle}>Notification retention and more</Text>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    General settings
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    Notification retention and more
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -457,8 +470,8 @@ export default function SettingsScreen() {
                   <MaterialIcons name="reply" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Auto-Reply</Text>
-                  <Text style={styles.menuItemSubtitle}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Auto-Reply</Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
                     {autoReplyEnabled
                       ? 'Enabled — auto-replying to messages'
                       : 'Set up automatic replies while focused'}
@@ -487,9 +500,34 @@ export default function SettingsScreen() {
                   <MaterialIcons name="contact-phone" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Emergency Contacts</Text>
-                  <Text style={styles.menuItemSubtitle}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Emergency Contacts
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
                     Contacts that can reach you during Landline Mode
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.itemDivider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/design');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="palette" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Design</Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    Theme and appearance preferences
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
@@ -521,8 +559,10 @@ export default function SettingsScreen() {
                   <MaterialIcons name="feedback" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Send Feedback</Text>
-                  <Text style={styles.menuItemSubtitle}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Send Feedback
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
                     Report bugs, request features, or share thoughts
                   </Text>
                 </View>
@@ -534,7 +574,7 @@ export default function SettingsScreen() {
 
         {/* App Permissions Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>App Permissions</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Permissions</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -548,8 +588,10 @@ export default function SettingsScreen() {
                   <MaterialIcons name="lock" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Permissions</Text>
-                  <Text style={styles.menuItemSubtitle}>Review and grant app access</Text>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Permissions</Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    Review and grant app access
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -560,14 +602,16 @@ export default function SettingsScreen() {
         {/* App Attention Section */}
         {Platform.OS === 'android' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>App Attention</Text>
+            <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Attention</Text>
             <AppAttentionCard limit={5} showViewMore />
           </View>
         )}
 
         {/* Tools Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Tools & Diagnostics</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>
+            Tools & Diagnostics
+          </Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -581,8 +625,12 @@ export default function SettingsScreen() {
                   <MaterialIcons name="notifications-off" size={22} color={COLORS.secondary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Landline Mode</Text>
-                  <Text style={styles.menuItemSubtitle}>Configure silencing engine</Text>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Landline Mode
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    Configure silencing engine
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -602,8 +650,12 @@ export default function SettingsScreen() {
                   <MaterialIcons name="build" size={22} color={COLORS.secondary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>Debug Console</Text>
-                  <Text style={styles.menuItemSubtitle}>System logs and developer tools</Text>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Debug Console
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    System logs and developer tools
+                  </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
@@ -612,7 +664,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Data Management</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Data Management</Text>
           <Card variant="elevated" padding="lg" style={styles.card}>
             {/* Retention Period Row */}
             <TouchableOpacity
@@ -679,7 +731,7 @@ export default function SettingsScreen() {
 
         {/* Developer Testing */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Development</Text>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Development</Text>
           <Button
             label="Reset Terms Acceptance"
             onPress={resetTermsAcceptance}

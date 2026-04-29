@@ -26,9 +26,11 @@ import { haptics } from '@/services/haptics';
 type LoggedNotification = {
   timestamp?: number;
   packageName?: string;
+  appName?: string;
 };
 
 type AppAttentionRow = AppUsageSummary & { notificationCount: number };
+type AppAttentionMetric = 'screenTime' | 'notifications';
 
 function getWindowMs(window: UsageWindow): number {
   switch (window) {
@@ -79,6 +81,7 @@ export function AppAttentionCard({
 }: AppAttentionCardProps) {
   const [hasUsagePermission, setHasUsagePermission] = useState(false);
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
+  const [selectedMetric, setSelectedMetric] = useState<AppAttentionMetric>('screenTime');
   const [topApps, setTopApps] = useState<AppAttentionRow[]>([]);
   const [usageLoading, setUsageLoading] = useState(false);
 
@@ -105,10 +108,25 @@ export function AppAttentionCard({
           logs = [];
         }
         const notifCounts = countLoggedNotificationsByPackage(logs, windowMs);
-        const merged: AppAttentionRow[] = usage.map((app) => ({
-          ...app,
-          notificationCount: notifCounts.get(app.packageName) ?? 0,
-        }));
+        const usageByPackage = new Map(usage.map((app) => [app.packageName, app] as const));
+        const notificationOnlyApps = Array.from(notifCounts.entries())
+          .filter(([packageName, count]) => count > 0 && !usageByPackage.has(packageName))
+          .map(([packageName, notificationCount]) => {
+            const matchingLog = logs.find((log) => log.packageName === packageName && log.appName);
+            return {
+              packageName,
+              appName: matchingLog?.appName?.trim() || packageName,
+              totalTimeMs: 0,
+              notificationCount,
+            };
+          });
+        const merged: AppAttentionRow[] = [
+          ...usage.map((app) => ({
+            ...app,
+            notificationCount: notifCounts.get(app.packageName) ?? 0,
+          })),
+          ...notificationOnlyApps,
+        ];
         setTopApps(merged);
       } catch (error) {
         console.error('Failed to load app usage data', error);
@@ -168,8 +186,33 @@ export function AppAttentionCard({
     () => (topApps.length > 0 ? Math.max(...topApps.map((a) => a.totalTimeMs)) : 1),
     [topApps],
   );
+  const maxNotificationCount = useMemo(
+    () => (topApps.length > 0 ? Math.max(...topApps.map((a) => a.notificationCount)) : 1),
+    [topApps],
+  );
+  const displayedApps = useMemo(() => {
+    const apps = [...topApps];
+    if (selectedMetric === 'notifications') {
+      return apps.sort((a, b) => {
+        if (b.notificationCount !== a.notificationCount) {
+          return b.notificationCount - a.notificationCount;
+        }
+        return b.totalTimeMs - a.totalTimeMs;
+      });
+    }
+    return apps.sort((a, b) => {
+      if (b.totalTimeMs !== a.totalTimeMs) {
+        return b.totalTimeMs - a.totalTimeMs;
+      }
+      return b.notificationCount - a.notificationCount;
+    });
+  }, [selectedMetric, topApps]);
 
   const windows: UsageWindow[] = ['24h', '7d', '30d'];
+  const metrics: Array<{ key: AppAttentionMetric; label: string }> = [
+    { key: 'screenTime', label: 'Screen time' },
+    { key: 'notifications', label: 'Notifications' },
+  ];
 
   // Generate a consistent color for an app based on its name
   const getAppIconColor = useCallback((appName: string) => {
@@ -278,22 +321,50 @@ export function AppAttentionCard({
               <MaterialIcons name="refresh" size={22} color={COLORS.text.secondary} />
             </TouchableOpacity>
           </View>
+          <View style={styles.metricRow}>
+            <View style={styles.metricGroup}>
+              {metrics.map((metric) => {
+                const active = selectedMetric === metric.key;
+                return (
+                  <Pressable
+                    key={metric.key}
+                    style={[styles.segmentChip, active && styles.segmentChipActive]}
+                    onPress={() => {
+                      haptics.light();
+                      setSelectedMetric(metric.key);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Show apps by ${metric.label.toLowerCase()}`}
+                  >
+                    <Text style={[styles.segmentChipText, active && styles.segmentChipTextActive]}>
+                      {metric.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
           {usageLoading ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text style={styles.loadingLabel}>Loading data…</Text>
             </View>
-          ) : topApps.length === 0 ? (
+          ) : displayedApps.length === 0 ? (
             <Text style={styles.emptyText}>
               No usage data found for this range yet. Keep using your apps and tap refresh.
             </Text>
           ) : (
             /* M3 two-line list — headline + supporting text, trailing metadata */
             <View style={styles.listContainer}>
-              {topApps.map((app) => {
+              {displayedApps.map((app) => {
+                const progressValue =
+                  selectedMetric === 'screenTime' ? app.totalTimeMs : app.notificationCount;
+                const progressMax =
+                  selectedMetric === 'screenTime' ? maxDurationMs : maxNotificationCount;
                 const barWidth =
-                  `${Math.round((app.totalTimeMs / maxDurationMs) * 100)}%` as `${number}%`;
+                  `${Math.round((progressValue / Math.max(progressMax, 1)) * 100)}%` as `${number}%`;
                 const iconColor = getAppIconColor(app.appName);
                 return (
                   <View key={app.packageName} style={styles.listItem}>
@@ -326,14 +397,30 @@ export function AppAttentionCard({
                       </View>
                     </View>
 
-                    {/* Trailing — screen time + notification chip */}
+                    {/* Trailing — primary metric + secondary detail */}
                     <View style={styles.listItemTrailing}>
-                      <Text style={styles.trailingDuration}>{formatDuration(app.totalTimeMs)}</Text>
-                      {app.notificationCount > 0 && (
+                      <Text style={styles.trailingDuration}>
+                        {selectedMetric === 'screenTime'
+                          ? formatDuration(app.totalTimeMs)
+                          : `${app.notificationCount} ${
+                              app.notificationCount === 1 ? 'notif' : 'notifs'
+                            }`}
+                      </Text>
+                      {selectedMetric === 'screenTime' ? (
+                        app.notificationCount > 0 && (
+                          <View style={styles.notifChip}>
+                            <Text style={styles.notifChipText}>
+                              {app.notificationCount}{' '}
+                              {app.notificationCount === 1 ? 'notif' : 'notifs'}
+                            </Text>
+                          </View>
+                        )
+                      ) : (
                         <View style={styles.notifChip}>
                           <Text style={styles.notifChipText}>
-                            {app.notificationCount}{' '}
-                            {app.notificationCount === 1 ? 'notif' : 'notifs'}
+                            {app.totalTimeMs > 0
+                              ? formatDuration(app.totalTimeMs)
+                              : 'No screen time'}
                           </Text>
                         </View>
                       )}
@@ -450,10 +537,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     gap: Spacing.sm,
   },
+  metricRow: {
+    marginBottom: Spacing.md,
+  },
   segmentGroup: {
     flexDirection: 'row',
     gap: Spacing.xs,
     flex: 1,
+  },
+  metricGroup: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    flexWrap: 'wrap',
   },
   segmentChip: {
     paddingHorizontal: Spacing.md,

@@ -32,6 +32,7 @@ interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
   isActive?: boolean;
+  isDark?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,7 +94,20 @@ export default function NotebookLogView({
   notifications,
   onRefresh,
   isActive,
+  isDark = false,
 }: NotebookLogViewProps) {
+  const darkUi = isDark
+    ? {
+        bg: '#5f5f5f',
+        surface: '#4a4a4a',
+        surfaceAlt: '#4f4f4f',
+        border: '#3a3a3a',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#F3F3F3',
+        textMuted: '#E0E0E0',
+      }
+    : null;
+
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
@@ -147,10 +161,15 @@ export default function NotebookLogView({
   }, [filtered]);
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, isDark && { backgroundColor: darkUi?.bg }]}>
       {/* ── Filter chip row ── */}
       {filterOptions.length > 1 && (
-        <View style={styles.filterBar}>
+        <View
+          style={[
+            styles.filterBar,
+            isDark && { backgroundColor: darkUi?.bg, borderBottomColor: darkUi?.border },
+          ]}
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -161,7 +180,11 @@ export default function NotebookLogView({
               return (
                 <Pressable
                   key={opt}
-                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  style={[
+                    styles.filterChip,
+                    active && styles.filterChipActive,
+                    isDark && !active && { borderColor: darkUi?.border, backgroundColor: darkUi?.surfaceAlt },
+                  ]}
                   onPress={() => {
                     haptics.light();
                     setSelectedFilter(opt);
@@ -170,7 +193,13 @@ export default function NotebookLogView({
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={opt === 'All' ? 'Show all notifications' : `Filter by ${opt}`}
                 >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      active && styles.filterChipTextActive,
+                      isDark && !active && { color: darkUi?.textSecondary },
+                    ]}
+                  >
                     {opt}
                   </Text>
                 </Pressable>
@@ -197,15 +226,22 @@ export default function NotebookLogView({
         {/* Empty state */}
         {filtered.length === 0 && (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconWrap}>
+            <View
+              style={[
+                styles.emptyIconWrap,
+                isDark && { backgroundColor: darkUi?.surfaceAlt, borderColor: darkUi?.border, borderWidth: 1 },
+              ]}
+            >
               <MaterialIcons
                 name={isActive ? 'hearing' : 'notifications-none'}
                 size={36}
-                color={COLORS.text.muted}
+                color={isDark ? darkUi?.textMuted : COLORS.text.muted}
               />
             </View>
-            <Text style={styles.emptyTitle}>{isActive ? 'Listening…' : 'Nothing here yet'}</Text>
-            <Text style={styles.emptyBody}>
+            <Text style={[styles.emptyTitle, isDark && { color: darkUi?.textPrimary }]}>
+              {isActive ? 'Listening…' : 'Nothing here yet'}
+            </Text>
+            <Text style={[styles.emptyBody, isDark && { color: darkUi?.textSecondary }]}>
               {isActive
                 ? 'Notifications will appear here as they arrive.'
                 : 'Activate Landline Mode to start capturing notifications.'}
@@ -215,7 +251,7 @@ export default function NotebookLogView({
 
         {/* Notification count summary */}
         {filtered.length > 0 && (
-          <Text style={styles.countLabel}>
+          <Text style={[styles.countLabel, isDark && { color: darkUi?.textMuted }]}>
             {filtered.length} {filtered.length === 1 ? 'notification' : 'notifications'}
             {selectedFilter !== 'All' ? ` · ${selectedFilter}` : ''}
           </Text>
@@ -229,7 +265,7 @@ export default function NotebookLogView({
               <View style={[styles.appAvatar, { backgroundColor: appTint(appName) }]}>
                 <Text style={styles.appAvatarText}>{appInitials(appName)}</Text>
               </View>
-              <Text style={styles.groupAppName} numberOfLines={1}>
+              <Text style={[styles.groupAppName, isDark && { color: darkUi?.textSecondary }]} numberOfLines={1}>
                 {appName}
               </Text>
               <View style={styles.groupCount}>
@@ -238,7 +274,12 @@ export default function NotebookLogView({
             </View>
 
             {/* Entries card */}
-            <View style={styles.entriesCard}>
+            <View
+              style={[
+                styles.entriesCard,
+                isDark && { backgroundColor: darkUi?.surface, borderColor: darkUi?.border },
+              ]}
+            >
               {entries.map((notif, idx) => {
                 const entryKey = `${appName}-${notif.id}-${notif.postTime}-${idx}`;
                 const isExpanded = expandedKeys.has(entryKey);
@@ -250,6 +291,7 @@ export default function NotebookLogView({
                       styles.entry,
                       !isLast && styles.entryBorder,
                       pressed && styles.entryPressed,
+                      pressed && isDark && { backgroundColor: darkUi?.surfaceAlt },
                     ]}
                     onPress={() => {
                       haptics.soft();
@@ -263,17 +305,23 @@ export default function NotebookLogView({
                     <View style={styles.entryMain}>
                       {/* Headline row */}
                       <View style={styles.entryHeadlineRow}>
-                        <Text style={styles.entryTitle} numberOfLines={isExpanded ? undefined : 1}>
+                        <Text
+                          style={[styles.entryTitle, isDark && { color: darkUi?.textPrimary }]}
+                          numberOfLines={isExpanded ? undefined : 1}
+                        >
                           {notif.title}
                         </Text>
-                        <Text style={styles.entryRelTime}>
+                        <Text style={[styles.entryRelTime, isDark && { color: darkUi?.textMuted }]}>
                           {formatRelativeTime(notif.postTime)}
                         </Text>
                       </View>
 
                       {/* Supporting text */}
                       {!!notif.text && (
-                        <Text style={styles.entryBody} numberOfLines={isExpanded ? undefined : 2}>
+                        <Text
+                          style={[styles.entryBody, isDark && { color: darkUi?.textSecondary }]}
+                          numberOfLines={isExpanded ? undefined : 2}
+                        >
                           {notif.text}
                         </Text>
                       )}
@@ -281,7 +329,7 @@ export default function NotebookLogView({
                       {/* Expanded: full timestamp + auto-reply badge */}
                       {isExpanded && (
                         <View style={styles.entryMeta}>
-                          <Text style={styles.entryTimestamp}>
+                          <Text style={[styles.entryTimestamp, isDark && { color: darkUi?.textMuted }]}>
                             {formatTimestamp(notif.postTime)}
                           </Text>
                           {notif.autoReplied && (
@@ -299,7 +347,9 @@ export default function NotebookLogView({
                           <View style={styles.replySubRowLine} />
                           <View style={styles.replySubRowContent}>
                             <Text style={styles.replySubRowLabel}>Replied</Text>
-                            <Text style={styles.replySubRowText}>{notif.replyText}</Text>
+                            <Text style={[styles.replySubRowText, isDark && { color: darkUi?.textSecondary }]}>
+                              {notif.replyText}
+                            </Text>
                           </View>
                         </View>
                       )}
@@ -317,7 +367,7 @@ export default function NotebookLogView({
                     <MaterialIcons
                       name={isExpanded ? 'expand-less' : 'expand-more'}
                       size={18}
-                      color={COLORS.text.muted}
+                      color={isDark ? darkUi?.textMuted : COLORS.text.muted}
                       style={styles.chevron}
                     />
                   </Pressable>

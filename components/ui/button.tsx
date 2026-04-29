@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { COLORS, Motion, Radius, Spacing, TouchTargets, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import { haptics } from '@/services/haptics';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,22 +34,6 @@ export interface ButtonProps {
 }
 
 // ── Variant & size lookup tables ──────────────────────────────────────────────
-
-const containerVariants: Record<ButtonVariant, ViewStyle> = {
-  primary: { backgroundColor: COLORS.primary },
-  secondary: { backgroundColor: COLORS.secondary },
-  ghost: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: COLORS.primary },
-  danger: { backgroundColor: COLORS.destructive },
-  text: { backgroundColor: 'transparent' },
-};
-
-const textVariants: Record<ButtonVariant, TextStyle> = {
-  primary: { color: COLORS.text.onPrimary },
-  secondary: { color: COLORS.text.onSecondary },
-  ghost: { color: COLORS.primary },
-  danger: { color: COLORS.text.onPrimary },
-  text: { color: COLORS.text.secondary, fontFamily: 'Nunito_400Regular', opacity: 0.8 },
-};
 
 const containerSizes: Record<ButtonSize, ViewStyle> = {
   sm: { height: TouchTargets.sm, paddingHorizontal: Spacing.md },
@@ -79,8 +64,31 @@ export function Button({
   textStyle,
   accessibilityLabel,
 }: ButtonProps) {
+  const { isDark } = useAppTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const isDisabled = disabled || loading;
+  const containerVariants: Record<ButtonVariant, ViewStyle> = {
+    primary: { backgroundColor: COLORS.primary },
+    secondary: { backgroundColor: COLORS.secondary },
+    ghost: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: isDark ? '#DDDDDD' : COLORS.primary,
+    },
+    danger: { backgroundColor: COLORS.destructive },
+    text: { backgroundColor: 'transparent' },
+  };
+  const textVariants: Record<ButtonVariant, TextStyle> = {
+    primary: { color: COLORS.text.onPrimary },
+    secondary: { color: COLORS.text.onSecondary },
+    ghost: { color: isDark ? '#FFFFFF' : COLORS.primary },
+    danger: { color: COLORS.text.onPrimary },
+    text: {
+      color: isDark ? '#F3F3F3' : COLORS.text.secondary,
+      fontFamily: 'Nunito_400Regular',
+      opacity: 0.8,
+    },
+  };
 
   const handlePressIn = useCallback(() => {
     Animated.timing(scaleAnim, {
