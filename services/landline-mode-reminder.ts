@@ -4,13 +4,13 @@ import type { EventSubscription } from 'expo-modules-core';
 import * as Notifications from 'expo-notifications';
 import type { NotificationResponse } from 'expo-notifications';
 
-import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { landlineSession } from '@/services/landline-session';
+import { readSessionStartTime } from '@/services/session-journal';
 import {
   getReminderIntervalHoursAsync,
   isValidReminderIntervalHours,
 } from '@/utils/landline-reminder-interval';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const LANDLINE_REMINDER_BG_TASK_NAME = 'LANDLINE_REMINDER_BACKGROUND';
 
@@ -23,12 +23,6 @@ export const ACTION_LANDLINE_KEEP_ON = 'landline_reminder_keep_on';
 export const ACTION_LANDLINE_TURN_OFF = 'landline_reminder_turn_off';
 
 export const LANDLINE_REMINDER_DATA_TYPE = 'landline_reminder';
-
-const SESSION_KEYS = [
-  'landline_session_start_time',
-  'landline_session_mode',
-  'landline_session_end_time',
-] as const;
 
 let responseSubscription: EventSubscription | null = null;
 let subsystemInitialized = false;
@@ -118,16 +112,8 @@ async function snoozeLandlineReminder(): Promise<void> {
  */
 export async function turnOffLandlineModeFromReminder(): Promise<void> {
   try {
-    NotificationApiManager.setLandlineMode(false);
-    try {
-      if (DndManager.hasPermission()) {
-        await DndManager.setDNDEnabled(false);
-      }
-    } catch {
-      /* optional */
-    }
+    await landlineSession.stop();
     await cancelLandlineModeReminderScheduled();
-    await AsyncStorage.multiRemove([...SESSION_KEYS]);
   } catch (e) {
     console.warn('turnOffLandlineModeFromReminder failed', e);
   }
@@ -142,7 +128,8 @@ async function applyLandlineReminderAction(actionIdentifier: string): Promise<vo
     actionIdentifier === ACTION_LANDLINE_KEEP_ON ||
     actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
   ) {
-    if (!NotificationApiManager.isLandlineModeActive()) {
+    const sessionState = await landlineSession.hydrate();
+    if (!sessionState.isActive) {
       await cancelLandlineModeReminderScheduled();
       return;
     }
@@ -172,14 +159,14 @@ export async function handleLandlineReminderTaskPayload(data: unknown): Promise<
 export async function ensureLandlineReminderScheduledIfNeeded(): Promise<void> {
   if (Platform.OS !== 'android') return;
   try {
-    if (!NotificationApiManager.isLandlineModeActive()) return;
+    const sessionState = await landlineSession.hydrate();
+    if (!sessionState.isActive) return;
 
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const ours = scheduled.some((r) => r.identifier === LANDLINE_REMINDER_NOTIFICATION_ID);
     if (ours) return;
 
-    const sessionStartRaw = await AsyncStorage.getItem('landline_session_start_time');
-    const startMs = sessionStartRaw ? parseInt(sessionStartRaw, 10) : Date.now();
+    const startMs = (await readSessionStartTime()) ?? Date.now();
     const hours = await getReminderIntervalHoursAsync();
     const at = new Date(startMs + hours * 60 * 60 * 1000);
     await scheduleLandlineReminderAt(at);
@@ -192,7 +179,9 @@ export async function ensureLandlineReminderScheduledIfNeeded(): Promise<void> {
 export async function rescheduleLandlineReminderAfterIntervalChange(
   intervalHoursOverride?: number,
 ): Promise<void> {
-  if (Platform.OS !== 'android' || !NotificationApiManager.isLandlineModeActive()) return;
+  if (Platform.OS !== 'android') return;
+  const sessionState = await landlineSession.hydrate();
+  if (!sessionState.isActive) return;
   const hours =
     intervalHoursOverride != null && isValidReminderIntervalHours(intervalHoursOverride)
       ? intervalHoursOverride
