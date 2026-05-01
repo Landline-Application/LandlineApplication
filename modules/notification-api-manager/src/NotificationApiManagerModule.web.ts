@@ -126,6 +126,10 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   async clearAllData() {
     return false;
   }
+
+  async deleteLoggedNotification() {
+    return false;
+  }
 }
 
 export default registerWebModule(NotificationApiManagerModule, 'NotificationApiManagerModule');

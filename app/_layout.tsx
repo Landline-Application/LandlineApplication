@@ -1,6 +1,9 @@
+import 'react-native-gesture-handler';
+
 import { useEffect, useRef, useState } from 'react';
 
 import { LogBox, Platform, Text } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -102,14 +105,16 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? darkTheme : lightTheme}>
-          <NavigationGate />
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? darkTheme : lightTheme}>
+            <NavigationGate />
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

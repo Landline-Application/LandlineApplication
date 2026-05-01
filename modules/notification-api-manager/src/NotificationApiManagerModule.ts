@@ -69,6 +69,13 @@ type NotificationApiNativeModule = {
   clearAllData(): Promise<boolean>;
   // Notification Retention - delete notifications older than cutoff timestamp
   deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number>;
+  /** Remove one persisted log row (Android). */
+  deleteLoggedNotification(
+    logTimestamp: number,
+    packageName: string,
+    postTime: number,
+    notificationId: number,
+  ): Promise<boolean>;
 };
 
 // Stale dev clients may omit newer native methods; avoid crashing until `expo run:android` picks up Kotlin.
@@ -288,6 +295,20 @@ export function deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<n
   return Promise.resolve(0);
 }
 
+export function deleteLoggedNotification(
+  logTimestamp: number,
+  packageName: string,
+  postTime: number,
+  notificationId: number,
+): Promise<boolean> {
+  const fn = Native.deleteLoggedNotification;
+  if (typeof fn === 'function') {
+    return fn.call(Native, logTimestamp, packageName, postTime, notificationId);
+  }
+  console.warn('deleteLoggedNotification native method not available');
+  return Promise.resolve(false);
+}
+
 export default {
   hasPostPermission,
   requestPostPermission,
@@ -328,4 +349,5 @@ export default {
   parseEmergencyContactsJson,
   clearAllData,
   deleteNotificationsOlderThan,
+  deleteLoggedNotification,
 };
