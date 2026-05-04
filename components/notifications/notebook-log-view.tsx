@@ -26,6 +26,9 @@ export interface NotebookLogEntry {
   timestamp?: number;
   autoReplied?: boolean;
   replyText?: string; // the message that was auto-replied, if any
+  isGroupChat?: boolean;
+  groupName?: string; // conversation/group name, if available
+  groupSender?: string; // name of the sender within the group, if available
 }
 
 interface NotebookLogViewProps {
@@ -278,7 +281,7 @@ export default function NotebookLogView({
                         </Text>
                       )}
 
-                      {/* Expanded: full timestamp + auto-reply badge */}
+                      {/* Expanded: full timestamp + badges */}
                       {isExpanded && (
                         <View style={styles.entryMeta}>
                           <Text style={styles.entryTimestamp}>
@@ -288,6 +291,12 @@ export default function NotebookLogView({
                             <View style={styles.autoRepliedBadge}>
                               <MaterialIcons name="reply" size={11} color={COLORS.primary} />
                               <Text style={styles.autoRepliedBadgeText}>Auto Replied</Text>
+                            </View>
+                          )}
+                          {notif.isGroupChat && (
+                            <View style={styles.groupBadge}>
+                              <MaterialIcons name="group" size={11} color={COLORS.text.secondary} />
+                              <Text style={styles.groupBadgeText}>Group</Text>
                             </View>
                           )}
                         </View>
@@ -304,11 +313,44 @@ export default function NotebookLogView({
                         </View>
                       )}
 
-                      {/* Collapsed: small auto-reply pill */}
-                      {!isExpanded && notif.autoReplied && (
-                        <View style={styles.autoRepliedPill}>
-                          <MaterialIcons name="reply" size={10} color={COLORS.primary} />
-                          <Text style={styles.autoRepliedPillText}>Auto Replied</Text>
+                      {/* Expanded: group info sub-row */}
+                      {isExpanded && notif.isGroupChat && (!!notif.groupName || !!notif.groupSender) && (
+                        <View style={styles.replySubRow}>
+                          <View style={styles.groupSubRowLine} />
+                          <View style={styles.replySubRowContent}>
+                            {!!notif.groupName && (
+                              <>
+                                <Text style={styles.groupSubRowLabel}>Group</Text>
+                                <Text style={styles.replySubRowText}>{notif.groupName}</Text>
+                              </>
+                            )}
+                            {!!notif.groupSender && (
+                              <>
+                                <Text style={[styles.groupSubRowLabel, !!notif.groupName && styles.groupSubRowLabelSpaced]}>
+                                  Sent by
+                                </Text>
+                                <Text style={styles.replySubRowText}>{notif.groupSender}</Text>
+                              </>
+                            )}
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Collapsed: pills row */}
+                      {!isExpanded && (notif.autoReplied || notif.isGroupChat) && (
+                        <View style={styles.pillRow}>
+                          {notif.autoReplied && (
+                            <View style={styles.autoRepliedPill}>
+                              <MaterialIcons name="reply" size={10} color={COLORS.primary} />
+                              <Text style={styles.autoRepliedPillText}>Auto Replied</Text>
+                            </View>
+                          )}
+                          {notif.isGroupChat && (
+                            <View style={styles.groupPill}>
+                              <MaterialIcons name="group" size={10} color={COLORS.text.secondary} />
+                              <Text style={styles.groupPillText}>Group</Text>
+                            </View>
+                          )}
                         </View>
                       )}
                     </View>
@@ -564,6 +606,13 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     letterSpacing: 0.2,
   },
+  // Pill row (collapsed state — holds auto-reply + group pills side by side)
+  pillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginTop: 3,
+  },
   // Auto-replied pill (shown in collapsed state, below body text)
   autoRepliedPill: {
     flexDirection: 'row',
@@ -574,13 +623,65 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
-    marginTop: 3,
   },
   autoRepliedPillText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,
     color: COLORS.primary,
     letterSpacing: 0.1,
+  },
+  // Group pill (shown in collapsed state)
+  groupPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    alignSelf: 'flex-start',
+    backgroundColor: `${COLORS.text.secondary}12`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  groupPillText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: COLORS.text.secondary,
+    letterSpacing: 0.1,
+  },
+  // Group badge (shown in expanded meta row)
+  groupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: `${COLORS.text.secondary}12`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: `${COLORS.text.secondary}25`,
+  },
+  groupBadgeText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 10,
+    color: COLORS.text.secondary,
+    letterSpacing: 0.2,
+  },
+  // Group info sub-row accent line
+  groupSubRowLine: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: `${COLORS.text.secondary}35`,
+    alignSelf: 'stretch',
+  },
+  groupSubRowLabel: {
+    fontSize: 10,
+    fontFamily: 'Nunito_600SemiBold',
+    color: COLORS.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  groupSubRowLabelSpaced: {
+    marginTop: Spacing.xs,
   },
   // M3 trailing icon
   chevron: {

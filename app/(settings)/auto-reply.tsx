@@ -14,6 +14,7 @@ import {
 
 import { router } from 'expo-router';
 
+import { TutorialReturnHint } from '@/components/tutorial/tutorial-return-hint';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
@@ -177,6 +178,8 @@ export default function AutoReplyScreen() {
         </View>
         <View style={styles.headerSpacer} />
       </View>
+
+      <TutorialReturnHint />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

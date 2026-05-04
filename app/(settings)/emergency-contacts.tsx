@@ -17,6 +17,7 @@ import {
 import * as Contacts from 'expo-contacts';
 import { router, useFocusEffect } from 'expo-router';
 
+import { TutorialReturnHint } from '@/components/tutorial/tutorial-return-hint';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -338,6 +339,8 @@ export default function EmergencyContactsScreen() {
         </View>
         <View style={styles.headerSpacer} />
       </View>
+
+      <TutorialReturnHint />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
