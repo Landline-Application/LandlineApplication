@@ -11,12 +11,13 @@
  * - No top border — surface elevation differentiates the bar
  * - Minimum 48dp touch target per item
  */
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 
 import { Animated, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import * as Haptics from 'expo-haptics';
 
+import { useTutorialTargets } from '@/components/tutorial/tutorial-targets-context';
 import { COLORS, Shadows, Typography } from '@/constants/theme';
 import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +36,7 @@ interface NavItemProps {
   onLongPress: () => void;
   accessibilityLabel?: string;
   testID?: string;
+  onLayoutMeasure?: (rect: { x: number; y: number; width: number; height: number }) => void;
 }
 
 function NavItem({
@@ -45,7 +47,18 @@ function NavItem({
   onLongPress,
   accessibilityLabel,
   testID,
+  onLayoutMeasure,
 }: NavItemProps) {
+  const contentRef = useRef<View>(null);
+
+  const handleContentLayout = useCallback(() => {
+    if (!onLayoutMeasure || !contentRef.current) return;
+    contentRef.current.measureInWindow((x, y, w, h) => {
+      if (w > 0 && h > 0) {
+        onLayoutMeasure({ x, y, width: w, height: h });
+      }
+    });
+  }, [onLayoutMeasure]);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const indicatorScaleAnim = React.useRef(new Animated.Value(focused ? 1 : 0.8)).current;
   const indicatorOpacityAnim = React.useRef(new Animated.Value(focused ? 1 : 0)).current;
@@ -103,6 +116,7 @@ function NavItem({
       testID={testID}
       style={styles.itemContainer}
     >
+      <View ref={contentRef} collapsable={false} onLayout={handleContentLayout}>
       <Animated.View style={[styles.itemInner, { transform: [{ scale: scaleAnim }] }]}>
         {/* Active indicator pill */}
         <Animated.View
@@ -139,16 +153,22 @@ function NavItem({
           {label}
         </Text>
       </Animated.View>
+      </View>
     </Pressable>
   );
 }
 
+const TAB_TARGET_KEYS: Record<string, string> = {
+  notifications: 'logTab',
+  settings: 'settingsTab',
+};
+
 export function NavigationBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { setTargetRect } = useTutorialTargets();
 
   const visibleRoutes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
-    // expo-router sets tabBarItemStyle.display='none' when href is null
     const itemStyle = options.tabBarItemStyle as { display?: string } | undefined;
     return itemStyle?.display !== 'none';
   });
@@ -199,6 +219,8 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
           });
         };
 
+        const targetKey = TAB_TARGET_KEYS[route.name];
+
         return (
           <NavItem
             key={route.key}
@@ -209,6 +231,11 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
             onLongPress={onLongPress}
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={options.tabBarButtonTestID}
+            onLayoutMeasure={
+              targetKey
+                ? (rect) => setTargetRect(targetKey, rect)
+                : undefined
+            }
           />
         );
       })}

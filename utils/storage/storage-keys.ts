@@ -18,6 +18,9 @@ export const STORAGE_KEYS = {
   // User preferences — persisted locally and synced to Firestore when authenticated
   USER_PREFERENCES: '@landline_user_preferences',
 
+  /** Device-local flag: user has seen the in-app tutorial walkthrough */
+  TUTORIAL_SEEN: '@landline_tutorial_seen',
+
   // Future keys can be added here as the app grows:
   // NOTIFICATION_SETTINGS: '@landline_notification_settings',
   // THEME_PREFERENCE: '@landline_theme',

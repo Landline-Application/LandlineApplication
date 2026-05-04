@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   Alert,
@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 
 import { RotaryDialButton } from '@/components/home/rotary-dial-button';
 import { SessionCard } from '@/components/home/session-card';
+import { useTutorialTargets } from '@/components/tutorial/tutorial-targets-context';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
@@ -69,6 +70,22 @@ export default function HomeScreen() {
     checkStatus,
     refreshNotifications,
   } = useLandlineStore();
+
+  // Tutorial target measurement (overlay is rendered in tab layout)
+  const { setTargetRect } = useTutorialTargets();
+  const dialRef = useRef<View>(null);
+
+  const measureTarget = useCallback(
+    (key: string, ref: React.RefObject<View | null>) => {
+      if (!ref.current) return;
+      ref.current.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          setTargetRect(key, { x, y, width: w, height: h });
+        }
+      });
+    },
+    [setTargetRect],
+  );
 
   // Component-specific UI state (keep these)
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -255,7 +272,12 @@ export default function HomeScreen() {
         </View>
 
         {/* Main Toggle Area - Rotary Dial Button */}
-        <View style={styles.toggleContainer}>
+        <View
+          ref={dialRef}
+          collapsable={false}
+          style={styles.toggleContainer}
+          onLayout={() => measureTarget('dial', dialRef)}
+        >
           <RotaryDialButton
             active={isActive}
             onPress={isActive ? handleDeactivate : handleActivate}
@@ -531,6 +553,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
     </View>
   );
 }

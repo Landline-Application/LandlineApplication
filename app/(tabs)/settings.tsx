@@ -23,6 +23,7 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { useTutorialStore } from '@/hooks/use-tutorial';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
@@ -683,6 +684,21 @@ export default function SettingsScreen() {
           <Button
             label="Reset Terms Acceptance"
             onPress={resetTermsAcceptance}
+            variant="ghost"
+            size="sm"
+            fullWidth
+          />
+          <Button
+            label="Replay Tutorial"
+            onPress={async () => {
+              await useTutorialStore.getState().resetTutorial();
+              Alert.alert('Tutorial Reset', 'The tutorial will replay now.', [
+                {
+                  text: 'OK',
+                  onPress: () => router.navigate('/(tabs)'),
+                },
+              ]);
+            }}
             variant="ghost"
             size="sm"
             fullWidth
