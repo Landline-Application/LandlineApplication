@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo } from 'react';
 
-import { Dimensions, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { StatusIndicator } from '@/components/ui/status-indicator';
-import { COLORS, Motion, Shadows } from '@/constants/theme';
+import { COLORS, Motion, Shadows, Typography } from '@/constants/theme';
 import { haptics } from '@/services/haptics';
 import Reanimated, {
   Easing,
@@ -126,6 +126,7 @@ export const RotaryDialButton = ({
             <LinearGradient colors={['#E6DCCD', '#D6C5B3']} style={StyleSheet.absoluteFill} />
             <View style={styles.centerBezel} />
             <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
+            <Text style={styles.actionLabel}>{active ? 'Deactivate' : 'Activate'}</Text>
           </View>
 
           <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
@@ -201,6 +202,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 6,
     borderColor: 'rgba(0,0,0,0.05)',
+  },
+  actionLabel: {
+    ...Typography.label,
+    color: COLORS.text.secondary,
+    marginTop: 6,
+    letterSpacing: 0.5,
   },
   holeLayer: {
     ...StyleSheet.absoluteFillObject,
