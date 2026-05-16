@@ -18,6 +18,10 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.URL
 
 class NotificationApiManagerModule : Module() {
+    companion object {
+        private const val CONTACTS_PREFS_NAME = "landline_contacts_prefs"
+    }
+
     override fun definition() = ModuleDefinition {
         // JS name: requireNativeModule('NotificationApiManager')
         Name("NotificationApiManager")
@@ -263,14 +267,14 @@ class NotificationApiManagerModule : Module() {
 
         Function("getEmergencyPhoneNumbers") {
             val ctx = appContext.reactContext ?: return@Function emptyList<String>()
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             val set = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
             set.toList().sorted()
         }
 
         Function("setEmergencyPhoneNumbers") { phoneNumbers: List<String> ->
             val ctx = appContext.reactContext ?: return@Function false
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             val normalized = phoneNumbers
                 .map { digits -> digits.filter { it.isDigit() } }
                 .filter { it.length >= 7 }
@@ -283,9 +287,10 @@ class NotificationApiManagerModule : Module() {
 
         Function("isNotificationFilterConfigured") {
             val ctx = appContext.reactContext ?: return@Function false
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
-            val packages = prefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
-            val emergency = prefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
+            val modePrefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val contactsPrefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
+            val packages = modePrefs.getStringSet("allowed_notification_packages", emptySet()) ?: emptySet()
+            val emergency = contactsPrefs.getStringSet("emergency_phone_digits", emptySet()) ?: emptySet()
             packages.isNotEmpty() || emergency.isNotEmpty()
         }
 
@@ -557,7 +562,7 @@ class NotificationApiManagerModule : Module() {
 
         Function("setEmergencyContactsJson") { json: String ->
             val ctx = appContext.reactContext ?: return@Function false
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
                 .putString("emergency_contacts_json", json)
                 .remove("emergency_contact_name")
@@ -570,7 +575,7 @@ class NotificationApiManagerModule : Module() {
 
         Function("getEmergencyContactsJson") {
             val ctx = appContext.reactContext ?: return@Function "[]"
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             val json = prefs.getString("emergency_contacts_json", null)
             if (!json.isNullOrBlank()) return@Function json
             val name = prefs.getString("emergency_contact_name", null) ?: ""
@@ -594,7 +599,7 @@ class NotificationApiManagerModule : Module() {
             o.put("name", name)
             o.put("phone", phone)
             arr.put(o)
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
                 .putString("emergency_contacts_json", arr.toString())
                 .remove("emergency_contact_name")
@@ -606,7 +611,7 @@ class NotificationApiManagerModule : Module() {
         /** Legacy: first contact if any */
         Function("getEmergencyContact") {
             val ctx = appContext.reactContext ?: return@Function mapOf<String, String?>()
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             val json = prefs.getString("emergency_contacts_json", null)
             if (!json.isNullOrBlank()) {
                 try {
@@ -628,7 +633,7 @@ class NotificationApiManagerModule : Module() {
 
         Function("clearEmergencyContact") {
             val ctx = appContext.reactContext ?: return@Function false
-            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val prefs = ctx.getSharedPreferences(CONTACTS_PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
                 .putString("emergency_contacts_json", "[]")
                 .remove("emergency_contact_name")
