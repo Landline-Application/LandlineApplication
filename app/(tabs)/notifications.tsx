@@ -37,7 +37,7 @@ export default function NotificationsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const success = await NotificationApiManager.clearAllData();
+              const success = await NotificationApiManager.clearLoggedNotifications();
               if (success) {
                 await refreshNotifications();
               } else {
