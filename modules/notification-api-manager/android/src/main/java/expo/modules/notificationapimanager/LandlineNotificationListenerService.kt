@@ -653,9 +653,24 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         }
     }
 
+    /**
+     * Incidental foreground-service notices (e.g. Google Messages syncing) are not
+     * user-facing messages and clutter the Landline log next to real SMS alerts.
+     */
+    private fun isIncidentalBackgroundWorkNotification(title: String, text: String): Boolean {
+        val combined = "$title $text"
+        return combined.contains("doing work in the background", ignoreCase = true) ||
+            combined.contains("is running in the background", ignoreCase = true)
+    }
+
     private fun shouldSkipNotification(packageName: String, title: String, text: String): Boolean {
         // Prevent the emergency alert we post from being processed/logged again.
         if (title.startsWith("Emergency Contact:")) {
+            return true
+        }
+
+        if (isIncidentalBackgroundWorkNotification(title, text)) {
+            Log.d(TAG, "Skipping incidental background-work notification: title='$title' text='${text.take(80)}'")
             return true
         }
 
