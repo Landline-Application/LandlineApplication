@@ -85,10 +85,18 @@ export default function AutoReplyScreen() {
     requestPermission,
   } = useAutoReplyStore();
 
+  const autoReplyDisabled = true;
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
 
   async function handleToggle(value: boolean) {
+    if (autoReplyDisabled) {
+      Alert.alert(
+        'Auto-Reply temporarily disabled',
+        'Auto-reply is turned off while we finalize the user flow and logic.',
+      );
+      return;
+    }
     if (!hasPermission) {
       Alert.alert(
         'Permission Required',
@@ -187,6 +195,15 @@ export default function AutoReplyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Auto-Reply</Text>
 
+          {autoReplyDisabled && (
+            <View style={styles.disabledBanner}>
+              <MaterialIcons name="info-outline" size={18} color={COLORS.secondary} />
+              <Text style={styles.disabledBannerText}>
+                Auto-reply is temporarily disabled while we finalize the user flow and logic.
+              </Text>
+            </View>
+          )}
+
           {/* Permission warning */}
           {!hasPermission && (
             <TouchableOpacity
@@ -226,7 +243,7 @@ export default function AutoReplyScreen() {
                 <Switch
                   value={isEnabled}
                   onValueChange={handleToggle}
-                  disabled={!hasPermission && !isEnabled}
+                  disabled={autoReplyDisabled || (!hasPermission && !isEnabled)}
                   trackColor={{ false: COLORS.accent, true: `${COLORS.primary}80` }}
                   thumbColor={isEnabled ? COLORS.primary : COLORS.text.muted}
                 />
@@ -475,6 +492,25 @@ const styles = StyleSheet.create({
     borderColor: `${COLORS.warning}30`,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+  },
+
+  disabledBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    backgroundColor: `${COLORS.secondary}10`,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: `${COLORS.secondary}25`,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  disabledBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 16,
   },
   warningCardText: {
     flex: 1,
