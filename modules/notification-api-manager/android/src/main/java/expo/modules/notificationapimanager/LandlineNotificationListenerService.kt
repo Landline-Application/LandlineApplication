@@ -37,6 +37,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
 
     companion object {
         private const val TAG = "LandlineNotifListener"
+        /**
+         * TEMPORARY: Auto-reply is disabled while product flow/logic is being finalized.
+         * Leave code paths in place, but never send replies.
+         */
+        private const val AUTO_REPLY_TEMP_DISABLED = true
         private const val PREFS_NAME = "landline_mode_prefs"
         private const val KEY_LANDLINE_MODE = "is_landline_mode_active"
 
@@ -378,7 +383,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         Log.d(TAG, "Notification received from: ${sbn.packageName}")
         
         val landlineModeActive = isLandlineModeActive()
-        val autoReplyEnabled = isAutoReplyEnabled()
+        val autoReplyEnabled = if (AUTO_REPLY_TEMP_DISABLED) false else isAutoReplyEnabled()
         
         Log.d(TAG, "Landline mode: $landlineModeActive, Auto-reply: $autoReplyEnabled")
         
@@ -483,13 +488,9 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
             loggedNotificationContent[sbn.key] = contentKey
 
-            // Auto-reply only to emergency contacts — they get a response so they know
-            // the user is in Landline Mode; non-emergency contacts are silently suppressed.
-            val autoReplied = if (autoReplyEnabled && isEmergencyContactNotification) {
-                handleAutoReplyIfNeeded(sbn, notification, packageName)
-            } else {
-                false
-            }
+            // TEMPORARY: auto-reply is disabled while flow/logic is finalized.
+            // Keep logging and emergency detection intact.
+            val autoReplied = false
 
             if (isEmergencyContactNotification && repeatCallerKey != null) {
                 synchronized(repeatCallTrackingLock) {
