@@ -69,6 +69,13 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
   // Action: Enable auto-reply
   enable: async () => {
+    if (Platform.OS !== 'android') return;
+    set({ error: 'Auto-reply is temporarily disabled while we finalize the user flow.' });
+    // Ensure UI stays off even if the toggle is pressed.
+    set({ isEnabled: false });
+    usePreferencesStore.getState().setAutoReplyEnabled(false);
+    return;
+    // (kept below for re-enable later)
     set({ isLoading: true, error: null });
     try {
       const result = await AutoReplyManager.setAutoReplyEnabled(true);
@@ -91,6 +98,7 @@ export const useAutoReplyStore = create<AutoReplyState>((set, get) => ({
 
   // Action: Disable auto-reply
   disable: async () => {
+    if (Platform.OS !== 'android') return;
     set({ isLoading: true, error: null });
     try {
       const result = await AutoReplyManager.setAutoReplyEnabled(false);
