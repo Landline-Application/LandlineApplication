@@ -186,7 +186,7 @@ export default function DebugToolsScreen() {
                     text: 'Clear',
                     style: 'destructive',
                     onPress: async () => {
-                      const success = await NotificationApiManager.clearAllData();
+                      const success = await NotificationApiManager.clearLoggedNotifications();
                       if (success) {
                         setNotifCount(0);
                         Alert.alert('Success', 'Logs cleared');
