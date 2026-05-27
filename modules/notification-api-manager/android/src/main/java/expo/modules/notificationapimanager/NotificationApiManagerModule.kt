@@ -373,6 +373,65 @@ class NotificationApiManagerModule : Module() {
         }
 
         /**
+         * Remove specific logged notifications by log timestamp and/or composite key.
+         * Each key map may include: timestamp, packageName, postTime, id.
+         */
+        Function("removeLoggedNotifications") { keys: List<Map<String, Any?>> ->
+            val ctx = appContext.reactContext ?: return@Function 0
+            if (keys.isEmpty()) return@Function 0
+
+            val prefs = ctx.getSharedPreferences("landline_notifications", Context.MODE_PRIVATE)
+            val logsString = prefs.getString("notification_logs", "") ?: ""
+            if (logsString.isEmpty()) return@Function 0
+
+            fun shouldRemove(parts: List<String>): Boolean {
+                if (parts.size < 7) return false
+                val logTs = parts[0].toLongOrNull()
+                val pkg = parts[1]
+                val post = parts[5].toLongOrNull()
+                val id = parts[6].toIntOrNull()
+
+                for (key in keys) {
+                    val keyTs = (key["timestamp"] as? Number)?.toLong()
+                    if (keyTs != null && logTs != null && keyTs == logTs) return true
+
+                    val keyPkg = key["packageName"] as? String
+                    val keyPost = (key["postTime"] as? Number)?.toLong()
+                    val keyId = (key["id"] as? Number)?.toInt()
+                    if (
+                        keyPkg != null &&
+                        keyPost != null &&
+                        keyId != null &&
+                        keyPkg == pkg &&
+                        keyPost == post &&
+                        keyId == id
+                    ) {
+                        return true
+                    }
+                }
+                return false
+            }
+
+            val lines = logsString.split("\n")
+            val kept = mutableListOf<String>()
+            var deletedCount = 0
+
+            for (line in lines) {
+                if (line.isEmpty()) continue
+                val parts = line.split("|")
+                if (shouldRemove(parts)) {
+                    deletedCount++
+                } else {
+                    kept.add(line)
+                }
+            }
+
+            val updatedLogs = kept.joinToString("\n")
+            prefs.edit().putString("notification_logs", updatedLogs).apply()
+            deletedCount
+        }
+
+        /**
          * Clear ALL user data stored in native storage
          * This includes:
          * - Landline mode state (landline_mode_prefs)
