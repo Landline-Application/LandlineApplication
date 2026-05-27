@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
+  const { notifications, isLoading, refreshNotifications, removeNotification, isActive } =
+    useLandlineStore();
 
   // Fast refresh (3s) while this screen is focused and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
@@ -93,6 +94,7 @@ export default function NotificationsScreen() {
         <NotebookLogView
           notifications={notifications}
           onRefresh={loadNotifications}
+          onDelete={removeNotification}
           isActive={isActive}
         />
       )}
