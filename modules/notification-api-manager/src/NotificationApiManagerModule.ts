@@ -12,6 +12,7 @@ import { requireNativeModule } from 'expo-modules-core';
  * - isLandlineModeActive(): boolean
  * - getLoggedNotifications(): Array
  * - clearLoggedNotifications(): boolean
+ * - removeLoggedNotifications(keys): number
  * - isAutoReplyEnabled(): boolean
  * - setAutoReplyEnabled(enabled: boolean): boolean
  * - setReplyMessage(message: string): boolean
@@ -24,6 +25,13 @@ import { requireNativeModule } from 'expo-modules-core';
  * - getActiveNotifications(): Array
  * - clearAllData(): Promise<boolean>
  */
+export type NotificationLogKey = {
+  timestamp?: number;
+  packageName: string;
+  postTime: number;
+  id: number;
+};
+
 type NotificationApiNativeModule = {
   hasPostPermission(): boolean;
   requestPostPermission(): Promise<boolean>;
@@ -38,6 +46,7 @@ type NotificationApiNativeModule = {
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
   clearLoggedNotifications(): boolean;
+  removeLoggedNotifications(keys: NotificationLogKey[]): number;
   // Notification permissions: allowed apps + emergency numbers during Landline Mode
   isNotificationFilterEnabled(): boolean;
   setNotificationFilterEnabled(enabled: boolean): boolean;
@@ -130,6 +139,29 @@ export function getLoggedNotifications() {
 
 export function clearLoggedNotifications() {
   return Native.clearLoggedNotifications();
+}
+
+export function removeLoggedNotifications(keys: NotificationLogKey[]) {
+  const fn = Native.removeLoggedNotifications;
+  if (typeof fn === 'function') {
+    return fn.call(Native, keys);
+  }
+  console.warn('removeLoggedNotifications native method not available');
+  return 0;
+}
+
+export function toNotificationLogKey(entry: {
+  timestamp?: number;
+  packageName: string;
+  postTime: number;
+  id: number;
+}): NotificationLogKey {
+  return {
+    timestamp: entry.timestamp,
+    packageName: entry.packageName,
+    postTime: entry.postTime,
+    id: entry.id,
+  };
 }
 
 export function isNotificationFilterEnabled() {
@@ -301,6 +333,8 @@ export default {
   isLandlineModeActive,
   getLoggedNotifications,
   clearLoggedNotifications,
+  removeLoggedNotifications,
+  toNotificationLogKey,
   isNotificationFilterEnabled,
   setNotificationFilterEnabled,
   getAllowedNotificationPackages,
