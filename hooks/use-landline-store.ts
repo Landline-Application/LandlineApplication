@@ -4,6 +4,7 @@ import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager, {
   isNotificationFilterEffective,
+  toNotificationLogKey,
 } from '@/modules/notification-api-manager';
 import {
   cancelLandlineModeReminderScheduled,
@@ -53,6 +54,7 @@ interface LandlineModeState {
   deactivateLandlineMode: () => Promise<void>;
   checkStatus: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  removeNotification: (entry: NotebookLogEntry) => Promise<boolean>;
   requestPermission: () => Promise<void>;
   clearError: () => void;
   clearRefreshError: () => void;
@@ -264,6 +266,36 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  // Action: Remove a single logged notification (swipe-to-delete)
+  removeNotification: async (entry: NotebookLogEntry) => {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+
+    const key = toNotificationLogKey(entry);
+    const removed = NotificationApiManager.removeLoggedNotifications([key]);
+    if (removed > 0) {
+      set((state) => ({
+        notifications: state.notifications.filter(
+          (n) =>
+            !(
+              (entry.timestamp != null &&
+                n.timestamp != null &&
+                n.timestamp === entry.timestamp) ||
+              (n.packageName === entry.packageName &&
+                n.postTime === entry.postTime &&
+                n.id === entry.id)
+            ),
+        ),
+        refreshError: null,
+      }));
+      return true;
+    }
+
+    await get().refreshNotifications();
+    return false;
   },
 
   // Action: Refresh notifications periodically

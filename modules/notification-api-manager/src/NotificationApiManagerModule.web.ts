@@ -46,6 +46,9 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   clearLoggedNotifications() {
     return false;
   }
+  removeLoggedNotifications() {
+    return 0;
+  }
 
   isNotificationFilterEnabled() {
     return false;

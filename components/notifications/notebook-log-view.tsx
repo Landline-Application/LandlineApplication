@@ -5,9 +5,11 @@
  * design system. Replaces the previous notebook metaphor with clean
  * M3-informed list rows on the app's cream surface.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
@@ -31,6 +33,7 @@ export interface NotebookLogEntry {
 interface NotebookLogViewProps {
   notifications: NotebookLogEntry[];
   onRefresh?: () => void;
+  onDelete?: (entry: NotebookLogEntry) => void | Promise<boolean>;
   isActive?: boolean;
 }
 
@@ -92,6 +95,7 @@ function appInitials(appName: string): string {
 export default function NotebookLogView({
   notifications,
   onRefresh,
+  onDelete,
   isActive,
 }: NotebookLogViewProps) {
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
@@ -104,6 +108,29 @@ export default function NotebookLogView({
     await onRefresh();
     setRefreshing(false);
   };
+
+  const handleDelete = useCallback(
+    (entry: NotebookLogEntry) => {
+      if (!onDelete) return;
+      haptics.medium();
+      void onDelete(entry);
+    },
+    [onDelete],
+  );
+
+  const renderDeleteAction = useCallback(
+    (entry: NotebookLogEntry) => (
+      <Pressable
+        style={styles.deleteAction}
+        onPress={() => handleDelete(entry)}
+        accessibilityRole="button"
+        accessibilityLabel="Delete notification"
+      >
+        <MaterialIcons name="delete-outline" size={22} color={COLORS.text.onPrimary} />
+      </Pressable>
+    ),
+    [handleDelete],
+  );
 
   const toggleExpand = (key: string) => {
     setExpandedKeys((prev) => {
@@ -243,9 +270,8 @@ export default function NotebookLogView({
                 const entryKey = `${appName}-${notif.id}-${notif.postTime}-${idx}`;
                 const isExpanded = expandedKeys.has(entryKey);
                 const isLast = idx === entries.length - 1;
-                return (
+                const entryContent = (
                   <Pressable
-                    key={entryKey}
                     style={({ pressed }) => [
                       styles.entry,
                       !isLast && styles.entryBorder,
@@ -257,7 +283,7 @@ export default function NotebookLogView({
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={notif.title}
-                    accessibilityHint="Tap to expand or collapse"
+                    accessibilityHint="Tap to expand or collapse. Swipe left to delete."
                   >
                     {/* M3 two-line list: headline + supporting text */}
                     <View style={styles.entryMain}>
@@ -321,6 +347,27 @@ export default function NotebookLogView({
                       style={styles.chevron}
                     />
                   </Pressable>
+                );
+
+                if (!onDelete) {
+                  return (
+                    <View key={entryKey}>
+                      {entryContent}
+                    </View>
+                  );
+                }
+
+                return (
+                  <Swipeable
+                    key={entryKey}
+                    renderRightActions={() => renderDeleteAction(notif)}
+                    onSwipeableOpen={() => handleDelete(notif)}
+                    overshootRight={false}
+                    friction={2}
+                    rightThreshold={48}
+                  >
+                    {entryContent}
+                  </Swipeable>
                 );
               })}
             </View>
@@ -479,8 +526,16 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    overflow: 'hidden',
+    overflow: 'visible',
     ...Shadows.sm,
+  },
+
+  deleteAction: {
+    backgroundColor: COLORS.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    alignSelf: 'stretch',
   },
 
   // ── Entry row (M3 two-line list item) ─────────────────────────────────────
@@ -491,6 +546,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     minHeight: TouchTargets.md,
     gap: Spacing.sm,
+    backgroundColor: COLORS.surface.base,
   },
   entryBorder: {
     borderBottomWidth: 1,
