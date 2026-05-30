@@ -100,11 +100,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       router: {},
       eas: {
-        projectId: process.env.EAS_PROJECT_ID ?? '9054e1e3-4810-4cc2a8',
+        projectId: process.env.EAS_PROJECT_ID ?? 'ca1a69f8-605a-4ab3-b42c-120e42523209',
       },
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },
 
-    owner: process.env.EXPO_OWNER ?? 'landline-application',
+    owner: process.env.EXPO_OWNER ?? 'ammorris',
   };
 };
