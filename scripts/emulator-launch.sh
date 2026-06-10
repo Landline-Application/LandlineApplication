@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Script to launch Android emulator with gum selection
-# Uses software rendering (swiftshader_indirect) to avoid GPU issues
+# Launch an Android emulator, using gum for selection if available.
+# Uses host GPU rendering; falls back to software if unavailable.
 
 set -e
 
@@ -13,7 +13,24 @@ if [ -z "$AVDS" ]; then
   exit 1
 fi
 
-SELECTED_AVD=$(echo "$AVDS" | gum choose --header "Select an Android Emulator to launch:")
+AVD_COUNT=$(echo "$AVDS" | wc -l | tr -d ' ')
+
+if [ "$AVD_COUNT" -eq 1 ]; then
+  SELECTED_AVD="$AVDS"
+elif command -v gum &>/dev/null; then
+  SELECTED_AVD=$(echo "$AVDS" | gum choose --header "Select an Android Emulator to launch:")
+else
+  echo "Available AVDs:"
+  i=1
+  while IFS= read -r avd; do
+    echo "  $i) $avd"
+    i=$((i + 1))
+  done <<< "$AVDS"
+  echo ""
+  printf "Select AVD (1-$AVD_COUNT): "
+  read -r choice
+  SELECTED_AVD=$(echo "$AVDS" | sed -n "${choice}p")
+fi
 
 if [ -z "$SELECTED_AVD" ]; then
   echo "No device selected. Exiting."
