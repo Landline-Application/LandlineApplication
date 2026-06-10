@@ -61,6 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
 
     plugins: [
+      'expo-image',
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       '@react-native-google-signin/google-signin',
