@@ -11,6 +11,58 @@
 
 set -e
 
+# ── Preflight checks ──────────────────────────────────────
+PREFLIGHT_FAILED=0
+
+preflight_fail() {
+    echo "  ✗ $1"
+    PREFLIGHT_FAILED=1
+}
+
+echo ""
+echo "Running preflight checks..."
+
+# EAS CLI
+if ! command -v eas &>/dev/null; then
+    preflight_fail "eas-cli not found — run: npm install -g eas-cli"
+fi
+
+# EAS login
+if [ -z "$(eas whoami 2>/dev/null || true)" ]; then
+    preflight_fail "Not logged in to EAS — run: eas login"
+fi
+
+# .env.local
+if [ ! -f "$(pwd)/.env.local" ]; then
+    preflight_fail ".env.local not found — copy .env.example and fill in values"
+else
+    set -a
+    # shellcheck disable=SC1091
+    source "$(pwd)/.env.local"
+    set +a
+
+    if [ -z "$GOOGLE_SERVICES_JSON" ] || [ "$GOOGLE_SERVICES_JSON" = "/path/to/google-services.json" ]; then
+        preflight_fail "GOOGLE_SERVICES_JSON not set in .env.local"
+    elif [ ! -f "$GOOGLE_SERVICES_JSON" ]; then
+        preflight_fail "GOOGLE_SERVICES_JSON path does not exist: $GOOGLE_SERVICES_JSON"
+    fi
+fi
+
+# ANDROID_HOME
+if [ -z "$ANDROID_HOME" ]; then
+    preflight_fail "ANDROID_HOME is not set — see BUILD.md for Android SDK setup"
+fi
+
+if [ "$PREFLIGHT_FAILED" -ne 0 ]; then
+    echo ""
+    echo "Preflight failed. Run ./scripts/setup.sh for guided setup."
+    exit 1
+fi
+
+echo "  ✓ All checks passed"
+echo ""
+# ─────────────────────────────────────────────────────────
+
 echo "Starting Android production build..."
 
 echo ""
