@@ -2,8 +2,17 @@ const fs = require('fs');
 const path = require('path');
 
 // Using Firebase REST API (no service account needed)
+// WARNING: 'add' command writes test data to the PRODUCTION Firestore database.
 
 const PROJECT_ID = 'landline-application';
+
+const apiKey = process.env.FIREBASE_API_KEY;
+if (!apiKey) {
+  console.error('Error: FIREBASE_API_KEY environment variable is not set.');
+  console.error('Add it to your .env.local or pass it inline:');
+  console.error('  FIREBASE_API_KEY=your-key node test-export.js [add|export|both]');
+  process.exit(1);
+}
 
 async function addTestData() {
   console.log('Adding test beta signups...\n');
@@ -37,7 +46,7 @@ async function addTestData() {
   ];
 
   // Using Firebase REST API since we don't have service account
-  const apiKey = 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk';
+
 
   for (const data of testData) {
     const docId = data.email.replace(/[^a-zA-Z0-9]/g, '_');
@@ -77,7 +86,7 @@ async function addTestData() {
 async function testExport() {
   console.log('\n📊 Testing export functionality...\n');
 
-  const apiKey = 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk';
+
 
   try {
     const response = await fetch(

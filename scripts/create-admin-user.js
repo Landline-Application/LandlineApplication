@@ -7,7 +7,13 @@
  * Example: node create-admin-user.js admin@landline.app SecurePass123!
  */
 
-const API_KEY = 'AIzaSyAZjY6U6zo2K037tSv-10mEuchy49AGQEk';
+const API_KEY = process.env.FIREBASE_API_KEY;
+if (!API_KEY) {
+  console.error('Error: FIREBASE_API_KEY environment variable is not set.');
+  console.error('Add it to your .env.local or pass it inline:');
+  console.error('  FIREBASE_API_KEY=your-key node create-admin-user.js <email> <password>');
+  process.exit(1);
+}
 
 async function createUser(email, password) {
   if (!email || !password) {
