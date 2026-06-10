@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Forms — fields, switch, checkbox" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--color-background); font-family: var(--font-sans); color: var(--color-foreground); }
+  .wrap { padding: var(--space-2xl); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); }
+  .rowlabel { font-size: var(--size-body-sm); font-weight: var(--weight-semibold); color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { OutlinedField, Switch, Checkbox } = window.LandlineDesignSystem_b5634b;
+  function Demo() {
+    const [phone, setPhone] = React.useState('(555) 012-3456');
+    const [auto, setAuto] = React.useState(true);
+    const [bypass, setBypass] = React.useState(false);
+    const [agree, setAgree] = React.useState(true);
+    return (
+      <>
+        <div className="stack">
+          <OutlinedField label="Phone number" value={phone} onChange={setPhone} />
+          <OutlinedField label="Password" type="password" value="hunter22" onChange={()=>{}} error="Must be 8+ characters" />
+        </div>
+        <div className="stack">
+          <div className="row"><span className="rowlabel">Auto-reply</span><Switch checked={auto} onChange={setAuto} /></div>
+          <div className="row"><span className="rowlabel">Per-app bypass</span><Switch checked={bypass} onChange={setBypass} /></div>
+          <Checkbox checked={agree} onChange={setAgree} label="I agree to the Terms & Privacy Policy" />
+          <Checkbox checked={false} onChange={()=>{}} label="Email me product updates" />
+        </div>
+      </>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
