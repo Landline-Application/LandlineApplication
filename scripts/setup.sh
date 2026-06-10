@@ -37,34 +37,27 @@ echo ""
 echo "Landline build environment setup"
 echo "================================="
 
+EAS="pnpm exec eas"
+
 # ── 1. EAS CLI ────────────────────────────────────────────
 divider "EAS CLI"
 
-if ! command -v eas &>/dev/null && ! npx eas --version &>/dev/null 2>&1; then
-    fail "eas-cli not found"
-    echo ""
-    echo "  Install it with:"
-    echo "    npm install -g eas-cli"
+if ! $EAS --version &>/dev/null 2>&1; then
+    fail "eas-cli not found — run: pnpm install"
     echo ""
     exit 1
 fi
-
-if command -v eas &>/dev/null; then
-    EAS_CMD="eas"
-else
-    EAS_CMD="npx eas"
-fi
-ok "eas-cli available ($($EAS_CMD --version 2>/dev/null | head -1))"
+ok "eas-cli available ($($EAS --version 2>/dev/null | head -1))"
 
 # ── 2. EAS authentication ─────────────────────────────────
 divider "EAS authentication"
 
-EAS_USER=$($EAS_CMD whoami 2>/dev/null || true)
+EAS_USER=$($EAS whoami 2>/dev/null || true)
 if [ -z "$EAS_USER" ]; then
     fail "Not logged in to EAS"
     echo ""
     echo "  Log in with:"
-    echo "    $EAS_CMD login"
+    echo "    pnpm exec eas login"
     echo ""
     exit 1
 fi
@@ -82,7 +75,7 @@ echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "  Run the following to pull the signing keystore from EAS:"
-    echo "    $EAS_CMD credentials"
+    echo "    \$EAS credentials"
     echo ""
     echo "  Navigate: Android → production → Keystore → Download existing keystore"
     echo "  When done: Go back → Exit"
@@ -90,7 +83,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     read -p "  Run 'eas credentials' now? (y/N): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        $EAS_CMD credentials
+        \$EAS credentials
     else
         warn "Skipping credentials — build will fail without the keystore"
     fi

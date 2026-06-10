@@ -11,6 +11,8 @@
 
 set -e
 
+EAS="pnpm exec eas"
+
 # ── Preflight checks ──────────────────────────────────────
 PREFLIGHT_FAILED=0
 
@@ -22,14 +24,14 @@ preflight_fail() {
 echo ""
 echo "Running preflight checks..."
 
-# EAS CLI
-if ! command -v eas &>/dev/null; then
-    preflight_fail "eas-cli not found — run: npm install -g eas-cli"
+# EAS CLI (via pnpm local install)
+if ! $EAS --version &>/dev/null 2>&1; then
+    preflight_fail "eas-cli not found — run: pnpm install"
 fi
 
 # EAS login
-if [ -z "$(eas whoami 2>/dev/null || true)" ]; then
-    preflight_fail "Not logged in to EAS — run: eas login"
+if [ -z "$($EAS whoami 2>/dev/null || true)" ]; then
+    preflight_fail "Not logged in to EAS — run: pnpm exec eas login"
 fi
 
 # .env.local
@@ -67,20 +69,20 @@ echo "Starting Android production build..."
 
 echo ""
 echo "Checking current EAS build version..."
-eas build:version:get -p android -e production
+$EAS build:version:get -p android -e production
 
 echo ""
 echo "NOTE: Increment the EAS build version for each build published to Google Play Console"
-echo "      Use: eas build:version:set -p android -e production --version <number>"
+echo "      Use: pnpm exec eas build:version:set -p android -e production --version <number>"
 echo ""
 
 echo "Setting EAS build version..."
-eas build:version:set -p android -e production
+$EAS build:version:set -p android -e production
 
 echo "Building Android production AAB..."
 # Use environment variable if set, otherwise use relative path from project root
 GOOGLE_SERVICES_JSON=${GOOGLE_SERVICES_JSON:-"$(pwd)/google-services.json"} \
-    eas build --platform android --profile production --local
+    $EAS build --platform android --profile production --local
 
 # Find the generated build artifact
 BUILD_FILE=$(ls -t build-*.aab 2>/dev/null | head -1)
@@ -102,9 +104,9 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Submitting $BUILD_FILE to Google Play Console..."
-    eas submit --platform android --path "$BUILD_FILE"
+    $EAS submit --platform android --path "$BUILD_FILE"
 else
     echo ""
     echo "To submit manually, run:"
-    echo "  eas submit --platform android --path $BUILD_FILE"
+    echo "  pnpm exec eas submit --platform android --path $BUILD_FILE"
 fi
