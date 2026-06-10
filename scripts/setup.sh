@@ -4,6 +4,12 @@
 # Run this before scripts/build-android-production.sh.
 #
 # Usage: ./scripts/setup.sh
+#
+# Windows users: This script requires Bash. Run it via Git Bash or WSL.
+#   Git Bash: Right-click your project folder → "Git Bash Here", then run:
+#               ./scripts/setup.sh
+#   WSL:      Open WSL terminal, navigate to your project, then run:
+#               ./scripts/setup.sh
 
 set -e
 
@@ -17,6 +23,16 @@ fail() { echo "  $FAIL $1"; }
 
 divider() { echo ""; echo "── $1 ──────────────────────────────"; }
 
+# ── Windows / Git Bash ────────────────────────────────────
+# Detect Git Bash / MINGW on Windows and warn about known limitations
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin" ]]; then
+  echo ""
+  echo "  Windows detected (Git Bash / MINGW)"
+  echo "  If any interactive prompts behave oddly, consider switching to WSL:"
+  echo "    https://learn.microsoft.com/en-us/windows/wsl/install"
+  echo ""
+fi
+
 echo ""
 echo "Landline build environment setup"
 echo "================================="
@@ -24,7 +40,7 @@ echo "================================="
 # ── 1. EAS CLI ────────────────────────────────────────────
 divider "EAS CLI"
 
-if ! command -v eas &>/dev/null; then
+if ! command -v eas &>/dev/null && ! npx eas --version &>/dev/null 2>&1; then
     fail "eas-cli not found"
     echo ""
     echo "  Install it with:"
@@ -32,17 +48,23 @@ if ! command -v eas &>/dev/null; then
     echo ""
     exit 1
 fi
-ok "eas-cli installed ($(eas --version 2>/dev/null | head -1))"
+
+if command -v eas &>/dev/null; then
+    EAS_CMD="eas"
+else
+    EAS_CMD="npx eas"
+fi
+ok "eas-cli available ($($EAS_CMD --version 2>/dev/null | head -1))"
 
 # ── 2. EAS authentication ─────────────────────────────────
 divider "EAS authentication"
 
-EAS_USER=$(eas whoami 2>/dev/null || true)
+EAS_USER=$($EAS_CMD whoami 2>/dev/null || true)
 if [ -z "$EAS_USER" ]; then
     fail "Not logged in to EAS"
     echo ""
     echo "  Log in with:"
-    echo "    eas login"
+    echo "    $EAS_CMD login"
     echo ""
     exit 1
 fi
@@ -52,8 +74,7 @@ ok "Logged in as: $EAS_USER"
 divider "EAS credentials"
 
 echo "  Checking for Android keystore..."
-echo "  (This opens the interactive credentials manager — select the existing keystore"
-echo "   if prompted, then press Ctrl+C or quit when done.)"
+echo "  (This opens the interactive credentials manager.)"
 echo ""
 read -p "  Have you already run 'eas credentials' on this machine? (y/N): " -n 1 -r
 echo ""
@@ -61,15 +82,15 @@ echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "  Run the following to pull the signing keystore from EAS:"
-    echo "    eas credentials"
+    echo "    $EAS_CMD credentials"
     echo ""
-    echo "  Navigate: Android → production → Keystore → Set up a new keystore"
-    echo "  The existing keystore will be detected and pulled automatically."
+    echo "  Navigate: Android → production → Keystore → Download existing keystore"
+    echo "  When done: Go back → Exit"
     echo ""
     read -p "  Run 'eas credentials' now? (y/N): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        eas credentials
+        $EAS_CMD credentials
     else
         warn "Skipping credentials — build will fail without the keystore"
     fi
@@ -122,8 +143,16 @@ divider "Android SDK"
 if [ -z "$ANDROID_HOME" ]; then
     fail "ANDROID_HOME is not set"
     echo ""
-    echo "  Add to your shell profile (~/.bashrc / ~/.zshrc / ~/.config/fish/config.fish):"
-    echo "    export ANDROID_HOME=\$HOME/Android/Sdk"
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin" ]]; then
+        echo "  Add to your environment variables (Windows):"
+        echo "    ANDROID_HOME = %LOCALAPPDATA%\\Android\\Sdk"
+        echo ""
+        echo "  Or in Git Bash ~/.bashrc:"
+        echo "    export ANDROID_HOME=\$LOCALAPPDATA/Android/Sdk"
+    else
+        echo "  Add to your shell profile (~/.bashrc / ~/.zshrc / ~/.config/fish/config.fish):"
+        echo "    export ANDROID_HOME=\$HOME/Android/Sdk"
+    fi
     echo "    export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin"
     echo "    export PATH=\$PATH:\$ANDROID_HOME/platform-tools"
     echo "    export PATH=\$PATH:\$ANDROID_HOME/emulator"
