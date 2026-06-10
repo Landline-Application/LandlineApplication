@@ -1,0 +1,67 @@
+<!-- @dsCard group="Components" viewport="700x380" name="Core — buttons, badges, chips, status" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--color-background); font-family: var(--font-sans); color: var(--color-foreground); }
+  .wrap { padding: var(--space-2xl); display: flex; flex-direction: column; gap: var(--space-xl); }
+  .group { display: flex; gap: var(--space-md); align-items: center; flex-wrap: wrap; }
+  .eyebrow { font-size: var(--size-label-sm); font-weight: var(--weight-bold); letter-spacing: var(--tracking-label);
+             text-transform: uppercase; color: var(--text-muted); margin: 0 0 var(--space-xs); width: 100%; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { Button, Badge, Chip, StatusIndicator } = window.LandlineDesignSystem_b5634b;
+  function Demo() {
+    const [filter, setFilter] = React.useState('All');
+    return (
+      <>
+        <div className="group">
+          <span className="eyebrow">Buttons</span>
+          <Button label="Start Session" variant="primary" />
+          <Button label="Configure" variant="secondary" />
+          <Button label="Stay in Landline" variant="ghost" />
+          <Button label="End Session" variant="danger" />
+          <Button label="Skip" variant="text" />
+          <Button label="Loading" loading />
+        </div>
+        <div className="group">
+          <span className="eyebrow">Sizes</span>
+          <Button label="Small" size="sm" />
+          <Button label="Medium" size="md" />
+          <Button label="Large" size="lg" />
+          <Button label="X-Large" size="xl" />
+        </div>
+        <div className="group">
+          <span className="eyebrow">Badges</span>
+          <Badge tone="primary">12</Badge>
+          <Badge tone="primary" soft>Auto Replied</Badge>
+          <Badge tone="secondary">New</Badge>
+          <Badge tone="warning">Live</Badge>
+          <Badge tone="danger" soft={false}>3 missed</Badge>
+          <Badge tone="neutral">Apps</Badge>
+        </div>
+        <div className="group">
+          <span className="eyebrow">Chips & status</span>
+          {['All','Messages','Calls','Apps'].map((c) => (
+            <Chip key={c} label={c} active={filter===c} onClick={() => setFilter(c)} />
+          ))}
+          <span style={{ width: 16 }} />
+          <StatusIndicator active label="Active" />
+          <StatusIndicator active={false} label="Inactive" />
+        </div>
+      </>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
