@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: 'Landline',
-    slug: 'landline',
+    slug: 'landline-application',
     version: '0.10.0',
     orientation: 'portrait',
     icon: './assets/landline-icon.png',
@@ -101,11 +101,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       router: {},
       eas: {
-        projectId: process.env.EAS_PROJECT_ID ?? 'ca1a69f8-605a-4ab3-b42c-120e42523209',
+        projectId: process.env.EAS_PROJECT_ID ?? '6eca4977-93f1-4209-a7b4-ed6cced9a82a',
       },
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },
 
-    owner: process.env.EXPO_OWNER ?? 'ammorris',
+    owner: process.env.EXPO_OWNER ?? 'landline-application',
   };
 };
