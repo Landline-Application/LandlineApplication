@@ -25,7 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Landline',
     slug: 'landline',
-    version: '0.9.0',
+    version: '0.10.0',
     orientation: 'portrait',
     icon: './assets/landline-icon.png',
     scheme: 'landlineapplication',
@@ -52,6 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.WAKE_LOCK',
       ],
       googleServicesFile: resolveGoogleServicesFile(),
+      versionCode: 19,
     },
 
     web: {
