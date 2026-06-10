@@ -75,7 +75,7 @@ echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "  Run the following to pull the signing keystore from EAS:"
-    echo "    \$EAS credentials"
+    echo "    pnpm exec eas credentials"
     echo ""
     echo "  Navigate: Android → production → Keystore → Download existing keystore"
     echo "  When done: Go back → Exit"
@@ -83,7 +83,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     read -p "  Run 'eas credentials' now? (y/N): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        \$EAS credentials
+        $EAS credentials
     else
         warn "Skipping credentials — build will fail without the keystore"
     fi

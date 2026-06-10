@@ -2,10 +2,7 @@
 
 # Build script for Android production release
 #
-# This requires a EAS expo account to work properly.
-#
-# If you dont want to create an account you must build
-# it manually with gradle
+# Requires an EAS Expo account. Run ./scripts/setup.sh first.
 #
 # Usage: ./scripts/build-android-production.sh
 
