@@ -39,7 +39,8 @@ import {
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { DarkTheme, DefaultTheme, type Theme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import type { Theme } from 'expo-router/react-navigation';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

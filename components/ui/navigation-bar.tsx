@@ -18,7 +18,7 @@ import { Animated, Pressable, StyleSheet, Text, View, type ViewStyle } from 'rea
 import * as Haptics from 'expo-haptics';
 
 import { COLORS, Shadows, Typography } from '@/constants/theme';
-import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { type BottomTabBarProps } from 'expo-router/tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // M3 spec dimensions
