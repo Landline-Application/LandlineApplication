@@ -18,6 +18,7 @@
  *      • remote is null/empty    → keep local, push local state up (first install)
  */
 import * as FirebaseApp from '@/utils/firebase/app';
+import { getAuthErrorCode, validateAuthSession } from '@/utils/firebase/auth';
 import { getUserPreferences, mergeUserPreferences } from '@/utils/firebase/user-service';
 import type { UserPreferences } from '@/utils/firebase/user-service';
 import {
@@ -190,7 +191,8 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       _syncToFirestore: async () => {
         if (getApps().length === 0) return;
-        const uid = FirebaseApp.auth.currentUser?.uid;
+        const currentUser = FirebaseApp.auth.currentUser;
+        const uid = currentUser?.uid;
         if (!uid) return; // No user yet — changes are kept in hasPendingSync
 
         const { autoReplyEnabled, notificationRetentionDays, landlineReminderIntervalHours } =
@@ -206,6 +208,24 @@ export const usePreferencesStore = create<PreferencesState>()(
           await mergeUserPreferences(uid, preferences);
           set({ hasPendingSync: false, lastSyncedAt: Date.now() });
         } catch (e) {
+          const code = getAuthErrorCode(e);
+          const isAuthError =
+            code === 'auth/user-not-found' ||
+            code === 'auth/unauthenticated' ||
+            code === 'auth/invalid-user-token';
+
+          if (isAuthError && currentUser) {
+            // The Firebase Auth account may have been deleted mid-session.
+            // Validate the session; if invalid the auth listener will bootstrap
+            // a fresh anonymous session and onAuthReady will retry the sync.
+            const isValid = await validateAuthSession(currentUser);
+            if (!isValid) {
+              console.warn(
+                'usePreferencesStore._syncToFirestore: auth session invalid, awaiting re-bootstrap.',
+              );
+            }
+          }
+
           console.warn('usePreferencesStore._syncToFirestore: sync failed, will retry', e);
           // hasPendingSync stays true — onAuthReady will retry on next auth event
         } finally {

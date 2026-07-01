@@ -36,7 +36,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
   const [passwordError, setPasswordError] = useState('');
   const [confirmError, setConfirmError] = useState('');
   const [ageError, setAgeError] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, isOperationInProgress } = useAuth();
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -56,6 +56,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
   };
 
   const handleSubmit = async () => {
+    if (isOperationInProgress) return;
     clearFieldErrors();
     let valid = true;
 
@@ -95,7 +96,9 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       );
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code;
-      if (code === 'auth/email-already-in-use') {
+      if (code === 'auth/operation-in-progress') {
+        // Silently ignore — the UI is already disabled.
+      } else if (code === 'auth/email-already-in-use') {
         setEmailError('An account with this email already exists');
       } else if (code === 'auth/weak-password') {
         setPasswordError(
@@ -118,12 +121,14 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
   };
 
   const handleGoogleSignIn = async () => {
+    if (isOperationInProgress) return;
     setIsLoading(true);
     try {
       await signInWithGoogle();
       onSuccess();
     } catch (error: unknown) {
-      if ((error as { code?: string })?.code !== 'SIGN_IN_CANCELLED') {
+      const code = (error as { code?: string })?.code;
+      if (code !== 'SIGN_IN_CANCELLED' && code !== 'auth/operation-in-progress') {
         Alert.alert(
           'Google Sign-In Failed',
           (error as Error)?.message || 'An unexpected error occurred.',
@@ -147,7 +152,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
-        editable={!isLoading}
+        editable={!isLoading && !isOperationInProgress}
         returnKeyType="next"
       />
 
@@ -161,7 +166,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
         }}
         error={passwordError}
         secureTextEntry={!showPassword}
-        editable={!isLoading}
+        editable={!isLoading && !isOperationInProgress}
         returnKeyType="next"
         trailingIcon={
           <Pressable
@@ -208,7 +213,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
         }}
         error={confirmError}
         secureTextEntry={!showConfirm}
-        editable={!isLoading}
+        editable={!isLoading && !isOperationInProgress}
         returnKeyType="done"
         onSubmitEditing={handleSubmit}
         trailingIcon={
@@ -235,7 +240,7 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
           setAgeError(false);
         }}
         error={ageError}
-        disabled={isLoading}
+        disabled={isLoading || isOperationInProgress}
         label={
           <Text style={styles.checkboxLabel}>
             I confirm I am <Text style={styles.checkboxLabelBold}>13 years or older</Text>
@@ -251,18 +256,18 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       {/* Primary CTA */}
       <Pressable
         onPress={handleSubmit}
-        disabled={!isFormValid || isLoading}
+        disabled={!isFormValid || isLoading || isOperationInProgress}
         style={({ pressed }) => [
           styles.primaryButton,
-          (!isFormValid || isLoading) && styles.primaryButtonDisabled,
-          pressed && isFormValid && !isLoading && styles.primaryButtonPressed,
+          (!isFormValid || isLoading || isOperationInProgress) && styles.primaryButtonDisabled,
+          pressed && isFormValid && !isLoading && !isOperationInProgress && styles.primaryButtonPressed,
         ]}
         accessibilityRole="button"
         accessibilityLabel="Create account"
-        accessibilityState={{ disabled: !isFormValid || isLoading }}
+        accessibilityState={{ disabled: !isFormValid || isLoading || isOperationInProgress }}
       >
         <Text style={styles.primaryButtonText}>
-          {isLoading ? 'Creating account…' : 'Create Account'}
+          {isLoading || isOperationInProgress ? 'Creating account…' : 'Create Account'}
         </Text>
       </Pressable>
 
@@ -276,8 +281,12 @@ export function CreateAccountForm({ onSuccess, onSignIn }: CreateAccountFormProp
       {/* Google sign-up — outlined button */}
       <Pressable
         onPress={handleGoogleSignIn}
-        disabled={isLoading}
-        style={({ pressed }) => [styles.outlinedButton, pressed && styles.outlinedButtonPressed]}
+        disabled={isLoading || isOperationInProgress}
+        style={({ pressed }) => [
+          styles.outlinedButton,
+          (isLoading || isOperationInProgress) && styles.primaryButtonDisabled,
+          pressed && !isLoading && !isOperationInProgress && styles.outlinedButtonPressed,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Continue with Google"
       >

@@ -8,19 +8,20 @@ import {
   type FirebaseAuthTypes,
   createUserWithEmailAndPassword,
   firebaseSignOut,
+  getAuthErrorCode,
   linkWithCredential,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
+  validateAuthSession,
 } from '@/utils/firebase/auth';
 import { getGoogleCredential } from '@/utils/firebase/google-auth';
-import { upsertUserDocument } from '@/utils/firebase/user-service';
+import { migrateAnonymousUserData, upsertUserDocument } from '@/utils/firebase/user-service';
 import { getApps } from '@react-native-firebase/app';
 import {
   EmailAuthProvider,
-  getIdToken,
   reload,
   signInWithCredential,
 } from '@react-native-firebase/auth';
@@ -32,6 +33,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   /** true when the current Firebase user is anonymous */
   isAnonymous: boolean;
+  /** true when any auth operation (sign-in, sign-up, sign-out) is in flight */
+  isOperationInProgress: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -39,24 +42,45 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   /** Reload current user from Firebase (e.g. after profile update) */
   refreshUser: () => Promise<void>;
+  /** Retry anonymous authentication after a previous failure (e.g. after regaining network). */
+  retryAnonymousAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_REFRESH_MS = 15_000;
+// ---------------------------------------------------------------------------
+// Auth operation concurrency lock
+// ---------------------------------------------------------------------------
 
-function getIdTokenWithTimeout(user: FirebaseAuthTypes.User): Promise<string> {
-  return Promise.race([
-    getIdToken(user, true),
-    new Promise<string>((_, reject) =>
-      setTimeout(() => reject(new Error('token-refresh-timeout')), TOKEN_REFRESH_MS),
-    ),
-  ]);
-}
+type AuthOperation = () => Promise<void>;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOperationInProgress, setIsOperationInProgress] = useState(false);
+
+  const operationLockRef = useRef(false);
+
+  const withAuthLock = useCallback(
+    async (operation: AuthOperation): Promise<void> => {
+      if (operationLockRef.current) {
+        const error = new Error('An authentication operation is already in progress.') as Error & {
+          code: string;
+        };
+        error.code = 'auth/operation-in-progress';
+        throw error;
+      }
+      operationLockRef.current = true;
+      setIsOperationInProgress(true);
+      try {
+        await operation();
+      } finally {
+        operationLockRef.current = false;
+        setIsOperationInProgress(false);
+      }
+    },
+    [],
+  );
 
   // Reload the Firebase user when the app comes back to the foreground.
   // This picks up emailVerified flipping to true after the user taps the
@@ -70,7 +94,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // FirebaseApp.auth.currentUser is a new object reference after reload — re-set state
       // so consumers re-render with the updated emailVerified value.
       setUser(FirebaseApp.auth.currentUser);
-    } catch {
+    } catch (error: unknown) {
+      const code = getAuthErrorCode(error);
+      if (code === 'auth/user-not-found') {
+        // Account was deleted from the console while the app was in the background.
+        // Force a sign-out so onAuthStateChanged can bootstrap a fresh anonymous session.
+        console.warn('reloadUser: user-not-found, signing out to bootstrap anonymous.');
+        setUser(null);
+        await firebaseSignOut(FirebaseApp.auth).catch(() => {});
+        return;
+      }
       // Silently ignore — if this fails the user just won't see the update
       // until their next forced token refresh.
     }
@@ -108,6 +141,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [uid]);
 
+  // ---------------------------------------------------------------------------
+  // Anonymous auth bootstrap hardening
+  // ---------------------------------------------------------------------------
+
+  const hasAttemptedAnonymousBootstrap = useRef(false);
+
   useEffect(() => {
     if (getApps().length === 0) {
       if (__DEV__) {
@@ -131,20 +170,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // On startup: attempt to refresh the token to confirm the account still exists.
           // This catches accounts deleted from the Firebase console while the app was closed.
           isFirstEvent = false;
-          try {
-            await getIdTokenWithTimeout(firebaseUser);
+          const isValid = await validateAuthSession(firebaseUser);
+          if (isValid) {
             setUser(firebaseUser);
-          } catch (error: unknown) {
-            const code = (error as { code?: string })?.code;
-            if (code === 'auth/user-not-found') {
-              // Account was deleted from the console — bootstrap a fresh anonymous session.
-              console.warn('User deleted from console, signing in anonymously.');
-              setUser(null);
+          } else {
+            // Account was deleted from the console — bootstrap a fresh anonymous session.
+            console.warn('User deleted from console, signing in anonymously.');
+            setUser(null);
+            if (!hasAttemptedAnonymousBootstrap.current) {
+              hasAttemptedAnonymousBootstrap.current = true;
               try {
                 await signInAnonymously(FirebaseApp.auth);
               } catch (anonError: unknown) {
-                const anonCode = (anonError as { code?: string })?.code;
-                if (anonCode === 'auth/admin-restricted-operation') {
+                const code = getAuthErrorCode(anonError);
+                if (code === 'auth/admin-restricted-operation') {
                   console.warn(
                     'Anonymous sign-in is disabled in the Firebase console. ' +
                       'Enable it under Authentication → Sign-in providers → Anonymous.',
@@ -153,10 +192,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   console.warn('Anonymous sign-in failed after user-not-found:', anonError);
                 }
               }
-            } else {
-              // Network error or timeout — stay logged in with the cached session.
-              console.log('Token refresh failed (likely offline), proceeding with cached user.');
-              setUser(firebaseUser);
             }
           }
         } else if (firebaseUser) {
@@ -166,23 +201,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // No user at all — bootstrap an anonymous account so every install has
           // a Firebase identity from day one (enables Firestore writes, future linking).
           isFirstEvent = false;
-          try {
-            await signInAnonymously(FirebaseApp.auth);
-            // onAuthStateChanged will fire again with the new anonymous user.
-          } catch (e: unknown) {
-            const code = (e as { code?: string })?.code;
-            if (code === 'auth/admin-restricted-operation') {
-              // Anonymous auth is disabled in the Firebase console.
-              // App continues without a Firebase identity — Firestore sync is
-              // skipped but all core Landline features remain functional.
-              console.warn(
-                'Anonymous sign-in is disabled. Enable it under ' +
-                  'Firebase Console → Authentication → Sign-in providers → Anonymous.',
-              );
-            } else {
-              console.warn('Anonymous sign-in failed:', e);
+          if (!hasAttemptedAnonymousBootstrap.current) {
+            hasAttemptedAnonymousBootstrap.current = true;
+            try {
+              await signInAnonymously(FirebaseApp.auth);
+              // onAuthStateChanged will fire again with the new anonymous user.
+            } catch (e: unknown) {
+              const code = getAuthErrorCode(e);
+              if (code === 'auth/admin-restricted-operation') {
+                // Anonymous auth is disabled in the Firebase console.
+                // App continues without a Firebase identity — Firestore sync is
+                // skipped but all core Landline features remain functional.
+                console.warn(
+                  'Anonymous sign-in is disabled. Enable it under ' +
+                    'Firebase Console → Authentication → Sign-in providers → Anonymous.',
+                );
+              } else {
+                console.warn('Anonymous sign-in failed:', e);
+              }
+              setUser(null);
             }
-            setUser(null);
           }
         }
       } finally {
@@ -194,126 +232,175 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ---------------------------------------------------------------------------
+  // Retry anonymous auth (exposed for manual retry, e.g. after regaining network)
+  // ---------------------------------------------------------------------------
+  const retryAnonymousAuth = useCallback(async () => {
+    if (getApps().length === 0) return;
+    hasAttemptedAnonymousBootstrap.current = false;
+    try {
+      await signInAnonymously(FirebaseApp.auth);
+    } catch (e: unknown) {
+      const code = getAuthErrorCode(e);
+      if (code === 'auth/admin-restricted-operation') {
+        console.warn(
+          'Anonymous sign-in is disabled. Enable it under ' +
+            'Firebase Console → Authentication → Sign-in providers → Anonymous.',
+        );
+      } else {
+        console.warn('Anonymous sign-in retry failed:', e);
+      }
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // Sign-up: link the anonymous account to an email/password credential so
   // all preferences written under the anonymous UID are preserved.
   // ---------------------------------------------------------------------------
-  const signUp = async (email: string, password: string) => {
-    const credential = EmailAuthProvider.credential(email, password);
-    const currentUser = FirebaseApp.auth.currentUser;
+  const signUp = useCallback(
+    async (email: string, password: string) => {
+      await withAuthLock(async () => {
+        const credential = EmailAuthProvider.credential(email, password);
+        const currentUser = FirebaseApp.auth.currentUser;
 
-    let linkedUser: FirebaseAuthTypes.User;
+        let linkedUser: FirebaseAuthTypes.User;
 
-    if (currentUser?.isAnonymous) {
-      try {
-        const result = await linkWithCredential(currentUser, credential);
-        linkedUser = result.user;
-      } catch (linkError: unknown) {
-        const code = (linkError as { code?: string })?.code;
-        if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
-          // An account with this email already exists — surface the error so the
-          // sign-up screen can direct the user to sign in instead.
-          const error = new Error(
-            'An account with this email already exists. Please sign in instead.',
-          ) as Error & { code: string };
-          error.code = 'auth/email-already-in-use';
+        if (currentUser?.isAnonymous) {
+          try {
+            const result = await linkWithCredential(currentUser, credential);
+            linkedUser = result.user;
+          } catch (linkError: unknown) {
+            const code = getAuthErrorCode(linkError);
+            if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+              // An account with this email already exists — surface the error so the
+              // sign-up screen can direct the user to sign in instead.
+              const error = new Error(
+                'An account with this email already exists. Please sign in instead.',
+              ) as Error & { code: string };
+              error.code = 'auth/email-already-in-use';
+              throw error;
+            }
+            throw linkError;
+          }
+        } else {
+          const result = await createUserWithEmailAndPassword(FirebaseApp.auth, email, password);
+          linkedUser = result.user;
+        }
+
+        upsertUserDocument(linkedUser).catch((e) => console.warn('upsertUserDocument failed:', e));
+
+        try {
+          await sendEmailVerification(linkedUser);
+        } catch (verificationError: unknown) {
+          const code = getAuthErrorCode(verificationError);
+          const message =
+            code === 'auth/too-many-requests'
+              ? 'Too many verification emails. Please try again later.'
+              : (verificationError as Error)?.message || 'We could not send the verification email.';
+          const error = new Error(message) as Error & { code?: string };
+          error.code = code ?? 'verification-email-failed';
           throw error;
         }
-        throw linkError;
-      }
-    } else {
-      const result = await createUserWithEmailAndPassword(FirebaseApp.auth, email, password);
-      linkedUser = result.user;
-    }
-
-    upsertUserDocument(linkedUser).catch((e) => console.warn('upsertUserDocument failed:', e));
-
-    try {
-      await sendEmailVerification(linkedUser);
-    } catch (verificationError: unknown) {
-      const code = (verificationError as { code?: string })?.code;
-      const message =
-        code === 'auth/too-many-requests'
-          ? 'Too many verification emails. Please try again later.'
-          : (verificationError as Error)?.message || 'We could not send the verification email.';
-      const error = new Error(message) as Error & { code?: string };
-      error.code = code ?? 'verification-email-failed';
-      throw error;
-    }
-  };
+      });
+    },
+    [withAuthLock],
+  );
 
   // ---------------------------------------------------------------------------
   // Sign-in: link anonymous account when possible, otherwise plain sign-in.
+  // If the anonymous account cannot be linked because the credential is already
+  // in use, we migrate the anonymous Firestore data into the existing account.
   // ---------------------------------------------------------------------------
-  const signIn = async (email: string, password: string) => {
-    const credential = EmailAuthProvider.credential(email, password);
-    const currentUser = FirebaseApp.auth.currentUser;
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      await withAuthLock(async () => {
+        const credential = EmailAuthProvider.credential(email, password);
+        const currentUser = FirebaseApp.auth.currentUser;
+        const anonUid = currentUser?.isAnonymous ? currentUser.uid : null;
 
-    let signedInUser: FirebaseAuthTypes.User;
+        let signedInUser: FirebaseAuthTypes.User;
 
-    if (currentUser?.isAnonymous) {
-      try {
-        const result = await linkWithCredential(currentUser, credential);
-        signedInUser = result.user;
-      } catch (linkError: unknown) {
-        const code = (linkError as { code?: string })?.code;
-        if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+        if (currentUser?.isAnonymous) {
+          try {
+            const result = await linkWithCredential(currentUser, credential);
+            signedInUser = result.user;
+          } catch (linkError: unknown) {
+            const code = getAuthErrorCode(linkError);
+            if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+              const result = await signInWithEmailAndPassword(FirebaseApp.auth, email, password);
+              signedInUser = result.user;
+              if (anonUid) {
+                await migrateAnonymousUserData(anonUid, signedInUser.uid).catch((e) =>
+                  console.warn('migrateAnonymousUserData failed:', e),
+                );
+              }
+            } else {
+              throw linkError;
+            }
+          }
+        } else {
           const result = await signInWithEmailAndPassword(FirebaseApp.auth, email, password);
           signedInUser = result.user;
-        } else {
-          throw linkError;
         }
-      }
-    } else {
-      const result = await signInWithEmailAndPassword(FirebaseApp.auth, email, password);
-      signedInUser = result.user;
-    }
 
-    upsertUserDocument(signedInUser).catch((e) => console.warn('upsertUserDocument failed:', e));
-  };
+        upsertUserDocument(signedInUser).catch((e) => console.warn('upsertUserDocument failed:', e));
+      });
+    },
+    [withAuthLock],
+  );
 
   // Sign-out is kept for completeness but the anonymous session is permanent —
   // the user's identity is always anchored to an anonymous UID from first launch.
-  const signOut = async () => {
-    await firebaseSignOut(FirebaseApp.auth);
-    // onAuthStateChanged will receive null and bootstrap a new anonymous session.
-  };
+  const signOut = useCallback(async () => {
+    await withAuthLock(async () => {
+      await firebaseSignOut(FirebaseApp.auth);
+      // onAuthStateChanged will receive null and bootstrap a new anonymous session.
+    });
+  }, [withAuthLock]);
 
-  const signInWithGoogle = async () => {
-    const googleCredential = await getGoogleCredential();
-    const currentUser = FirebaseApp.auth.currentUser;
+  const signInWithGoogle = useCallback(async () => {
+    await withAuthLock(async () => {
+      const googleCredential = await getGoogleCredential();
+      const currentUser = FirebaseApp.auth.currentUser;
+      const anonUid = currentUser?.isAnonymous ? currentUser.uid : null;
 
-    let result: FirebaseAuthTypes.UserCredential;
+      let result: FirebaseAuthTypes.UserCredential;
 
-    if (currentUser?.isAnonymous) {
-      try {
-        result = await linkWithCredential(currentUser, googleCredential);
-      } catch (linkError: unknown) {
-        const code = (linkError as { code?: string })?.code;
-        if (code === 'auth/credential-already-in-use') {
-          // This Google account is already tied to a real account — sign in normally.
-          // Google has no separate sign-up/sign-in distinction so this is always correct.
-          result = await signInWithCredential(FirebaseApp.auth, googleCredential);
-        } else {
-          throw linkError;
+      if (currentUser?.isAnonymous) {
+        try {
+          result = await linkWithCredential(currentUser, googleCredential);
+        } catch (linkError: unknown) {
+          const code = getAuthErrorCode(linkError);
+          if (code === 'auth/credential-already-in-use') {
+            // This Google account is already tied to a real account — sign in normally.
+            // Google has no separate sign-up/sign-in distinction so this is always correct.
+            result = await signInWithCredential(FirebaseApp.auth, googleCredential);
+            if (anonUid) {
+              await migrateAnonymousUserData(anonUid, result.user.uid).catch((e) =>
+                console.warn('migrateAnonymousUserData failed:', e),
+              );
+            }
+          } else {
+            throw linkError;
+          }
         }
+      } else {
+        result = await signInWithCredential(FirebaseApp.auth, googleCredential);
       }
-    } else {
-      result = await signInWithCredential(FirebaseApp.auth, googleCredential);
-    }
 
-    upsertUserDocument(result.user).catch((e) => console.warn('upsertUserDocument failed:', e));
-  };
+      upsertUserDocument(result.user).catch((e) => console.warn('upsertUserDocument failed:', e));
+    });
+  }, [withAuthLock]);
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     await sendPasswordResetEmail(FirebaseApp.auth, email);
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     const current = FirebaseApp.auth.currentUser;
     if (!current) return;
     await reload(current);
     setUser(FirebaseApp.auth.currentUser);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -322,12 +409,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user && !user.isAnonymous,
         isAnonymous: !!user?.isAnonymous,
+        isOperationInProgress,
         signUp,
         signIn,
         signInWithGoogle,
         signOut,
         resetPassword,
         refreshUser,
+        retryAnonymousAuth,
       }}
     >
       {children}

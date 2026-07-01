@@ -4,7 +4,7 @@
 
 Landline is an Android-first mobile application built with Expo and React Native that silently intercepts and logs notifications, manages auto-replies, and controls device interruption settings. Built with Expo SDK 55, React 19, React Native 0.83, and TypeScript. Uses the New Architecture and experimental React Compiler.
 
-**Current Status:** Functional backend and native modules; UI/UX design needed; user flow not finalized. Authentication flows use mock API calls (no real backend).
+**Current Status:** Functional backend and native modules; UI/UX design needed; user flow not finalized. Authentication is fully wired to Firebase (anonymous-first + account linking).
 
 **Platform:** Android-primary. iOS has scaffolded native module stubs but no functional implementation. Web has partial fallbacks (auto-reply only); other native modules will crash on web.
 
@@ -16,30 +16,31 @@ Landline is an Android-first mobile application built with Expo and React Native
 
 - **Description:** Sign up and log in using phone numbers with country detection and validation via libphonenumber-js.
 - **Routes:** `/create-account`, `/login`
-- **Status:** UI complete; backend is mocked (`setTimeout` simulation). Does NOT call `AuthContext.signIn()`/`signUp()`, so auth state is not persisted through the login flow.
+- **Status:** UI complete; backend NOT wired to `AuthContext`. The phone auth flow exists in components but does not call `AuthContext.signIn()`/`signUp()`.
 - **Components:** PhoneInput with validation, `usePhoneAuth` hook, `ContinueWithSocials`
 
 ### Email Authentication
 
-- **Description:** Sign up and log in using email and password. Signup includes age verification (13+).
-- **Routes:** `/create-account-email`, `/login-email`
-- **Status:** UI complete; backend is mocked. Same auth state persistence gap as phone auth. Inline password validation (6+ chars) differs from the stricter `validators.ts` utility (8+ chars, uppercase, lowercase, digit, special char) which is not currently wired up.
-- **Components:** EmailPasswordInput, `ContinueWithSocials`
+- **Description:** Sign up and log in using email and password. Signup includes age verification (13+). Anonymous accounts are automatically linked to the new email credential, preserving Firestore data.
+- **Routes:** `/auth/create-account`, `/auth/sign-in`
+- **Status:** Fully functional. Wired to Firebase Auth via `AuthContext.signUp()` and `AuthContext.signIn()`. On `auth/email-already-in-use`, anonymous Firestore data is merged into the existing account (anonymous data wins).
+- **Components:** `CreateAccountForm`, `SignInForm`, `OutlinedField`
 
 ### Google OAuth
 
-- **Description:** "Continue with Google" buttons appear on all auth pages.
-- **Status:** Stub only. Handler is a no-op `console.log`.
+- **Description:** "Continue with Google" buttons appear on all auth pages. Anonymous accounts are linked to the Google credential when possible.
+- **Routes:** Used inside `/auth/create-account` and `/auth/sign-in`
+- **Status:** Fully functional. Wired to Firebase Auth via `AuthContext.signInWithGoogle()`. Uses `@react-native-google-signin/google-signin` for native sign-in and `linkWithCredential` for anonymous account upgrades. On `auth/credential-already-in-use`, anonymous Firestore data is merged into the existing Google account (anonymous data wins).
 
 ### Skip Authentication
 
 - **Description:** All auth pages include a "Skip" button that navigates directly to the main app, bypassing authentication entirely.
-- **Status:** Functional. Intended for development convenience; likely needs removal or gating before production.
+- **Status:** Functional. Intended for development convenience; likely needs removal or gating before production. **Note:** Anonymous auth is automatically bootstrapped on first launch, so there is no functional difference between "skipping" and normal onboarding — both result in an anonymous Firebase identity.
 
 ### Auth Context
 
-- **Description:** React Context (`AuthProvider`) with `useAuth()` hook. Stores user in AsyncStorage under `@user` key.
-- **Status:** Mounted at root layout but disconnected from login/signup flows. Only `signOut()` (on the home page) is wired up. `signIn()` and `signUp()` exist but are mock implementations with TODO comments.
+- **Description:** React Context (`AuthProvider`) with `useAuth()` hook. Manages Firebase Auth state (anonymous + real accounts). No AsyncStorage caching of user object — Firebase SDK handles persistence natively.
+- **Status:** Fully functional. Implements anonymous-first auth with `linkWithCredential` upgrades to email/password or Google. Includes operation concurrency locks (`isOperationInProgress`) to prevent rapid-fire auth requests. Handles `auth/user-not-found` (console deletion) by re-bootstrapping anonymous auth. Mid-session invalidation is detected via `validateAuthSession()` before critical Firestore writes.
 
 ### Onboarding Carousel
 
@@ -366,16 +367,15 @@ From project documentation (README.md) but no implementation in the codebase:
 
 ## Known Issues & Technical Debt
 
-1. **Auth not wired up:** Login/signup pages do not call `AuthContext.signIn()`/`signUp()` — auth state is not persisted through the actual login flow
+1. **Phone auth not wired up:** Phone authentication UI exists but does not call `AuthContext.signIn()`/`signUp()` — only email and Google auth are fully functional
 2. **Debug pages linked from Settings:** `landline`, `tools`, and `bypass-list` are accessible via Settings → Tools & Diagnostics
 3. **Home page is a test page:** Contains debug buttons, no production dashboard
 4. **Notification log classic view:** Toggle exists but the view returns `null`
 5. **Password validation mismatch:** `validators.ts` requires 8+ chars with complexity rules; auth pages only check 6+ chars inline
-6. **Google OAuth stub:** Buttons rendered on all auth pages but handler is a no-op
-7. **Skip auth in production:** All auth pages allow skipping directly to the main app
-8. **Background worker placeholder:** `BackgroundWorker.performNotificationCheck()` is a TODO — no actual work is performed
-9. **Self-notification filter disabled:** `LandlineNotificationListenerService` self-filter is temporarily disabled for testing
-10. **Notification broadcast receiver missing:** Native layer emits `NOTIFICATION_RECEIVED` broadcast but no React Native receiver exists
+6. **Skip auth in production:** All auth pages allow skipping directly to the main app
+7. **Background worker placeholder:** `BackgroundWorker.performNotificationCheck()` is a TODO — no actual work is performed
+8. **Self-notification filter disabled:** `LandlineNotificationListenerService` self-filter is temporarily disabled for testing
+9. **Notification broadcast receiver missing:** Native layer emits `NOTIFICATION_RECEIVED` broadcast but no React Native receiver exists
 11. **Pipe-delimited storage:** Notification logs use pipe-delimited strings in SharedPreferences (intended to be replaced with a database)
 12. **No UI designs:** All pages needing production UI lack design specifications
 13. **No user flow designed:** Feature integration points and navigation paths not finalized
