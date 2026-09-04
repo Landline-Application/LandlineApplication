@@ -1,7 +1,7 @@
 allowBuilds:
-  '@firebase/util': set this to true or false
-  protobufjs: set this to true or false
-  unrs-resolver: set this to true or false
+  '@firebase/util': true
+  protobufjs: true
+  unrs-resolver: true
 minimumReleaseAgeExclude:
   - '@expo/cli@56.1.15'
   - '@expo/log-box@56.0.13'
