@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import * as Contacts from 'expo-contacts';
+import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
 import { router, useFocusEffect } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
@@ -167,7 +167,7 @@ export default function EmergencyContactsScreen() {
 
   const openContactPicker = useCallback(async () => {
     if (Platform.OS !== 'android') return;
-    const { status } = await Contacts.requestPermissionsAsync();
+    const { status } = await requestPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
         'Permission needed',
@@ -175,11 +175,13 @@ export default function EmergencyContactsScreen() {
       );
       return;
     }
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-    });
-    const withPhone = data
-      .filter((c) => c.phoneNumbers && c.phoneNumbers.length > 0)
+    const data = await Contact.getAllDetails([ContactField.FULL_NAME, ContactField.PHONES]);
+    const withPhone: AddressBookContact[] = data
+      .filter((c) => c.phones && c.phones.length > 0)
+      .map((c) => ({
+        name: c.fullName ?? '',
+        phoneNumbers: (c.phones ?? []).map((p) => ({ number: p.number, label: p.label })),
+      }))
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
     if (withPhone.length === 0) {
       Alert.alert('No contacts', 'No contacts with phone numbers were found.');
@@ -232,7 +234,7 @@ export default function EmergencyContactsScreen() {
     if (Platform.OS !== 'android') return;
 
     try {
-      const { status, canAskAgain } = await Contacts.requestPermissionsAsync();
+      const { status, canAskAgain } = await requestPermissionsAsync();
       if (status !== 'granted') {
         console.warn('Contacts permission not granted, cannot sync starred status');
         if (canAskAgain) {
@@ -241,33 +243,33 @@ export default function EmergencyContactsScreen() {
             'To automatically sync emergency contacts with starred contacts for call handling, please allow contacts access.',
             [
               { text: 'Later', style: 'cancel' },
-              { text: 'Grant Access', onPress: () => Contacts.requestPermissionsAsync() },
+              { text: 'Grant Access', onPress: () => void requestPermissionsAsync() },
             ],
           );
         }
         return;
       }
 
-      // Get all contacts with phone numbers
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.IsFavorite],
-      });
+      const data = await Contact.getAllDetails([
+        ContactField.FULL_NAME,
+        ContactField.PHONES,
+        ContactField.IS_FAVOURITE,
+      ]);
 
       let starredCount = 0;
       let unmatchedEmergencies: string[] = [];
 
       // For each contact, check if any of their numbers match emergency numbers
       for (const contact of data) {
-        if (!contact.phoneNumbers || contact.phoneNumbers.length === 0) continue;
+        if (!contact.phones || contact.phones.length === 0) continue;
 
-        const contactDigits = contact.phoneNumbers
+        const contactDigits = contact.phones
           .map((p) => normalizeDigits(p.number ?? ''))
           .filter((d) => d.length >= 7);
 
         // Check if this contact has any emergency number
         const matchedEmergency = phoneNumbers.find((emergency) =>
           contactDigits.some((digits) => {
-            // Match last 10 digits for flexibility
             const emergencyLast10 = emergency.slice(-10);
             const contactLast10 = digits.slice(-10);
             return emergencyLast10 === contactLast10;
@@ -275,29 +277,22 @@ export default function EmergencyContactsScreen() {
         );
 
         const isEmergencyContact = !!matchedEmergency;
+        const nativeContact = new Contact(contact.id);
 
-        // Update starred status if needed
-        if (isEmergencyContact && !contact.isFavorite) {
+        if (isEmergencyContact && !contact.isFavourite) {
           try {
-            await Contacts.updateContactAsync({
-              id: contact.id,
-              [Contacts.Fields.IsFavorite]: true,
-            });
+            await nativeContact.setIsFavourite(true);
             starredCount++;
-            console.log(`Starred contact: ${contact.name}`);
+            console.log(`Starred contact: ${contact.fullName}`);
           } catch (updateErr) {
-            console.error(`Failed to star contact ${contact.name}:`, updateErr);
+            console.error(`Failed to star contact ${contact.fullName}:`, updateErr);
           }
-        } else if (!isEmergencyContact && contact.isFavorite) {
-          // Unstar contacts that are no longer emergency contacts
+        } else if (!isEmergencyContact && contact.isFavourite) {
           try {
-            await Contacts.updateContactAsync({
-              id: contact.id,
-              [Contacts.Fields.IsFavorite]: false,
-            });
-            console.log(`Unstarred contact: ${contact.name}`);
+            await nativeContact.setIsFavourite(false);
+            console.log(`Unstarred contact: ${contact.fullName}`);
           } catch (updateErr) {
-            console.error(`Failed to unstar contact ${contact.name}:`, updateErr);
+            console.error(`Failed to unstar contact ${contact.fullName}:`, updateErr);
           }
         }
       }
@@ -305,7 +300,7 @@ export default function EmergencyContactsScreen() {
       // Check for emergency numbers that didn't match any contact
       for (const emergency of phoneNumbers) {
         const hasMatch = data.some((contact) =>
-          contact.phoneNumbers?.some((p) => {
+          contact.phones?.some((p) => {
             const digits = normalizeDigits(p.number ?? '');
             return digits.slice(-10) === emergency.slice(-10);
           }),
