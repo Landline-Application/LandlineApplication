@@ -23,6 +23,11 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAppTheme } from '@/contexts/theme-context';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
+import {
+  BADGE_CATALOG,
+  achievementsProgressLabel,
+  useAchievementsStore,
+} from '@/hooks/use-achievements-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
@@ -53,6 +58,11 @@ export default function SettingsScreen() {
   const { isDark } = useAppTheme();
   const { user, isAuthenticated, signOut } = useAuth();
   const { isEnabled: autoReplyEnabled } = useAutoReplyStore();
+  const unlockedBadgeIds = useAchievementsStore((s) => s.unlockedBadgeIds);
+  const achievementsSubtitle = achievementsProgressLabel(
+    unlockedBadgeIds.length,
+    BADGE_CATALOG.length,
+  );
   const { localDisplayName, setLocalDisplayName, reset: resetPreferences } = usePreferencesStore();
   const [displayNameDraft, setDisplayNameDraft] = useState(
     () => usePreferencesStore.getState().localDisplayName,
@@ -427,6 +437,37 @@ export default function SettingsScreen() {
               </View>
             </Card>
           )}
+        </View>
+
+        {/* Achievements — opens dedicated badge list */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Achievements</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/achievements');
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Achievements. ${achievementsSubtitle}`}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="emoji-events" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Achievements
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    {achievementsSubtitle}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
         </View>
 
         {/* Preferences Section */}

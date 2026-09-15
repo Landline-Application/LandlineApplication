@@ -882,12 +882,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
   },
   modalContent: {
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
+    borderRadius: Radius.xl,
     maxHeight: '80%',
     paddingBottom: Spacing.lg,
   },

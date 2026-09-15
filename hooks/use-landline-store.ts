@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
 import NotificationApiManager from '@/modules/notification-api-manager';
+import { useAchievementsStore } from '@/hooks/use-achievements-store';
 import {
     cancelLandlineModeReminderScheduled,
     ensureLandlineReminderScheduledIfNeeded,
@@ -207,6 +208,9 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
   deactivateLandlineMode: async () => {
     set({ isLoading: true, error: null });
     try {
+      // Capture start before clearing so achievements can use session duration
+      const sessionStartForAchievements = get().sessionStartTime;
+
       // Stop auto-refresh first
       get().stopAutoRefresh();
 
@@ -228,6 +232,21 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       const actualActive = NotificationApiManager.isLandlineModeActive();
 
       if (!actualActive) {
+        // Refresh before counting so session-blocked notifications are included
+        await get().refreshNotifications();
+
+        if (sessionStartForAchievements) {
+          const startMs = sessionStartForAchievements.getTime();
+          const durationMs = Date.now() - startMs;
+          const notificationsBlocked = get().notifications.filter(
+            (n) => n.postTime >= startMs,
+          ).length;
+          useAchievementsStore.getState().recordSessionEnded({
+            durationMs,
+            notificationsBlocked,
+          });
+        }
+
         try {
           await AsyncStorage.removeItem(SESSION_START_KEY);
           await AsyncStorage.removeItem(SESSION_MODE_KEY);
@@ -253,7 +272,9 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       });
 
       // Final refresh to get latest notifications
-      await get().refreshNotifications();
+      if (actualActive) {
+        await get().refreshNotifications();
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to deactivate';
       set({ error: errorMessage });
