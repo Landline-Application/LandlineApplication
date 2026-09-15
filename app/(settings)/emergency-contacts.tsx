@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import * as Contacts from 'expo-contacts';
+import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
 import { router, useFocusEffect } from 'expo-router';
 
 import { MaterialIcons } from '@/components/ui/icon-symbol';
@@ -26,7 +26,50 @@ function normalizeDigits(input: string): string {
   return input.replace(/\D/g, '');
 }
 
+/** Last 10 digits so +1 555-123-4567 and 5551234567 count as the same number. */
+function phoneMatchKey(digits: string): string {
+  return digits.slice(-10);
+}
+
 type EmergencyEntry = { name: string; phone: string };
+type NumberChoice = { phone: string; label: string };
+type AddressBookContact = {
+  name?: string | null;
+  phoneNumbers?: { number?: string; label?: string }[] | null;
+};
+
+function dedupeEmergencyContacts(entries: EmergencyEntry[]): EmergencyEntry[] {
+  const byKey = new Map<string, EmergencyEntry>();
+  for (const entry of entries) {
+    const phone = normalizeDigits(entry.phone);
+    if (phone.length < 7) continue;
+    const key = phoneMatchKey(phone);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { name: entry.name.trim(), phone });
+      continue;
+    }
+    byKey.set(key, {
+      name: existing.name || entry.name.trim(),
+      phone: phone.length > existing.phone.length ? phone : existing.phone,
+    });
+  }
+  return Array.from(byKey.values());
+}
+
+function uniqueNumbersFromContact(contact: AddressBookContact): NumberChoice[] {
+  const byKey = new Map<string, NumberChoice>();
+  for (const p of contact.phoneNumbers ?? []) {
+    const phone = normalizeDigits(p.number ?? '');
+    if (phone.length < 7) continue;
+    const key = phoneMatchKey(phone);
+    const existing = byKey.get(key);
+    if (!existing || phone.length > existing.phone.length) {
+      byKey.set(key, { phone, label: (p.label ?? '').trim() });
+    }
+  }
+  return Array.from(byKey.values());
+}
 
 function parseStoredContacts(): EmergencyEntry[] {
   if (Platform.OS !== 'android') return [];
@@ -34,14 +77,16 @@ function parseStoredContacts(): EmergencyEntry[] {
     const json = NotificationApiManager.getEmergencyContactsJson();
     if (json) {
       const parsed = JSON.parse(json) as { name?: string; phone?: string }[];
-      const entries = parsed
-        .map((e) => ({ name: e.name ?? '', phone: normalizeDigits(e.phone ?? '') }))
-        .filter((e) => e.phone.length >= 7);
+      const entries = dedupeEmergencyContacts(
+        parsed.map((e) => ({ name: e.name ?? '', phone: e.phone ?? '' })),
+      );
       if (entries.length > 0) return entries;
     }
   } catch {}
   // Fallback: legacy phone-number-only storage
-  return NotificationApiManager.getEmergencyPhoneNumbers().map((p) => ({ name: '', phone: p }));
+  return dedupeEmergencyContacts(
+    NotificationApiManager.getEmergencyPhoneNumbers().map((p) => ({ name: '', phone: p })),
+  );
 }
 
 export default function EmergencyContactsScreen() {
@@ -49,15 +94,17 @@ export default function EmergencyContactsScreen() {
   const [loading, setLoading] = useState(true);
 
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyEntry[]>(parseStoredContacts);
-  // Flat list of digits for backward-compat APIs
-  const emergencyNumbers = emergencyContacts.map((e) => e.phone);
 
   const [newPhone, setNewPhone] = useState('');
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
-  const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
+  const [contactList, setContactList] = useState<AddressBookContact[]>([]);
   const [contactSearch, setContactSearch] = useState('');
+  const [numberPicker, setNumberPicker] = useState<{
+    name: string;
+    numbers: NumberChoice[];
+  } | null>(null);
 
-  // Load emergency numbers on every focus
+  // Load emergency numbers on every focus and persist a cleaned list if storage had dupes
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') {
@@ -68,46 +115,59 @@ export default function EmergencyContactsScreen() {
       try {
         const current = parseStoredContacts();
         setEmergencyContacts(current);
+        const rawJson = NotificationApiManager.getEmergencyContactsJson();
+        let rawCount = 0;
+        try {
+          const parsed = JSON.parse(rawJson) as unknown;
+          rawCount = Array.isArray(parsed) ? parsed.length : 0;
+        } catch {
+          rawCount = 0;
+        }
+        if (rawCount > current.length) {
+          NotificationApiManager.setEmergencyPhoneNumbers(current.map((e) => e.phone));
+          NotificationApiManager.setEmergencyContactsJson(
+            JSON.stringify(current.map((e) => ({ name: e.name, phone: e.phone }))),
+          );
+        }
       } finally {
         setLoading(false);
       }
     }, []),
   );
 
-  const addEmergencyEntries = async (entries: EmergencyEntry[]) => {
-    const existingPhones = new Set(emergencyContacts.map((e) => e.phone));
-    const toAdd = entries.filter((e) => e.phone.length >= 7 && !existingPhones.has(e.phone));
-    if (toAdd.length === 0) return;
-    const newContacts = [...emergencyContacts, ...toAdd].sort((a, b) =>
+  const addEmergencyEntries = async (entries: EmergencyEntry[]): Promise<boolean> => {
+    const existingKeys = new Set(emergencyContacts.map((e) => phoneMatchKey(e.phone)));
+    const toAdd = dedupeEmergencyContacts(entries).filter(
+      (e) => !existingKeys.has(phoneMatchKey(e.phone)),
+    );
+    if (toAdd.length === 0) return false;
+    const newContacts = dedupeEmergencyContacts([...emergencyContacts, ...toAdd]).sort((a, b) =>
       a.phone.localeCompare(b.phone),
     );
     setEmergencyContacts(newContacts);
-    // Save immediately
     await saveContacts(newContacts);
+    return true;
   };
 
   const removeEmergencyContact = async (phone: string) => {
-    const newContacts = emergencyContacts.filter((e) => e.phone !== phone);
+    const key = phoneMatchKey(phone);
+    const newContacts = emergencyContacts.filter((e) => phoneMatchKey(e.phone) !== key);
     setEmergencyContacts(newContacts);
-    // Save immediately
     await saveContacts(newContacts);
   };
 
   const addManualContact = async (phone: string) => {
     const digits = normalizeDigits(phone);
     if (digits.length < 7) return;
-    if (emergencyNumbers.includes(digits)) return;
-    const newContacts = [...emergencyContacts, { name: '', phone: digits }].sort((a, b) =>
-      a.phone.localeCompare(b.phone),
-    );
-    setEmergencyContacts(newContacts);
-    // Save immediately
-    await saveContacts(newContacts);
+    const added = await addEmergencyEntries([{ name: '', phone: digits }]);
+    if (!added) {
+      Alert.alert('Already added', 'That number is already on your emergency list.');
+    }
   };
 
   const openContactPicker = useCallback(async () => {
     if (Platform.OS !== 'android') return;
-    const { status } = await Contacts.requestPermissionsAsync();
+    const { status } = await requestPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
         'Permission needed',
@@ -115,11 +175,13 @@ export default function EmergencyContactsScreen() {
       );
       return;
     }
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-    });
-    const withPhone = data
-      .filter((c) => c.phoneNumbers && c.phoneNumbers.length > 0)
+    const data = await Contact.getAllDetails([ContactField.FULL_NAME, ContactField.PHONES]);
+    const withPhone: AddressBookContact[] = data
+      .filter((c) => c.phones && c.phones.length > 0)
+      .map((c) => ({
+        name: c.fullName ?? '',
+        phoneNumbers: (c.phones ?? []).map((p) => ({ number: p.number, label: p.label })),
+      }))
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
     if (withPhone.length === 0) {
       Alert.alert('No contacts', 'No contacts with phone numbers were found.');
@@ -130,17 +192,35 @@ export default function EmergencyContactsScreen() {
     setContactPickerVisible(true);
   }, []);
 
-  const onPickContact = async (contact: Contacts.Contact) => {
-    const entries: EmergencyEntry[] =
-      contact.phoneNumbers
-        ?.map((p) => ({ name: contact.name ?? '', phone: normalizeDigits(p.number ?? '') }))
-        .filter((e) => e.phone.length >= 7) ?? [];
-    if (entries.length === 0) {
+  const onPickContact = async (contact: AddressBookContact) => {
+    const numbers = uniqueNumbersFromContact(contact);
+    if (numbers.length === 0) {
       Alert.alert('No valid numbers', 'That contact has no phone numbers with at least 7 digits.');
       return;
     }
-    await addEmergencyEntries(entries);
+    if (numbers.length === 1) {
+      const added = await addEmergencyEntries([
+        { name: contact.name ?? '', phone: numbers[0].phone },
+      ]);
+      if (!added) {
+        Alert.alert('Already added', 'That number is already on your emergency list.');
+        return;
+      }
+      setContactPickerVisible(false);
+      return;
+    }
     setContactPickerVisible(false);
+    setNumberPicker({ name: contact.name ?? 'Unknown', numbers });
+  };
+
+  const onPickNumber = async (choice: NumberChoice) => {
+    const added = await addEmergencyEntries([
+      { name: numberPicker?.name ?? '', phone: choice.phone },
+    ]);
+    setNumberPicker(null);
+    if (!added) {
+      Alert.alert('Already added', 'That number is already on your emergency list.');
+    }
   };
 
   const filteredContacts = useMemo(
@@ -154,7 +234,7 @@ export default function EmergencyContactsScreen() {
     if (Platform.OS !== 'android') return;
 
     try {
-      const { status, canAskAgain } = await Contacts.requestPermissionsAsync();
+      const { status, canAskAgain } = await requestPermissionsAsync();
       if (status !== 'granted') {
         console.warn('Contacts permission not granted, cannot sync starred status');
         if (canAskAgain) {
@@ -163,33 +243,33 @@ export default function EmergencyContactsScreen() {
             'To automatically sync emergency contacts with starred contacts for call handling, please allow contacts access.',
             [
               { text: 'Later', style: 'cancel' },
-              { text: 'Grant Access', onPress: () => Contacts.requestPermissionsAsync() },
+              { text: 'Grant Access', onPress: () => void requestPermissionsAsync() },
             ],
           );
         }
         return;
       }
 
-      // Get all contacts with phone numbers
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.IsFavorite],
-      });
+      const data = await Contact.getAllDetails([
+        ContactField.FULL_NAME,
+        ContactField.PHONES,
+        ContactField.IS_FAVOURITE,
+      ]);
 
       let starredCount = 0;
       let unmatchedEmergencies: string[] = [];
 
       // For each contact, check if any of their numbers match emergency numbers
       for (const contact of data) {
-        if (!contact.phoneNumbers || contact.phoneNumbers.length === 0) continue;
+        if (!contact.phones || contact.phones.length === 0) continue;
 
-        const contactDigits = contact.phoneNumbers
+        const contactDigits = contact.phones
           .map((p) => normalizeDigits(p.number ?? ''))
           .filter((d) => d.length >= 7);
 
         // Check if this contact has any emergency number
         const matchedEmergency = phoneNumbers.find((emergency) =>
           contactDigits.some((digits) => {
-            // Match last 10 digits for flexibility
             const emergencyLast10 = emergency.slice(-10);
             const contactLast10 = digits.slice(-10);
             return emergencyLast10 === contactLast10;
@@ -197,29 +277,22 @@ export default function EmergencyContactsScreen() {
         );
 
         const isEmergencyContact = !!matchedEmergency;
+        const nativeContact = new Contact(contact.id);
 
-        // Update starred status if needed
-        if (isEmergencyContact && !contact.isFavorite) {
+        if (isEmergencyContact && !contact.isFavourite) {
           try {
-            await Contacts.updateContactAsync({
-              id: contact.id,
-              [Contacts.Fields.IsFavorite]: true,
-            });
+            await nativeContact.setIsFavourite(true);
             starredCount++;
-            console.log(`Starred contact: ${contact.name}`);
+            console.log(`Starred contact: ${contact.fullName}`);
           } catch (updateErr) {
-            console.error(`Failed to star contact ${contact.name}:`, updateErr);
+            console.error(`Failed to star contact ${contact.fullName}:`, updateErr);
           }
-        } else if (!isEmergencyContact && contact.isFavorite) {
-          // Unstar contacts that are no longer emergency contacts
+        } else if (!isEmergencyContact && contact.isFavourite) {
           try {
-            await Contacts.updateContactAsync({
-              id: contact.id,
-              [Contacts.Fields.IsFavorite]: false,
-            });
-            console.log(`Unstarred contact: ${contact.name}`);
+            await nativeContact.setIsFavourite(false);
+            console.log(`Unstarred contact: ${contact.fullName}`);
           } catch (updateErr) {
-            console.error(`Failed to unstar contact ${contact.name}:`, updateErr);
+            console.error(`Failed to unstar contact ${contact.fullName}:`, updateErr);
           }
         }
       }
@@ -227,7 +300,7 @@ export default function EmergencyContactsScreen() {
       // Check for emergency numbers that didn't match any contact
       for (const emergency of phoneNumbers) {
         const hasMatch = data.some((contact) =>
-          contact.phoneNumbers?.some((p) => {
+          contact.phones?.some((p) => {
             const digits = normalizeDigits(p.number ?? '');
             return digits.slice(-10) === emergency.slice(-10);
           }),
@@ -252,16 +325,13 @@ export default function EmergencyContactsScreen() {
   const saveContacts = async (contacts: EmergencyEntry[]) => {
     if (Platform.OS !== 'android') return;
     try {
-      const phones = contacts.map((e) => e.phone);
-      // Save emergency numbers to native storage
+      const unique = dedupeEmergencyContacts(contacts);
+      const phones = unique.map((e) => e.phone);
       NotificationApiManager.setEmergencyPhoneNumbers(phones);
-      // Save with real contact names so Kotlin can match by name OR phone
-      const emergencyContactsJson = JSON.stringify(
-        contacts.map((e) => ({ name: e.name, phone: e.phone })),
+      NotificationApiManager.setEmergencyContactsJson(
+        JSON.stringify(unique.map((e) => ({ name: e.name, phone: e.phone }))),
       );
-      NotificationApiManager.setEmergencyContactsJson(emergencyContactsJson);
 
-      // Sync with Android starred contacts for DND call handling
       await syncEmergencyContactsWithStarred(phones);
     } catch (e) {
       console.error('Failed to save emergency contacts:', e);
@@ -385,7 +455,7 @@ export default function EmergencyContactsScreen() {
             <View style={styles.card}>
               {emergencyContacts.map((entry, index) => (
                 <View
-                  key={entry.phone}
+                  key={`${phoneMatchKey(entry.phone)}-${index}`}
                   style={[
                     styles.contactRow,
                     index === emergencyContacts.length - 1 && styles.contactRowLast,
@@ -481,32 +551,85 @@ export default function EmergencyContactsScreen() {
             <FlatList
               data={filteredContacts}
               keyExtractor={(item, index) => `${item.name ?? 'unknown'}-${index}`}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.contactItem}
-                  onPress={() => onPickContact(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.contactAvatar}>
-                    <Text style={styles.contactAvatarText}>
-                      {(item.name ?? '?')[0].toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.contactItemInfo}>
-                    <Text style={styles.contactItemName}>{item.name ?? 'Unknown'}</Text>
-                    <Text style={styles.contactItemNumber}>
-                      {item.phoneNumbers?.[0]?.number ?? ''}
-                    </Text>
-                  </View>
-                  <MaterialIcons name="chevron-right" size={24} color={COLORS.text.muted} />
-                </TouchableOpacity>
-              )}
+              renderItem={({ item }) => {
+                const numbers = uniqueNumbersFromContact(item);
+                return (
+                  <TouchableOpacity
+                    style={styles.contactItem}
+                    onPress={() => onPickContact(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.contactAvatar}>
+                      <Text style={styles.contactAvatarText}>
+                        {(item.name ?? '?')[0].toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.contactItemInfo}>
+                      <Text style={styles.contactItemName}>{item.name ?? 'Unknown'}</Text>
+                      <Text style={styles.contactItemNumber}>
+                        {numbers.length > 1
+                          ? `${numbers.length} numbers`
+                          : (item.phoneNumbers?.[0]?.number ?? '')}
+                      </Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color={COLORS.text.muted} />
+                  </TouchableOpacity>
+                );
+              }}
               ItemSeparatorComponent={() => <View style={styles.separator} />}
               ListEmptyComponent={
                 <View style={styles.modalEmptyState}>
                   <Text style={styles.modalEmptyText}>No contacts found</Text>
                 </View>
               }
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Number picker when a contact has more than one unique number */}
+      <Modal
+        visible={numberPicker !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setNumberPicker(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select a number</Text>
+              <TouchableOpacity onPress={() => setNumberPicker(null)}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.numberPickerHint}>
+              {numberPicker?.name ?? 'This contact'} has more than one number. Choose which one can
+              reach you in Landline Mode.
+            </Text>
+            <FlatList
+              data={numberPicker?.numbers ?? []}
+              keyExtractor={(item) => phoneMatchKey(item.phone)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.contactItem}
+                  onPress={() => void onPickNumber(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.contactAvatar}>
+                    <MaterialIcons name="phone" size={20} color={COLORS.text.onPrimary} />
+                  </View>
+                  <View style={styles.contactItemInfo}>
+                    {item.label ? (
+                      <Text style={styles.contactItemName}>{item.label}</Text>
+                    ) : (
+                      <Text style={styles.contactItemName}>Phone</Text>
+                    )}
+                    <Text style={styles.contactItemNumber}>{item.phone}</Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={24} color={COLORS.text.muted} />
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
             />
           </View>
         </View>
@@ -828,6 +951,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.primary,
     fontFamily: 'Nunito_600SemiBold',
+  },
+  numberPickerHint: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    fontFamily: 'Nunito_400Regular',
+    lineHeight: 20,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   searchContainer: {
     flexDirection: 'row',
