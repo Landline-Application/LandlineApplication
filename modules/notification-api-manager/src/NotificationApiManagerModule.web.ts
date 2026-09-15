@@ -46,6 +46,9 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
   clearLoggedNotifications() {
     return false;
   }
+  removeLoggedNotifications() {
+    return 0;
+  }
 
   isNotificationFilterEnabled() {
     return false;
@@ -66,6 +69,19 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return false;
   }
   isNotificationFilterConfigured() {
+    return false;
+  }
+
+  isRepeatCallBypassEnabled() {
+    return true;
+  }
+  setRepeatCallBypassEnabled() {
+    return false;
+  }
+  getRepeatCallBypassWindowMs() {
+    return 7 * 60 * 1000;
+  }
+  setRepeatCallBypassWindowMs() {
     return false;
   }
 

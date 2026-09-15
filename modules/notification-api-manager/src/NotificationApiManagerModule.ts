@@ -12,6 +12,7 @@ import { requireNativeModule } from 'expo-modules-core';
  * - isLandlineModeActive(): boolean
  * - getLoggedNotifications(): Array
  * - clearLoggedNotifications(): boolean
+ * - removeLoggedNotifications(keys): number
  * - isAutoReplyEnabled(): boolean
  * - setAutoReplyEnabled(enabled: boolean): boolean
  * - setReplyMessage(message: string): boolean
@@ -24,6 +25,13 @@ import { requireNativeModule } from 'expo-modules-core';
  * - getActiveNotifications(): Array
  * - clearAllData(): Promise<boolean>
  */
+export type NotificationLogKey = {
+  timestamp?: number;
+  packageName: string;
+  postTime: number;
+  id: number;
+};
+
 type NotificationApiNativeModule = {
   hasPostPermission(): boolean;
   requestPostPermission(): Promise<boolean>;
@@ -38,6 +46,7 @@ type NotificationApiNativeModule = {
   isLandlineModeActive(): boolean;
   getLoggedNotifications(): Promise<any[]>;
   clearLoggedNotifications(): boolean;
+  removeLoggedNotifications(keys: NotificationLogKey[]): number;
   // Notification permissions: allowed apps + emergency numbers during Landline Mode
   isNotificationFilterEnabled(): boolean;
   setNotificationFilterEnabled(enabled: boolean): boolean;
@@ -46,6 +55,11 @@ type NotificationApiNativeModule = {
   getEmergencyPhoneNumbers(): string[];
   setEmergencyPhoneNumbers(phoneNumbers: string[]): boolean;
   isNotificationFilterConfigured(): boolean;
+  // Repeat-call bypass (Android incoming call notifications)
+  isRepeatCallBypassEnabled(): boolean;
+  setRepeatCallBypassEnabled(enabled: boolean): boolean;
+  getRepeatCallBypassWindowMs(): number;
+  setRepeatCallBypassWindowMs(windowMs: number): boolean;
   // Auto-Reply
   isAutoReplyEnabled(): boolean;
   setAutoReplyEnabled(enabled: boolean): boolean;
@@ -127,6 +141,29 @@ export function clearLoggedNotifications() {
   return Native.clearLoggedNotifications();
 }
 
+export function removeLoggedNotifications(keys: NotificationLogKey[]) {
+  const fn = Native.removeLoggedNotifications;
+  if (typeof fn === 'function') {
+    return fn.call(Native, keys);
+  }
+  console.warn('removeLoggedNotifications native method not available');
+  return 0;
+}
+
+export function toNotificationLogKey(entry: {
+  timestamp?: number;
+  packageName: string;
+  postTime: number;
+  id: number;
+}): NotificationLogKey {
+  return {
+    timestamp: entry.timestamp,
+    packageName: entry.packageName,
+    postTime: entry.postTime,
+    id: entry.id,
+  };
+}
+
 export function isNotificationFilterEnabled() {
   const fn = Native.isNotificationFilterEnabled;
   return typeof fn === 'function' ? fn.call(Native) : false;
@@ -160,6 +197,26 @@ export function setEmergencyPhoneNumbers(phoneNumbers: string[]) {
 export function isNotificationFilterConfigured() {
   const fn = Native.isNotificationFilterConfigured;
   return typeof fn === 'function' ? fn.call(Native) : false;
+}
+
+export function isRepeatCallBypassEnabled() {
+  const fn = Native.isRepeatCallBypassEnabled;
+  return typeof fn === 'function' ? fn.call(Native) : true;
+}
+
+export function setRepeatCallBypassEnabled(enabled: boolean) {
+  const fn = Native.setRepeatCallBypassEnabled;
+  return typeof fn === 'function' ? fn.call(Native, enabled) : false;
+}
+
+export function getRepeatCallBypassWindowMs() {
+  const fn = Native.getRepeatCallBypassWindowMs;
+  return typeof fn === 'function' ? fn.call(Native) : 7 * 60 * 1000;
+}
+
+export function setRepeatCallBypassWindowMs(windowMs: number) {
+  const fn = Native.setRepeatCallBypassWindowMs;
+  return typeof fn === 'function' ? fn.call(Native, windowMs) : false;
 }
 
 /** True when notification permissions are on and at least one bypass app or emergency number is set. */
@@ -276,6 +333,8 @@ export default {
   isLandlineModeActive,
   getLoggedNotifications,
   clearLoggedNotifications,
+  removeLoggedNotifications,
+  toNotificationLogKey,
   isNotificationFilterEnabled,
   setNotificationFilterEnabled,
   getAllowedNotificationPackages,
@@ -284,6 +343,10 @@ export default {
   setEmergencyPhoneNumbers,
   isNotificationFilterConfigured,
   isNotificationFilterEffective,
+  isRepeatCallBypassEnabled,
+  setRepeatCallBypassEnabled,
+  getRepeatCallBypassWindowMs,
+  setRepeatCallBypassWindowMs,
   isAutoReplyEnabled,
   setAutoReplyEnabled,
   setReplyMessage,

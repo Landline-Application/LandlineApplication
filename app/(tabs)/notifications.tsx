@@ -24,7 +24,8 @@ export default function NotificationsScreen() {
         textMuted: '#E0E0E0',
       }
     : null;
-  const { notifications, isLoading, refreshNotifications, isActive } = useLandlineStore();
+  const { notifications, isLoading, refreshNotifications, removeNotification, isActive } =
+    useLandlineStore();
 
   // Fast refresh (3s) while this screen is focused and Landline Mode is active
   useActiveRefresh(refreshNotifications, isActive);
@@ -49,7 +50,7 @@ export default function NotificationsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const success = await NotificationApiManager.clearAllData();
+              const success = await NotificationApiManager.clearLoggedNotifications();
               if (success) {
                 await refreshNotifications();
               } else {
@@ -119,6 +120,7 @@ export default function NotificationsScreen() {
         <NotebookLogView
           notifications={notifications}
           onRefresh={loadNotifications}
+          onDelete={removeNotification}
           isActive={isActive}
           isDark={isDark}
         />

@@ -24,8 +24,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: 'Landline',
-    slug: 'landline',
-    version: '0.9.0',
+    slug: 'landline-application',
+    version: '0.10.0',
     orientation: 'portrait',
     icon: './assets/landline-icon.png',
     scheme: 'landlineapplication',
@@ -52,6 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.WAKE_LOCK',
       ],
       googleServicesFile: resolveGoogleServicesFile(),
+      versionCode: 19,
     },
 
     web: {
@@ -60,6 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
 
     plugins: [
+      'expo-image',
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       '@react-native-google-signin/google-signin',
@@ -100,7 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       router: {},
       eas: {
-        projectId: process.env.EAS_PROJECT_ID ?? '9054e1e3-4810-4cc2a8',
+        projectId: process.env.EAS_PROJECT_ID ?? '6eca4977-93f1-4209-a7b4-ed6cced9a82a',
       },
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },

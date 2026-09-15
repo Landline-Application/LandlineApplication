@@ -65,6 +65,9 @@ google-services.json
 GoogleService-Info.plist
 
 # Environment files
+*.keystore
+*.pem
+android/keystore.properties
 .env
 .env.local
 .env.*.local
