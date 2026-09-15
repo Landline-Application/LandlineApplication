@@ -1,62 +1,66 @@
-# Export Beta Signups to CSV
+# Scripts
 
-This script exports all beta signup emails from Firebase Firestore to a CSV file.
+## Development
 
-## Quick Setup
-
-### Step 1: Get your Firebase service account key
-
-1. Go to [Firebase Console](https://console.firebase.google.com/project/landline-application/settings/serviceaccounts)
-2. Click **"Generate new private key"**
-3. Save the JSON file as `service-account-key.json` in this `scripts/` folder
-
-### Step 2: Install dependencies
+### `emulator-launch.sh`
+Launch an Android emulator. Uses `gum` for a TUI picker if installed; falls back to a numbered prompt.
 
 ```bash
-cd scripts
-npm install firebase-admin
+./scripts/emulator-launch.sh
 ```
 
-### Step 3: Run the export
+### `send-test-sms.sh`
+Send a fake SMS to a running emulator via ADB. Useful for testing notification capture.
 
 ```bash
-node export-beta-signups.js
+./scripts/send-test-sms.sh [phone_number] [message]
+# e.g. ./scripts/send-test-sms.sh 5554 "Hello from Landline"
 ```
 
-This will create two files:
-
-- `beta-signups.csv` - Full data with email, source, and signup date
-- `beta-emails.txt` - Just the emails (copy/paste into Google Play Console)
-
-## Alternative: Using Firebase CLI
-
-If you prefer not to use a script, you can use the Firebase CLI to export all data:
+### `capture-app-store-screenshots.sh`
+Capture screenshots from a connected device or emulator via ADB. Saves PNGs to a local directory.
 
 ```bash
-# Export all Firestore data (includes betaSignups)
-firebase firestore:export ./firestore-export --project landline-application
-
-# This creates a backup that you can browse
+./scripts/capture-app-store-screenshots.sh [output_dir] [device_serial]
+# e.g. ./scripts/capture-app-store-screenshots.sh app-store-shots emulator-5554
 ```
 
-## For Google Play Console
+---
 
-To add testers to your closed beta:
+## Build & Release
 
-1. Open `beta-emails.txt` (created by the script)
-2. Copy all emails
-3. Go to [Google Play Console](https://play.google.com/console)
-4. Navigate to your app → Testing → Closed testing
-5. Click "Create release" or "Edit"
-6. Paste emails into the "Testers" section
+### `setup.sh`
+One-time setup for new developers. Checks EAS CLI, authentication, keystore, `.env.local`, Android SDK, and Node/pnpm.
 
-## Troubleshooting
+```bash
+./scripts/setup.sh
+```
 
-**"Cannot find module './service-account-key.json'"**
+> **Windows users:** Requires Bash. Run via Git Bash or WSL.
 
-- Make sure you downloaded the service account key and saved it as `service-account-key.json` in the scripts folder
+### `build-android-production.sh`
+Build and optionally submit a production Android AAB to Google Play Console via EAS.
 
-**"Permission denied"**
+```bash
+./scripts/build-android-production.sh
+```
 
-- The service account needs "Cloud Datastore User" or "Editor" role
-- Check in Firebase Console → IAM & Admin → IAM
+---
+
+## Data Export
+
+### `export-beta-signups.js`
+Export beta signup emails from Firebase Firestore to CSV and `.txt` for Google Play Console testers.
+
+**Setup:**
+1. Download a Firebase service account key from the [Firebase Console](https://console.firebase.google.com/project/landline-application/settings/serviceaccounts)
+2. Save it as `scripts/service-account-key.json`
+3. Install deps: `cd scripts && npm install firebase-admin`
+
+```bash
+node scripts/export-beta-signups.js
+```
+
+Outputs:
+- `beta-signups.csv` — email, source, signup date
+- `beta-emails.txt` — emails only, for pasting into Google Play Console

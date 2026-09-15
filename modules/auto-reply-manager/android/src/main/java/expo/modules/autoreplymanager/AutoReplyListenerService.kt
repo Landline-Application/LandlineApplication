@@ -18,6 +18,8 @@ class AutoReplyListenerService : NotificationListenerService() {
 
     companion object {
         private const val TAG = "AutoReplyListener"
+        /** TEMPORARY: feature disabled while we finalize UX/logic. */
+        private const val AUTO_REPLY_TEMP_DISABLED = true
         private const val PREFS_NAME = "auto_reply_prefs"
         private const val KEY_ENABLED = "auto_reply_enabled"
         private const val KEY_REPLY_MESSAGE = "default_reply_message"
@@ -64,6 +66,11 @@ class AutoReplyListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
+
+        if (AUTO_REPLY_TEMP_DISABLED) {
+            Log.d(TAG, "Auto-reply temporarily disabled; skipping")
+            return
+        }
         
         Log.d(TAG, "Notification posted from: ${sbn.packageName}")
         

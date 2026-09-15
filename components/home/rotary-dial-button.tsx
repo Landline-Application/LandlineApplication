@@ -42,7 +42,7 @@ export const RotaryDialButton = ({
   const dialSize = width * 0.82;
   const dialCenter = dialSize / 2;
   const holeRadius = width * 0.045;
-  const holeDistance = dialCenter * 0.72;
+  const holeDistance = dialCenter * 0.75;
 
   const holes = useMemo(
     () =>
@@ -113,40 +113,37 @@ export const RotaryDialButton = ({
         end={{ x: 1, y: 1 }}
         style={styles.dialBase}
       >
-        <Reanimated.View style={[styles.pressable, pressableStyle]}>
-          <Pressable
-            onPress={handlePress}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            disabled={disabled}
-            style={StyleSheet.absoluteFill}
-          />
+        <Pressable
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={disabled}
+          style={StyleSheet.absoluteFill}
+        />
 
-          <View style={styles.centerDisplay} pointerEvents="none">
-            <LinearGradient colors={['#E6DCCD', '#D6C5B3']} style={StyleSheet.absoluteFill} />
-            <View style={styles.centerBezel} />
-            <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
-          </View>
+        <Reanimated.View style={[styles.centerDisplay, pressableStyle]} pointerEvents="none">
+          <LinearGradient colors={['#E6DCCD', '#D6C5B3']} style={StyleSheet.absoluteFill} />
+          <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
+        </Reanimated.View>
 
-          <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
-            {holes.map((hole) => (
-              <View
-                key={hole.id}
-                style={[
-                  styles.hole,
-                  {
-                    top: hole.y,
-                    left: hole.x,
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.02)']}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
-            ))}
-          </Reanimated.View>
+        <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
+          {holes.map((hole) => (
+            <View
+              key={hole.id}
+              style={[
+                styles.hole,
+                {
+                  top: hole.y,
+                  left: hole.x,
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.05)']}
+                style={StyleSheet.absoluteFill}
+              />
+            </View>
+          ))}
         </Reanimated.View>
       </LinearGradient>
     </View>
@@ -178,14 +175,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Shadows.lg,
   },
-  pressable: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   centerDisplay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
     width: '52%',
     height: '52%',
+    marginLeft: -(width * 0.82 * 0.52) / 2,
+    marginTop: -(width * 0.82 * 0.52) / 2,
     borderRadius: (width * 0.82 * 0.52) / 2,
     backgroundColor: '#E6DCCD',
     overflow: 'hidden',
@@ -196,25 +193,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
   },
-  centerBezel: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    borderWidth: 6,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
   holeLayer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 20,
   },
   hole: {
     position: 'absolute',
     width: width * 0.09,
     height: width * 0.09,
     borderRadius: (width * 0.09) / 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
 });

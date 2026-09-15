@@ -60,37 +60,36 @@ export const StatusIndicator = ({
 
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0.4, 1],
-    outputRange: [0.3, 0.8],
+    outputRange: [0.12, 0.4],
   });
 
   return (
     <View style={[styles.container, style]}>
       {showGlow && (
         <Animated.View
-          style={[
-            styles.glow,
-            {
-              width: glowSize,
-              height: glowSize,
-              borderRadius: glowSize / 2,
-              backgroundColor: color,
-              opacity: glowOpacity,
-            },
-          ]}
+          style={{
+            position: 'absolute',
+            top: (indicatorSize - glowSize) / 2,
+            left: (indicatorSize - glowSize) / 2,
+            width: glowSize,
+            height: glowSize,
+            borderRadius: glowSize / 2,
+            backgroundColor: color,
+            opacity: glowOpacity,
+          }}
         />
       )}
       <View
-        style={[
-          styles.dot,
-          {
-            width: indicatorSize,
-            height: indicatorSize,
-            borderRadius: indicatorSize / 2,
-            backgroundColor: color,
-            shadowColor: color,
-            shadowOpacity: active ? 0.6 : 0.3,
-          },
-        ]}
+        style={{
+          width: indicatorSize,
+          height: indicatorSize,
+          borderRadius: indicatorSize / 2,
+          backgroundColor: color,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: active && showGlow ? 0 : 0.3,
+          shadowRadius: 3,
+        }}
       />
     </View>
   );
@@ -100,13 +99,5 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glow: {
-    position: 'absolute',
-  },
-  dot: {
-    zIndex: 1,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 3,
   },
 });
