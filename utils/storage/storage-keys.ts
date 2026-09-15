@@ -18,10 +18,8 @@ export const STORAGE_KEYS = {
   // User preferences — persisted locally and synced to Firestore when authenticated
   USER_PREFERENCES: '@landline_user_preferences',
 
-  // Future keys can be added here as the app grows:
-  // NOTIFICATION_SETTINGS: '@landline_notification_settings',
-  // THEME_PREFERENCE: '@landline_theme',
-  // LAST_SYNC_TIME: '@landline_last_sync',
+  // Achievement badges — device-local unlock state (no Firestore sync in v1)
+  ACHIEVEMENTS: '@landline_achievements',
 } as const;
 
 /**

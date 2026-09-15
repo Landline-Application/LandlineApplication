@@ -20,6 +20,11 @@ import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
+import {
+  BADGE_CATALOG,
+  achievementsProgressLabel,
+  useAchievementsStore,
+} from '@/hooks/use-achievements-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
@@ -45,6 +50,11 @@ function accountIdentifier(user: FirebaseAuthTypes.User): string {
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, refreshUser, signOut, resetPassword } = useAuth();
+  const unlockedBadgeIds = useAchievementsStore((s) => s.unlockedBadgeIds);
+  const achievementsSubtitle = achievementsProgressLabel(
+    unlockedBadgeIds.length,
+    BADGE_CATALOG.length,
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   // Display name editing — seed from localDisplayName if no Firebase name yet
@@ -388,6 +398,32 @@ export default function ProfileScreen() {
             </View>
           </>
         )}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Achievements</Text>
+          <Card variant="elevated" padding="none" style={styles.securityCard}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/achievements');
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Achievements. ${achievementsSubtitle}`}
+            >
+              <View style={styles.menuItem}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="emoji-events" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Achievements</Text>
+                  <Text style={styles.menuItemSubtitle}>{achievementsSubtitle}</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
       </ScrollView>
 
       {/* Delete Account Modal */}
