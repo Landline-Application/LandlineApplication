@@ -52,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.WAKE_LOCK',
       ],
       googleServicesFile: resolveGoogleServicesFile(),
-      versionCode: 19,
+      versionCode: 20,
     },
 
     web: {
