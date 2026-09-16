@@ -14,6 +14,8 @@ Quick reference to official documentation for setting up EAS and connecting to G
 - [Service Account Setup for Google Play](https://github.com/expo/fyi/blob/main/creating-google-service-account.md)
 - [EAS Submit with Google Play Internal Track](https://docs.expo.dev/submit/android/#22-if-youre-uploading-to-google-play-for)
 
+How to ship a closed-beta update: [docs/beta-updates.md](beta-updates.md).
+
 ## Local Builds
 
 - [Local Builds with EAS](https://docs.expo.dev/build-reference/local-builds/)
