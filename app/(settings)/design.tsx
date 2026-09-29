@@ -59,30 +59,52 @@ export default function DesignScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: darkUi?.textPrimary }]}>Theme</Text>
           <Card variant="elevated" padding="md" style={styles.prefCard}>
-            <View style={styles.prefRow}>
-              <View style={styles.prefTextBlock}>
-                <Text style={[styles.prefTitle, isDark && { color: darkUi?.textPrimary }]}>Dark mode</Text>
-                <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
-                  Use a darker app appearance for low-light environments.
-                </Text>
-              </View>
-              <Switch
-                value={isDark}
-                onValueChange={(nextValue) => {
-                  setDarkMode(nextValue);
-                  haptics.light();
-                }}
-                trackColor={{ false: COLORS.accent, true: COLORS.primary }}
-                thumbColor={COLORS.surface.base}
-                accessibilityLabel="Toggle dark mode"
-              />
-            </View>
+             {Object.values(THEMES).map((theme, index) => {
+              const isSelected = themeId === theme.id;
+              return (
+                <TouchableOpacity
+                  key={theme.id}
+                  onPress={() => {
+                    setTheme(theme.id as ThemeId);
+                    haptics.light();
+                  }}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.themeOption,
+                    index > 0 && styles.themeOptionBorder,
+                    isDark && index > 0 && { borderTopColor: darkUi?.border },
+                  ]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <View style={styles.prefTextBlock}>
+                    <Text style={[styles.prefTitle, isDark && { color: darkUi?.textPrimary }]}>
+                      {theme.label}
+                    </Text>
+                    {theme.id === 'easy' && (
+                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
+                        Larger text and buttons for easier reading.
+                      </Text>
+                    )}
+                    {theme.id === 'school' && (
+                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
+                        A calmer look for focused study.
+                      </Text>
+                    )}
+                  </View>
+                  <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                    {isSelected && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </Card>
         </View>
       </ScrollView>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
