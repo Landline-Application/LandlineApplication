@@ -39,6 +39,8 @@ export const NATIVE_STORAGE = {
     NOTIFICATION_FILTER_ENABLED: 'notification_filter_enabled',
     ALLOWED_NOTIFICATION_PACKAGES: 'allowed_notification_packages',
     EMERGENCY_PHONE_DIGITS: 'emergency_phone_digits',
+    /** Apps excluded from the in-app log; lives in landline_mode_prefs, not notification_logs */
+    BLOCKED_LOG_PACKAGES: 'blocked_log_packages',
   },
 } as const;
 

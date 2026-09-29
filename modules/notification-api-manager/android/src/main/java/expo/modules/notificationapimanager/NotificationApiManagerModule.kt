@@ -319,6 +319,69 @@ class NotificationApiManagerModule : Module() {
             true
         }
 
+        // Logged-apps filter (SCRUM-67/69): packages excluded from the in-app log.
+        // Lives in landline_mode_prefs so clearLoggedNotifications does not wipe it.
+        // Empty set = log all apps. Not the same as allowed_notification_packages.
+
+        Function("getBlockedLogPackages") {
+            val ctx = appContext.reactContext ?: return@Function emptyList<String>()
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("blocked_log_packages", emptySet()) ?: emptySet()
+            set.toList().sorted()
+        }
+
+        Function("setBlockedLogPackages") { packageNames: List<String> ->
+            val ctx = appContext.reactContext ?: return@Function false
+            val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
+            val cleaned = packageNames.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+            prefs.edit().putStringSet("blocked_log_packages", cleaned).apply()
+            true
+        }
+
+        /**
+         * User-facing apps with a launcher icon (includes Phone/Messages).
+         * Used by Logged apps settings. Does not require QUERY_ALL_PACKAGES.
+         */
+        AsyncFunction("getLaunchableApps") {
+            val ctx = appContext.reactContext ?: return@AsyncFunction emptyList<Map<String, String>>()
+            val pm = ctx.packageManager
+            val ownPackage = ctx.packageName
+            val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val resolved = try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.queryIntentActivities(
+                        launcherIntent,
+                        PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.queryIntentActivities(launcherIntent, PackageManager.MATCH_ALL)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationApiManager", "Failed to list launchable apps", e)
+                emptyList()
+            }
+
+            val seen = HashSet<String>()
+            val apps = mutableListOf<Map<String, String>>()
+            for (info in resolved) {
+                val packageName = info.activityInfo?.packageName ?: continue
+                if (packageName == ownPackage || !seen.add(packageName)) continue
+                val appName = try {
+                    info.loadLabel(pm).toString()
+                } catch (e: Exception) {
+                    packageName
+                }
+                apps.add(
+                    mapOf(
+                        "packageName" to packageName,
+                        "appName" to appName
+                    )
+                )
+            }
+            apps.sortedBy { it["appName"]?.lowercase() ?: it["packageName"].orEmpty() }
+        }
+
         /**
          * Get all logged notifications
          * Returns array of notification objects
@@ -363,7 +426,8 @@ class NotificationApiManagerModule : Module() {
         }
 
         /**
-         * Clear all logged notifications
+         * Clear all logged notifications.
+         * Does not touch blocked_log_packages (logged-apps filter lives in landline_mode_prefs).
          */
         Function("clearLoggedNotifications") {
             val ctx = appContext.reactContext ?: return@Function false
