@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Needed for Android 13+; harmless on older versions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- List user-facing apps for Logged apps settings without QUERY_ALL_PACKAGES -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
     
     <application>
         <!-- NotificationListenerService for capturing notifications during Landline mode -->

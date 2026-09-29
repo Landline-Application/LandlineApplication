@@ -50,6 +50,13 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         private const val KEY_ALLOWED_NOTIFICATION_PACKAGES = "allowed_notification_packages"
         private const val KEY_EMERGENCY_PHONE_DIGITS = "emergency_phone_digits"
 
+        /**
+         * Stored in landline_mode_prefs, not with notification_logs, so clearing the log
+         * does not reset this list. Empty set = log every app (today's default).
+         * Independent of [KEY_ALLOWED_NOTIFICATION_PACKAGES] (breakthrough whitelist).
+         */
+        private const val KEY_BLOCKED_LOG_PACKAGES = "blocked_log_packages"
+
         /** Second incoming call from the same number within this window rings through like an emergency. */
         private const val KEY_REPEAT_CALL_BYPASS_ENABLED = "repeat_call_bypass_enabled"
         private const val KEY_REPEAT_CALL_BYPASS_WINDOW_MS = "repeat_call_bypass_window_ms"
@@ -499,17 +506,21 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
 
             val replyText = if (autoReplied) repliedWithMessage[sbn.key] ?: getReplyMessage() else ""
-            logNotification(
-                packageName = packageName,
-                appName = appName,
-                title = title,
-                text = text,
-                timestamp = timestamp,
-                notificationId = notificationId,
-                autoReplied = autoReplied,
-                replyText = replyText
-            )
-            Log.d(TAG, "Logged notification from $appName: $title")
+            if (isPackageBlockedFromLog(packageName)) {
+                Log.d(TAG, "Skipping log for $packageName (user excluded this app from the log)")
+            } else {
+                logNotification(
+                    packageName = packageName,
+                    appName = appName,
+                    title = title,
+                    text = text,
+                    timestamp = timestamp,
+                    notificationId = notificationId,
+                    autoReplied = autoReplied,
+                    replyText = replyText
+                )
+                Log.d(TAG, "Logged notification from $appName: $title")
+            }
 
             // Emergency contacts and repeat-call bypass: leave the original notification
             // completely untouched so the system can ring/show the call.
@@ -706,6 +717,16 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         } catch (e: Exception) {
             packageName // Fall back to package name if can't get app name
         }
+    }
+
+    /**
+     * True when the user turned this app off in Logged apps settings.
+     * Empty blocked set means log all apps.
+     */
+    private fun isPackageBlockedFromLog(packageName: String): Boolean {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val blocked = prefs.getStringSet(KEY_BLOCKED_LOG_PACKAGES, emptySet()) ?: emptySet()
+        return blocked.contains(packageName)
     }
 
     /**

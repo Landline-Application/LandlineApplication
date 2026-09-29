@@ -85,6 +85,16 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return false;
   }
 
+  getBlockedLogPackages() {
+    return [];
+  }
+  setBlockedLogPackages() {
+    return false;
+  }
+  async getLaunchableApps() {
+    return [];
+  }
+
   // Auto-Reply (Web stubs - not supported)
   isAutoReplyEnabled() {
     return false;

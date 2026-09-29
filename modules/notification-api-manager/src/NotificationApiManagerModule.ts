@@ -32,6 +32,11 @@ export type NotificationLogKey = {
   id: number;
 };
 
+export type LaunchableApp = {
+  packageName: string;
+  appName: string;
+};
+
 type NotificationApiNativeModule = {
   hasPostPermission(): boolean;
   requestPostPermission(): Promise<boolean>;
@@ -60,6 +65,10 @@ type NotificationApiNativeModule = {
   setRepeatCallBypassEnabled(enabled: boolean): boolean;
   getRepeatCallBypassWindowMs(): number;
   setRepeatCallBypassWindowMs(windowMs: number): boolean;
+  // Logged apps (which packages are written to the in-app log)
+  getBlockedLogPackages(): string[];
+  setBlockedLogPackages(packageNames: string[]): boolean;
+  getLaunchableApps(): Promise<LaunchableApp[]>;
   // Auto-Reply
   isAutoReplyEnabled(): boolean;
   setAutoReplyEnabled(enabled: boolean): boolean;
@@ -219,6 +228,32 @@ export function setRepeatCallBypassWindowMs(windowMs: number) {
   return typeof fn === 'function' ? fn.call(Native, windowMs) : false;
 }
 
+/** Packages excluded from the notification log. Empty = log all apps. */
+export function getBlockedLogPackages(): string[] {
+  const fn = Native.getBlockedLogPackages;
+  return typeof fn === 'function' ? fn.call(Native) : [];
+}
+
+export function setBlockedLogPackages(packageNames: string[]): boolean {
+  const fn = Native.setBlockedLogPackages;
+  return typeof fn === 'function' ? fn.call(Native, packageNames) : false;
+}
+
+/** Installed apps with a launcher icon, for Logged apps settings. */
+export async function getLaunchableApps(): Promise<LaunchableApp[]> {
+  const fn = Native.getLaunchableApps;
+  if (typeof fn !== 'function') {
+    return [];
+  }
+  try {
+    const listed = await fn.call(Native);
+    return Array.isArray(listed) ? listed : [];
+  } catch (error) {
+    console.warn('getLaunchableApps native method failed', error);
+    return [];
+  }
+}
+
 /** True when notification permissions are on and at least one bypass app or emergency number is set. */
 export function isNotificationFilterEffective() {
   return isNotificationFilterEnabled() && isNotificationFilterConfigured();
@@ -347,6 +382,9 @@ export default {
   setRepeatCallBypassEnabled,
   getRepeatCallBypassWindowMs,
   setRepeatCallBypassWindowMs,
+  getBlockedLogPackages,
+  setBlockedLogPackages,
+  getLaunchableApps,
   isAutoReplyEnabled,
   setAutoReplyEnabled,
   setReplyMessage,
