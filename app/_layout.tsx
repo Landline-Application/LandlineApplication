@@ -21,6 +21,7 @@ import {
   hasCompletedOnboarding,
   migrateFromOldAcceptance,
 } from '@/utils/onboarding-storage';
+import { grandfatherUsageTutorial } from '@/utils/usage-tutorial-storage';
 import {
   Fraunces_600SemiBold,
   Fraunces_700Bold,
@@ -83,7 +84,6 @@ export default function RootLayout() {
           <ThemeContextProvider>
             <RootThemeProvider>
               <NavigationGate />
-              <StatusBar style="auto" />
             </RootThemeProvider>
           </ThemeContextProvider>
         </AuthProvider>
@@ -97,7 +97,10 @@ function RootThemeProvider({ children }: { children: React.ReactNode }) {
   if (!isHydrated) {
     return null;
   }
+
+  // Keep shared COLORS tokens in sync for components that read them at render time.
   applyThemeColors(isDark);
+
   const activeTheme: Theme = isDark
     ? {
         ...DarkTheme,
@@ -123,8 +126,9 @@ function RootThemeProvider({ children }: { children: React.ReactNode }) {
         },
       };
   return (
-    <ThemeProvider key={isDark ? 'dark' : 'light'} value={activeTheme}>
+    <ThemeProvider value={activeTheme}>
       {children}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }
@@ -147,6 +151,7 @@ function NavigationGate() {
     async function initialize() {
       try {
         await migrateFromOldAcceptance();
+        await grandfatherUsageTutorial();
 
         // Initialize retention settings (sets defaults for fresh installs)
         await initializeRetentionSettings();

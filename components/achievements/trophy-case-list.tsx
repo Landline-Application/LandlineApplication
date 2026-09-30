@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -8,8 +8,8 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Shadows, Spacing } from '@/constants/theme';
 import {
   ACHIEVEMENT_FAMILIES,
-  TROPHY_CATALOG,
   getHighestUnlockedBadge,
+  getVisibleTrophies,
   useAchievementsStore,
 } from '@/hooks/use-achievements-store';
 
@@ -24,15 +24,24 @@ type CaseItem = {
   /** Highest tier for progression badges; null = locked or special trophy. */
   tier: 'bronze' | 'silver' | 'gold' | null;
   kind: 'achievement' | 'special';
+  familyId?: (typeof ACHIEVEMENT_FAMILIES)[number]['id'];
+  emoji?: string;
 };
 
 /**
  * Visual trophy shelf: badge icon with title underneath.
- * Includes progression achievements and special trophies — not the Achievements tab list layout.
+ * Includes progression achievements and unlocked special/hidden trophies.
  */
 export function TrophyCaseList({ isDark = false }: TrophyCaseListProps) {
   const unlockedBadgeIds = useAchievementsStore((s) => s.unlockedBadgeIds);
   const unlockedTrophyIds = useAchievementsStore((s) => s.unlockedTrophyIds);
+  const checkAnniversaryTrophies = useAchievementsStore((s) => s.checkAnniversaryTrophies);
+
+  useEffect(() => {
+    checkAnniversaryTrophies();
+  }, [checkAnniversaryTrophies]);
+
+  const visibleTrophies = getVisibleTrophies(unlockedTrophyIds);
 
   const items: CaseItem[] = [
     ...ACHIEVEMENT_FAMILIES.map((family) => {
@@ -43,14 +52,16 @@ export function TrophyCaseList({ isDark = false }: TrophyCaseListProps) {
         unlocked: highest != null,
         tier: highest?.tier ?? null,
         kind: 'achievement' as const,
+        familyId: family.id,
       };
     }),
-    ...TROPHY_CATALOG.map((trophy) => ({
+    ...visibleTrophies.map((trophy) => ({
       key: trophy.id,
       title: trophy.title,
       unlocked: unlockedTrophyIds.includes(trophy.id),
       tier: null,
       kind: 'special' as const,
+      emoji: trophy.emoji,
     })),
   ];
 
@@ -65,7 +76,12 @@ export function TrophyCaseList({ isDark = false }: TrophyCaseListProps) {
             accessibilityLabel={`${item.title}${item.unlocked ? ', collected' : ', locked'}`}
           >
             {item.kind === 'achievement' ? (
-              <BadgeThumbnail tier={item.tier} size={64} />
+              <BadgeThumbnail
+                tier={item.tier}
+                familyId={item.familyId}
+                locked={!item.unlocked}
+                size={64}
+              />
             ) : (
               <View
                 style={[
@@ -73,11 +89,15 @@ export function TrophyCaseList({ isDark = false }: TrophyCaseListProps) {
                   item.unlocked ? styles.specialIconUnlocked : styles.specialIconLocked,
                 ]}
               >
-                <MaterialIcons
-                  name={item.unlocked ? 'military-tech' : 'lock'}
-                  size={28}
-                  color={item.unlocked ? COLORS.primary : COLORS.text.muted}
-                />
+                {item.emoji && item.unlocked ? (
+                  <Text style={styles.specialEmoji}>{item.emoji}</Text>
+                ) : (
+                  <MaterialIcons
+                    name={item.unlocked ? 'military-tech' : 'lock'}
+                    size={28}
+                    color={item.unlocked ? COLORS.primary : COLORS.text.muted}
+                  />
+                )}
               </View>
             )}
             <Text
@@ -128,6 +148,11 @@ const styles = StyleSheet.create({
   specialIconLocked: {
     backgroundColor: COLORS.muted,
     borderColor: COLORS.surface.border,
+  },
+  specialEmoji: {
+    fontSize: 28,
+    lineHeight: 34,
+    textAlign: 'center',
   },
   badgeTitle: {
     marginTop: Spacing.sm,

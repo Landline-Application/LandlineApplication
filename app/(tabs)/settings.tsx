@@ -19,6 +19,8 @@ import { AppAttentionCard } from '@/components/settings/app-attention-card';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { TourAnchor, TourScrollView } from '@/components/usage-tutorial/tour-anchor';
+import { openTutorialTab } from '@/components/usage-tutorial/open-tutorial-tab';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAppTheme } from '@/contexts/theme-context';
@@ -29,6 +31,7 @@ import {
   useAchievementsStore,
 } from '@/hooks/use-achievements-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import { useUsageTutorialStore } from '@/hooks/use-usage-tutorial-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
@@ -282,7 +285,8 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, isDark && { backgroundColor: '#5f5f5f' }]}>
-      <ScrollView
+      <TourScrollView
+        scrollKey="settings"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
       >
@@ -294,7 +298,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Account Section */}
-        <View style={styles.section}>
+        <TourAnchor id="settings-account" scrollKey="settings" style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Account</Text>
 
           {isAuthenticated ? (
@@ -437,10 +441,10 @@ export default function SettingsScreen() {
               </View>
             </Card>
           )}
-        </View>
+        </TourAnchor>
 
         {/* Achievements — opens dedicated badge list */}
-        <View style={styles.section}>
+        <TourAnchor id="settings-achievements" scrollKey="settings" style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Achievements</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
@@ -468,12 +472,44 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
           </Card>
+        </TourAnchor>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Help</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                openTutorialTab('index');
+                useUsageTutorialStore.getState().start();
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="App tour. Walk through how to use Landline"
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="school" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    App tour
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    Walk through how to use Landline
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
         </View>
 
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Preferences</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
+            <TourAnchor id="settings-general" scrollKey="settings">
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -496,9 +532,11 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+            </TourAnchor>
 
             <View style={styles.itemDivider} />
 
+            <TourAnchor id="settings-auto-reply" scrollKey="settings">
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -526,9 +564,11 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+            </TourAnchor>
 
             <View style={styles.itemDivider} />
 
+            <TourAnchor id="settings-emergency" scrollKey="settings">
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -551,10 +591,12 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+            </TourAnchor>
 
             {Platform.OS === 'android' && (
               <>
                 <View style={styles.itemDivider} />
+                <TourAnchor id="settings-repeat-call" scrollKey="settings">
                 <TouchableOpacity
                   onPress={() => {
                     haptics.light();
@@ -567,19 +609,23 @@ export default function SettingsScreen() {
                       <MaterialIcons name="phone-callback" size={22} color={COLORS.primary} />
                     </View>
                     <View style={styles.menuItemContent}>
-                      <Text style={styles.menuItemTitle}>Repeat-call bypass</Text>
-                      <Text style={styles.menuItemSubtitle}>
+                      <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                        Repeat-call bypass
+                      </Text>
+                      <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
                         Let a second call from the same number through within a short window
                       </Text>
                     </View>
                     <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
                   </View>
                 </TouchableOpacity>
+                </TourAnchor>
               </>
             )}
 
             <View style={styles.itemDivider} />
 
+            <TourAnchor id="settings-design" scrollKey="settings">
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -600,9 +646,11 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+            </TourAnchor>
 
             <View style={styles.itemDivider} />
 
+            <TourAnchor id="settings-feedback" scrollKey="settings">
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -636,11 +684,12 @@ export default function SettingsScreen() {
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>
             </TouchableOpacity>
+            </TourAnchor>
           </Card>
         </View>
 
         {/* App Permissions Section */}
-        <View style={styles.section}>
+        <TourAnchor id="settings-permissions" scrollKey="settings" style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Permissions</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
@@ -664,14 +713,14 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
           </Card>
-        </View>
+        </TourAnchor>
 
         {/* App Attention Section */}
         {Platform.OS === 'android' && (
-          <View style={styles.section}>
+          <TourAnchor id="settings-app-attention" scrollKey="settings" style={styles.section}>
             <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Attention</Text>
             <AppAttentionCard limit={5} showViewMore />
-          </View>
+          </TourAnchor>
         )}
 
         {/* Tools Section */}
@@ -730,7 +779,7 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
-        <View style={styles.section}>
+        <TourAnchor id="settings-data" scrollKey="settings" style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Data Management</Text>
           <Card variant="elevated" padding="lg" style={styles.card}>
             {/* Retention Period Row */}
@@ -794,7 +843,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </Card>
-        </View>
+        </TourAnchor>
 
         {/* Developer Testing */}
         <View style={styles.section}>
@@ -812,7 +861,7 @@ export default function SettingsScreen() {
           <Text style={styles.versionText}>Landline v0.1.0 (Alpha)</Text>
           <Text style={styles.copyrightText}>© 2026 Landline Application</Text>
         </View>
-      </ScrollView>
+      </TourScrollView>
 
       {/* Edit Local Display Name Modal */}
       <Modal

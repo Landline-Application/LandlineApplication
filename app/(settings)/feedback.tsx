@@ -16,8 +16,11 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import {
+  SettingsDescriptionCard,
+  SettingsPageHeader,
+} from '@/components/settings/settings-page-header';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAppTheme } from '@/contexts/theme-context';
@@ -38,19 +41,13 @@ const MAX_MESSAGE_LENGTH = 2000;
 const D_BG = '#5f5f5f';
 const D_BORDER = '#3a3a3a';
 const D_SURFACE = '#4a4a4a';
+const D_ACCENT = '#B8C4A8';
+const D_MUTED = '#A8A8A8';
+const D_FG = '#FFFFFF';
 
 export default function FeedbackScreen() {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
-  const d = isDark
-    ? {
-        headerBg: D_BG,
-        border: D_BORDER,
-        text: '#FFFFFF',
-        muted: '#E0E0E0',
-        chipInactive: '#4f4f4f',
-      }
-    : null;
   const { user } = useAuth();
   const messageRef = useRef<TextInput>(null);
 
@@ -95,38 +92,24 @@ export default function FeedbackScreen() {
 
   return (
     <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top },
-          isDark && { backgroundColor: d?.headerBg, borderBottomColor: d?.border },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={d?.text ?? COLORS.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={[styles.headerTitle, isDark && { color: d?.text }]}>Send Feedback</Text>
-          <Text style={[styles.headerSubtitle, isDark && { color: d?.muted }]}>
-            Help us improve Landline
-          </Text>
-        </View>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SettingsPageHeader title="Send Feedback" paddingTop={insets.top} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.section}>
+          <SettingsDescriptionCard
+            icon="feedback"
+            title="Send Feedback"
+            body="Report a bug, request a feature, or share thoughts. Your account info is attached so we can follow up if needed."
+          />
+        </View>
+
         {/* Category Picker */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
+          <Text style={[styles.sectionLabel, isDark && { color: D_ACCENT }]}>
             {"What's this about?"}
           </Text>
           <View style={styles.categoryRow}>
@@ -140,7 +123,7 @@ export default function FeedbackScreen() {
                     isSelected && styles.categoryChipSelected,
                     isDark &&
                       !isSelected && {
-                        backgroundColor: d?.chipInactive,
+                        backgroundColor: '#4f4f4f',
                         borderColor: D_BORDER,
                       },
                   ]}
@@ -153,15 +136,13 @@ export default function FeedbackScreen() {
                   <MaterialIcons
                     name={icon}
                     size={18}
-                    color={
-                      isSelected ? COLORS.primary : isDark ? d?.muted : COLORS.text.muted
-                    }
+                    color={isSelected ? COLORS.primary : isDark ? D_MUTED : COLORS.text.muted}
                   />
                   <Text
                     style={[
                       styles.categoryChipText,
                       isSelected && styles.categoryChipTextSelected,
-                      isDark && !isSelected && { color: d?.muted },
+                      isDark && !isSelected && { color: D_MUTED },
                     ]}
                   >
                     {label}
@@ -174,16 +155,24 @@ export default function FeedbackScreen() {
 
         {/* Message Input */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
-            Your message
-          </Text>
-          <Card variant="elevated" padding="none" style={styles.card}>
+          <Text style={[styles.sectionLabel, isDark && { color: D_ACCENT }]}>Your message</Text>
+          <View
+            style={[
+              styles.card,
+              isDark && {
+                backgroundColor: D_SURFACE,
+                borderColor: D_BORDER,
+                shadowColor: 'transparent',
+                elevation: 0,
+              },
+            ]}
+          >
             <TextInput
               ref={messageRef}
               style={[
                 styles.messageInput,
                 isDark && {
-                  color: '#FFFFFF',
+                  color: D_FG,
                   backgroundColor: '#3d3d3d',
                 },
               ]}
@@ -203,17 +192,22 @@ export default function FeedbackScreen() {
               autoFocus={false}
             />
             <View style={styles.charCount}>
-              <Text style={[styles.charCountText, isDark && { color: d?.muted }]}>
+              <Text style={[styles.charCountText, isDark && { color: D_MUTED }]}>
                 {trimmedMessage.length} / {MAX_MESSAGE_LENGTH}
               </Text>
             </View>
-          </Card>
+          </View>
         </View>
 
         {/* Context Info */}
-        <View style={[styles.infoBox, isDark && { backgroundColor: D_SURFACE, borderWidth: 1, borderColor: D_BORDER }]}>
-          <MaterialIcons name="info-outline" size={16} color={d?.muted ?? COLORS.text.muted} />
-          <Text style={[styles.infoText, isDark && { color: d?.muted }]}>
+        <View
+          style={[
+            styles.infoBox,
+            isDark && { backgroundColor: D_SURFACE, borderWidth: 1, borderColor: D_BORDER },
+          ]}
+        >
+          <MaterialIcons name="info-outline" size={16} color={isDark ? D_MUTED : COLORS.text.muted} />
+          <Text style={[styles.infoText, isDark && { color: D_MUTED }]}>
             Your account info will be attached so we can follow up if needed.
           </Text>
         </View>
@@ -228,6 +222,8 @@ export default function FeedbackScreen() {
           disabled={!canSubmit}
           loading={isSubmitting}
         />
+
+        <View style={{ height: Spacing.jumbo }} />
       </ScrollView>
     </View>
   );
@@ -238,47 +234,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.full,
-  },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: COLORS.foreground,
-    fontFamily: 'Fraunces_700Bold',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: COLORS.text.muted,
-    fontFamily: 'Nunito_400Regular',
-    marginTop: 2,
-  },
-  headerSpacer: {
-    width: 40,
-  },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.jumbo,
   },
   section: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,
   },
   sectionLabel: {
     fontSize: 13,
@@ -319,6 +280,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   card: {
+    backgroundColor: COLORS.surface.base,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
     ...Shadows.sm,
   },
   messageInput: {
@@ -350,9 +316,9 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.text.muted,
     fontFamily: 'Nunito_400Regular',
-    lineHeight: 18,
+    lineHeight: 17,
   },
 });

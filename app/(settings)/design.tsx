@@ -1,55 +1,30 @@
 import React from 'react';
 
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { router } from 'expo-router';
-
-import { Card } from '@/components/ui/card';
-import { MaterialIcons } from '@/components/ui/icon-symbol';
-import { COLORS, Shadows, Spacing } from '@/constants/theme';
+import {
+  SettingsDescriptionCard,
+  SettingsPageHeader,
+} from '@/components/settings/settings-page-header';
+import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { haptics } from '@/services/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const D_BG = '#5f5f5f';
+const D_SURFACE = '#4a4a4a';
+const D_BORDER = '#3a3a3a';
+const D_FG = '#FFFFFF';
+const D_SOFT = '#E0E0E0';
+const D_ACCENT = '#B8C4A8';
+
 export default function DesignScreen() {
   const insets = useSafeAreaInsets();
   const { isDark, setDarkMode } = useAppTheme();
-  const darkUi = isDark
-    ? {
-        bg: '#5f5f5f',
-        border: '#3a3a3a',
-        textPrimary: '#FFFFFF',
-        textSecondary: '#F3F3F3',
-      }
-    : null;
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top },
-        isDark && { backgroundColor: darkUi?.bg },
-      ]}
-    >
-      <View style={[styles.header, isDark && { backgroundColor: darkUi?.bg, borderBottomColor: darkUi?.border }]}>
-        <TouchableOpacity
-          onPress={() => {
-            haptics.light();
-            router.back();
-          }}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={12}
-        >
-          <MaterialIcons name="arrow-back" size={22} color={COLORS.primary} />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]} accessibilityRole="header">
-          Design
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
+      <SettingsPageHeader title="Design" paddingTop={insets.top} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -57,113 +32,86 @@ export default function DesignScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: darkUi?.textPrimary }]}>Theme</Text>
-          <Card variant="elevated" padding="md" style={styles.prefCard}>
-             {Object.values(THEMES).map((theme, index) => {
-              const isSelected = themeId === theme.id;
-              return (
-                <TouchableOpacity
-                  key={theme.id}
-                  onPress={() => {
-                    setTheme(theme.id as ThemeId);
-                    haptics.light();
-                  }}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.themeOption,
-                    index > 0 && styles.themeOptionBorder,
-                    isDark && index > 0 && { borderTopColor: darkUi?.border },
-                  ]}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isSelected }}
-                >
-                  <View style={styles.prefTextBlock}>
-                    <Text style={[styles.prefTitle, isDark && { color: darkUi?.textPrimary }]}>
-                      {theme.label}
-                    </Text>
-                    {theme.id === 'easy' && (
-                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
-                        Larger text and buttons for easier reading.
-                      </Text>
-                    )}
-                    {theme.id === 'school' && (
-                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
-                        A calmer look for focused study.
-                      </Text>
-                    )}
-                  </View>
-                  <View style={[styles.radio, isSelected && styles.radioSelected]}>
-                    {isSelected && <View style={styles.radioInner} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </Card>
+          <SettingsDescriptionCard
+            icon="palette"
+            title="Design"
+            body="Choose how Landline looks. Dark mode softens the screen for low-light use without changing how the app works."
+          />
         </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, isDark && { color: D_ACCENT }]}>Theme</Text>
+          <View
+            style={[
+              styles.card,
+              isDark && {
+                backgroundColor: D_SURFACE,
+                borderColor: D_BORDER,
+                shadowColor: 'transparent',
+                elevation: 0,
+              },
+            ]}
+          >
+            <View style={styles.prefRow}>
+              <View style={styles.prefTextBlock}>
+                <Text style={[styles.prefTitle, isDark && { color: D_FG }]}>Dark mode</Text>
+                <Text style={[styles.prefSubtitle, isDark && { color: D_SOFT }]}>
+                  Use a darker app appearance for low-light environments.
+                </Text>
+              </View>
+              <Switch
+                value={isDark}
+                onValueChange={(nextValue) => {
+                  setDarkMode(nextValue);
+                  haptics.light();
+                }}
+                trackColor={{ false: COLORS.accent, true: COLORS.primary }}
+                thumbColor={COLORS.surface.base}
+                accessibilityLabel="Toggle dark mode"
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={{ height: Spacing.jumbo }} />
       </ScrollView>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface.border,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    paddingRight: Spacing.md,
-    gap: 2,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontFamily: 'Nunito_600SemiBold',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 20,
-    color: COLORS.foreground,
-    fontFamily: 'Fraunces_600SemiBold',
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 60,
-  },
   scrollContent: {
-    paddingBottom: Spacing.jumbo,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
   },
   section: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
+    marginBottom: Spacing.xxl,
   },
-  sectionHeader: {
-    fontSize: 18,
+  sectionLabel: {
+    fontSize: 13,
     color: COLORS.primary,
-    fontFamily: 'Fraunces_600SemiBold',
-    marginBottom: Spacing.lg,
+    fontFamily: 'Nunito_600SemiBold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.md,
     marginLeft: Spacing.xs,
   },
-  prefCard: {
+  card: {
+    backgroundColor: COLORS.surface.base,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: Spacing.lg,
     ...Shadows.sm,
   },
   prefRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
     gap: Spacing.md,
   },
   prefTextBlock: {

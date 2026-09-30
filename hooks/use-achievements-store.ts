@@ -371,19 +371,80 @@ export type TrophyKind = 'holiday' | 'anniversary' | 'special';
 
 export type TrophyId = string;
 
+export type TrophyUnlockRule = { type: 'anniversary_months'; months: number };
+
 export interface TrophyDefinition {
   id: TrophyId;
   title: string;
   description: string;
   kind: TrophyKind;
+  /** Shown on the trophy shelf when unlocked. */
+  emoji?: string;
+  /**
+   * Hidden trophies stay out of the Trophy Case until unlocked
+   * (classic secret-achievement behavior).
+   */
+  hidden?: boolean;
+  unlock?: TrophyUnlockRule;
 }
+
+export const ANNIVERSARY_6_MONTHS_ID = 'anniversary_6_months' as const;
+export const ANNIVERSARY_1_YEAR_ID = 'anniversary_1_year' as const;
+export const ANNIVERSARY_2_YEARS_ID = 'anniversary_2_years' as const;
+export const ANNIVERSARY_3_YEARS_ID = 'anniversary_3_years' as const;
+export const ANNIVERSARY_5_YEARS_ID = 'anniversary_5_years' as const;
 
 /**
  * Special collectible badges (holidays, anniversaries, etc.).
  * Kept separate from ACHIEVEMENT_FAMILIES — they do not use bronze/silver/gold tiers.
- * Add entries here as you introduce them; unlock logic can call unlockTrophy(id).
  */
-export const TROPHY_CATALOG: readonly TrophyDefinition[] = [] as const;
+export const TROPHY_CATALOG: readonly TrophyDefinition[] = [
+  {
+    id: ANNIVERSARY_6_MONTHS_ID,
+    title: 'Half-Year',
+    description: 'Six months with Landline',
+    kind: 'anniversary',
+    emoji: '🎂',
+    hidden: true,
+    unlock: { type: 'anniversary_months', months: 6 },
+  },
+  {
+    id: ANNIVERSARY_1_YEAR_ID,
+    title: 'One Year',
+    description: 'One year with Landline',
+    kind: 'anniversary',
+    emoji: '🎂',
+    hidden: true,
+    unlock: { type: 'anniversary_months', months: 12 },
+  },
+  {
+    id: ANNIVERSARY_2_YEARS_ID,
+    title: 'Two Years',
+    description: 'Two years with Landline',
+    kind: 'anniversary',
+    emoji: '🎂',
+    hidden: true,
+    unlock: { type: 'anniversary_months', months: 24 },
+  },
+  {
+    id: ANNIVERSARY_3_YEARS_ID,
+    title: 'Three Years',
+    description: 'Three years with Landline',
+    kind: 'anniversary',
+    emoji: '🎂',
+    hidden: true,
+    unlock: { type: 'anniversary_months', months: 36 },
+  },
+  {
+    id: ANNIVERSARY_5_YEARS_ID,
+    title: 'Five Years',
+    description: 'Five years with Landline',
+    kind: 'anniversary',
+    emoji: '🎂',
+    hidden: true,
+    unlock: { type: 'anniversary_months', months: 60 },
+  },
+] as const;
 
 export function trophyKindLabel(kind: TrophyKind): string {
   switch (kind) {
@@ -394,6 +455,20 @@ export function trophyKindLabel(kind: TrophyKind): string {
     case 'special':
       return 'Special';
   }
+}
+
+/** Full calendar months elapsed from a start timestamp to `now`. */
+export function calendarMonthsElapsed(fromMs: number, nowMs: number = Date.now()): number {
+  const from = new Date(fromMs);
+  const to = new Date(nowMs);
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+/** Trophies visible in the case: non-hidden always, hidden only after unlock. */
+export function getVisibleTrophies(unlockedTrophyIds: readonly TrophyId[]): TrophyDefinition[] {
+  return TROPHY_CATALOG.filter((trophy) => !trophy.hidden || unlockedTrophyIds.includes(trophy.id));
 }
 
 function badgesUnlockedBySessionDuration(
@@ -446,12 +521,33 @@ interface AchievementsState {
   lastActiveDay: string | null;
   /** Lifetime notifications logged while in Landline Mode. */
   totalNotificationsBlocked: number;
+  /**
+   * ms timestamp of the first Landline session recorded on this device.
+   * Anniversary trophies use this — no account/profile required.
+   */
+  journeyStartedAt: number | null;
   /** Called when a Landline session successfully ends. */
   recordSessionEnded: (input: RecordSessionEndedInput) => void;
+  /** Re-check anniversary trophies (e.g. when opening Trophy Case). */
+  checkAnniversaryTrophies: () => void;
   unlockTrophy: (id: TrophyId) => void;
   isUnlocked: (id: BadgeId) => boolean;
   isTrophyUnlocked: (id: TrophyId) => boolean;
   reset: () => void;
+}
+
+function anniversaryTrophiesToUnlock(
+  journeyStartedAt: number,
+  unlockedTrophyIds: readonly TrophyId[],
+  nowMs: number = Date.now(),
+): TrophyId[] {
+  const months = calendarMonthsElapsed(journeyStartedAt, nowMs);
+  return TROPHY_CATALOG.filter(
+    (trophy) =>
+      trophy.unlock?.type === 'anniversary_months' &&
+      months >= trophy.unlock.months &&
+      !unlockedTrophyIds.includes(trophy.id),
+  ).map((trophy) => trophy.id);
 }
 
 export const useAchievementsStore = create<AchievementsState>()(
@@ -463,11 +559,24 @@ export const useAchievementsStore = create<AchievementsState>()(
       longestStreak: 0,
       lastActiveDay: null,
       totalNotificationsBlocked: 0,
+      journeyStartedAt: null,
 
       recordSessionEnded: ({ durationMs, notificationsBlocked = 0 }) => {
         const state = get();
         let unlockedBadgeIds = [...state.unlockedBadgeIds];
-        let { currentStreak, longestStreak, lastActiveDay, totalNotificationsBlocked } = state;
+        let unlockedTrophyIds = [...state.unlockedTrophyIds];
+        let {
+          currentStreak,
+          longestStreak,
+          lastActiveDay,
+          totalNotificationsBlocked,
+          journeyStartedAt,
+        } = state;
+
+        // First session on this device starts the anniversary clock
+        if (journeyStartedAt == null) {
+          journeyStartedAt = Date.now();
+        }
 
         const timeAwayUnlocks = badgesUnlockedBySessionDuration(durationMs, unlockedBadgeIds);
         if (timeAwayUnlocks.length > 0) {
@@ -501,13 +610,42 @@ export const useAchievementsStore = create<AchievementsState>()(
           }
         }
 
+        const anniversaryUnlocks = anniversaryTrophiesToUnlock(
+          journeyStartedAt,
+          unlockedTrophyIds,
+        );
+        if (anniversaryUnlocks.length > 0) {
+          unlockedTrophyIds = [...unlockedTrophyIds, ...anniversaryUnlocks];
+        }
+
         set({
           unlockedBadgeIds,
+          unlockedTrophyIds,
           currentStreak,
           longestStreak,
           lastActiveDay,
           totalNotificationsBlocked,
+          journeyStartedAt,
         });
+      },
+
+      checkAnniversaryTrophies: () => {
+        const state = get();
+        let { journeyStartedAt, unlockedTrophyIds } = state;
+
+        // Existing installs: start anniversary clock when we first see prior Landline use
+        if (journeyStartedAt == null) {
+          if (state.lastActiveDay || state.unlockedBadgeIds.length > 0) {
+            journeyStartedAt = Date.now();
+            set({ journeyStartedAt });
+          } else {
+            return;
+          }
+        }
+
+        const newlyUnlocked = anniversaryTrophiesToUnlock(journeyStartedAt, unlockedTrophyIds);
+        if (newlyUnlocked.length === 0) return;
+        set({ unlockedTrophyIds: [...unlockedTrophyIds, ...newlyUnlocked] });
       },
 
       unlockTrophy: (id: TrophyId) => {
@@ -529,6 +667,7 @@ export const useAchievementsStore = create<AchievementsState>()(
           longestStreak: 0,
           lastActiveDay: null,
           totalNotificationsBlocked: 0,
+          journeyStartedAt: null,
         });
       },
     }),
@@ -542,6 +681,7 @@ export const useAchievementsStore = create<AchievementsState>()(
         longestStreak: state.longestStreak,
         lastActiveDay: state.lastActiveDay,
         totalNotificationsBlocked: state.totalNotificationsBlocked,
+        journeyStartedAt: state.journeyStartedAt,
       }),
     },
   ),

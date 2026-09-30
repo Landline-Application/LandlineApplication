@@ -15,6 +15,9 @@ export const STORAGE_KEYS = {
   /** Device-local flag: user finished onboarding (see utils/onboarding-storage.ts) */
   ONBOARDING_COMPLETE: '@landline_onboarding_complete',
 
+  /** Device-local flag: usage tour pending or finished (see utils/usage-tutorial-storage.ts) */
+  USAGE_TUTORIAL: '@landline_usage_tutorial',
+
   // User preferences — persisted locally and synced to Firestore when authenticated
   USER_PREFERENCES: '@landline_user_preferences',
 

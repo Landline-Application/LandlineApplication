@@ -112,7 +112,12 @@ export default function AchievementFamilyScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.hero}>
-          <BadgeThumbnail tier={highest?.tier ?? null} size={72} />
+          <BadgeThumbnail
+            tier={highest?.tier ?? null}
+            familyId={family.id}
+            locked={highest == null}
+            size={72}
+          />
           <Text style={[styles.heroTitle, isDark && { color: '#FFFFFF' }]}>{family.title}</Text>
           <Text style={[styles.heroSummary, isDark && { color: '#F3F3F3' }]}>{family.summary}</Text>
           {isStreakFamily ? (
