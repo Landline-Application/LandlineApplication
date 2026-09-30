@@ -84,6 +84,8 @@ export async function markLegalAccepted(): Promise<void> {
 /** Clear completion so the user sees onboarding again (e.g. Settings reset). */
 export async function resetOnboarding(): Promise<void> {
   await StorageManager.removeItem(ONBOARDING_KEY);
+  const { clearUsageTutorial } = await import('@/utils/usage-tutorial-storage');
+  await clearUsageTutorial();
 }
 
 /**

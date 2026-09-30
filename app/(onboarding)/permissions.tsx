@@ -9,7 +9,7 @@ import { OnboardingProgress } from '@/components/onboarding/onboarding-progress'
 import { Permission, PermissionCards, usePermissions } from '@/components/permissions';
 import { Button } from '@/components/ui/button';
 import { COLORS, Fonts, Radius } from '@/constants/theme';
-import { markOnboardingComplete } from '@/utils/onboarding-storage';
+import { completeOnboardingAndQueueTutorial } from '@/utils/usage-tutorial-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PermissionsScreen() {
@@ -46,7 +46,7 @@ export default function PermissionsScreen() {
   const handleContinue = useCallback(async () => {
     if (!allGranted) return;
     try {
-      await markOnboardingComplete();
+      await completeOnboardingAndQueueTutorial();
       router.replace('/(tabs)');
     } catch {
       Alert.alert('Error', 'Could not save progress. Please try again.');

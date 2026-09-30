@@ -8,7 +8,7 @@ import { SignInForm } from '@/components/auth/sign-in-form';
 import { Blob, Button, Page } from '@/components/onboarding/onboarding-primitives';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Fonts } from '@/constants/theme';
-import { markOnboardingComplete } from '@/utils/onboarding-storage';
+import { completeOnboardingAndQueueTutorial } from '@/utils/usage-tutorial-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OnboardingSignInPage() {
@@ -60,9 +60,9 @@ export default function OnboardingSignInPage() {
         <SignInForm
           onSuccess={async () => {
             try {
-              await markOnboardingComplete();
+              await completeOnboardingAndQueueTutorial();
             } catch (e) {
-              console.warn('markOnboardingComplete', e);
+              console.warn('completeOnboardingAndQueueTutorial', e);
             }
             router.replace('/(tabs)');
           }}
@@ -77,9 +77,9 @@ export default function OnboardingSignInPage() {
           label="Skip for now"
           onPress={async () => {
             try {
-              await markOnboardingComplete();
+              await completeOnboardingAndQueueTutorial();
             } catch (e) {
-              console.warn('markOnboardingComplete', e);
+              console.warn('completeOnboardingAndQueueTutorial', e);
             }
             router.replace('/(tabs)');
           }}

@@ -12,8 +12,10 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
-
+import {
+  SettingsDescriptionCard,
+  SettingsPageHeader,
+} from '@/components/settings/settings-page-header';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
@@ -80,10 +82,6 @@ export default function AutoReplyScreen() {
   /** Runtime dark styles — StyleSheet snapshots light COLORS at module load */
   const d = isDark
     ? {
-        header: {
-          backgroundColor: DARK_BG,
-          borderBottomColor: DARK_BORDER,
-        },
         card: {
           backgroundColor: DARK_SURFACE,
           borderColor: DARK_BORDER,
@@ -193,34 +191,24 @@ export default function AutoReplyScreen() {
 
   return (
     <View style={[styles.container, isDark && { backgroundColor: DARK_BG }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }, d?.header]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={d?.text ?? COLORS.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={[styles.headerTitle, isDark && { color: d?.text }]}>Auto-Reply</Text>
-          <Text style={[styles.headerSubtitle, isDark && { color: d?.muted }]}>
-            Respond automatically while focused
-          </Text>
-        </View>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SettingsPageHeader title="Auto-Reply" paddingTop={insets.top} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.section}>
+          <SettingsDescriptionCard
+            icon="reply"
+            title="Auto-Reply"
+            body="Send a short reply automatically while you're in Landline Mode, so people know you're focused and will get back to them."
+          />
+        </View>
+
         {/* ── Status / Enable section ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
-            Auto-Reply
-          </Text>
+          <Text style={[styles.sectionLabel, isDark && { color: '#B8C4A8' }]}>Auto-Reply</Text>
 
           {autoReplyDisabled && (
             <View style={styles.disabledBanner}>
@@ -315,7 +303,7 @@ export default function AutoReplyScreen() {
 
         {/* ── Reply message ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>Reply Message</Text>
+          <Text style={[styles.sectionLabel, isDark && { color: '#B8C4A8' }]}>Reply Message</Text>
 
           {/* Current message preview */}
           {!!message && (
@@ -409,9 +397,7 @@ export default function AutoReplyScreen() {
 
         {/* ── App filter ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, isDark && { color: COLORS.primary }]}>
-            Reply to Apps
-          </Text>
+          <Text style={[styles.sectionLabel, isDark && { color: '#B8C4A8' }]}>Reply to Apps</Text>
           {APP_PRESETS.map((preset) => {
             const isActive =
               preset.packages.length === allowedApps.length &&
@@ -474,42 +460,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.full,
-  },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: COLORS.foreground,
-    fontFamily: 'Fraunces_700Bold',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.text.muted,
-    fontFamily: 'Nunito_400Regular',
-    marginTop: 1,
-  },
-  headerSpacer: {
-    width: 40,
   },
 
   // Scroll content

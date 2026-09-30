@@ -52,7 +52,11 @@ export function AchievementsFamilyList({
               accessibilityLabel={`${family.title}. ${progress}. ${family.summary}`}
             >
               <View style={styles.row}>
-                <BadgeThumbnail tier={highest?.tier ?? null} />
+                <BadgeThumbnail
+                  tier={highest?.tier ?? null}
+                  familyId={family.id}
+                  locked={highest == null}
+                />
                 <View style={styles.content}>
                   <Text
                     style={[
@@ -108,6 +112,7 @@ export function BadgeTierList({ family, isDark = false }: BadgeTierListProps) {
         <TierRow
           key={badge.id}
           badge={badge}
+          familyId={family.id}
           unlocked={unlockedBadgeIds.includes(badge.id)}
           isDark={isDark}
           showDivider={index > 0}
@@ -119,11 +124,13 @@ export function BadgeTierList({ family, isDark = false }: BadgeTierListProps) {
 
 function TierRow({
   badge,
+  familyId,
   unlocked,
   isDark,
   showDivider,
 }: {
   badge: BadgeDefinition;
+  familyId: AchievementFamily['id'];
   unlocked: boolean;
   isDark: boolean;
   showDivider: boolean;
@@ -137,7 +144,11 @@ function TierRow({
         accessibilityRole="text"
         accessibilityLabel={`${badge.title}, ${badge.tier}${unlocked ? ', unlocked' : ', locked'}. ${badge.description}`}
       >
-        <BadgeThumbnail tier={unlocked ? badge.tier : null} />
+        <BadgeThumbnail
+          tier={badge.tier}
+          familyId={familyId}
+          locked={!unlocked}
+        />
         <View style={styles.content}>
           <Text
             style={[

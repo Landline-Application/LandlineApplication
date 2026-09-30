@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Radius, Spacing, TouchTargets } from '@/constants/theme';
+import { useAppTheme } from '@/contexts/theme-context';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
 import { haptics } from '@/services/haptics';
@@ -79,6 +80,17 @@ export function AppAttentionCard({
   onViewMore,
   style,
 }: AppAttentionCardProps) {
+  const { isDark } = useAppTheme();
+  const darkUi = isDark
+    ? {
+        border: '#3a3a3a',
+        surfaceAlt: '#4f4f4f',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#F3F3F3',
+        textMuted: '#E0E0E0',
+      }
+    : null;
+
   const [hasUsagePermission, setHasUsagePermission] = useState(false);
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
   const [selectedMetric, setSelectedMetric] = useState<AppAttentionMetric>('screenTime');
@@ -237,7 +249,9 @@ export function AppAttentionCard({
     <Card variant="outlined" shadow="sm" padding="lg" borderRadius="xl" style={style}>
       {/* Section header row */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionLabel}>App Attention</Text>
+        <Text style={[styles.sectionLabel, isDark && { color: darkUi?.textPrimary }]}>
+          App Attention
+        </Text>
         <View style={styles.usageStatusChip}>
           <StatusIndicator
             active={hasUsagePermission}
@@ -245,13 +259,13 @@ export function AppAttentionCard({
             showGlow={false}
             color={hasUsagePermission ? COLORS.success : COLORS.error}
           />
-          <Text style={styles.usageStatusText}>
+          <Text style={[styles.usageStatusText, isDark && { color: darkUi?.textSecondary }]}>
             {hasUsagePermission ? 'Usage granted' : 'No usage access'}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.bodyText}>
+      <Text style={[styles.bodyText, isDark && { color: darkUi?.textPrimary }]}>
         Top apps by screen time for the selected period. Notification counts reflect what Landline
         captured while active.
       </Text>
@@ -261,7 +275,9 @@ export function AppAttentionCard({
         <View style={styles.usagePermissionBanner}>
           <View style={styles.usagePermissionBannerInner}>
             <MaterialIcons name="bar-chart" size={18} color={COLORS.secondary} />
-            <Text style={styles.usagePermissionBannerText}>
+            <Text
+              style={[styles.usagePermissionBannerText, isDark && { color: darkUi?.textPrimary }]}
+            >
               Enable Usage Access to see screen time data.
             </Text>
           </View>
@@ -274,9 +290,16 @@ export function AppAttentionCard({
               fullWidth
             />
           </View>
-          <View style={styles.usageHelpBox}>
-            <Text style={styles.usageHelpTitle}>How to enable</Text>
-            <Text style={styles.usageHelpText}>
+          <View
+            style={[
+              styles.usageHelpBox,
+              isDark && { backgroundColor: darkUi?.surfaceAlt, borderColor: darkUi?.border },
+            ]}
+          >
+            <Text style={[styles.usageHelpTitle, isDark && { color: darkUi?.textPrimary }]}>
+              How to enable
+            </Text>
+            <Text style={[styles.usageHelpText, isDark && { color: darkUi?.textSecondary }]}>
               1{')'} Settings {'→'} Apps {'→'} Special app access {'→'} Usage access{'\n'}2{')'} Tap
               Landline {'→'} Permit usage access
             </Text>
@@ -295,7 +318,15 @@ export function AppAttentionCard({
                 return (
                   <Pressable
                     key={w}
-                    style={[styles.segmentChip, active && styles.segmentChipActive]}
+                    style={[
+                      styles.segmentChip,
+                      active && styles.segmentChipActive,
+                      isDark &&
+                        !active && {
+                          borderColor: darkUi?.border,
+                          backgroundColor: darkUi?.surfaceAlt,
+                        },
+                    ]}
                     onPress={() => {
                       haptics.light();
                       handleChangeUsageWindow(w);
@@ -304,7 +335,13 @@ export function AppAttentionCard({
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={`Show ${w} data`}
                   >
-                    <Text style={[styles.segmentChipText, active && styles.segmentChipTextActive]}>
+                    <Text
+                      style={[
+                        styles.segmentChipText,
+                        active && styles.segmentChipTextActive,
+                        isDark && !active && { color: darkUi?.textPrimary },
+                      ]}
+                    >
                       {w}
                     </Text>
                   </Pressable>
@@ -318,7 +355,11 @@ export function AppAttentionCard({
               accessibilityRole="button"
               accessibilityLabel="Refresh usage data"
             >
-              <MaterialIcons name="refresh" size={22} color={COLORS.text.secondary} />
+              <MaterialIcons
+                name="refresh"
+                size={22}
+                color={isDark ? darkUi?.textSecondary : COLORS.text.secondary}
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.metricRow}>
@@ -328,7 +369,15 @@ export function AppAttentionCard({
                 return (
                   <Pressable
                     key={metric.key}
-                    style={[styles.segmentChip, active && styles.segmentChipActive]}
+                    style={[
+                      styles.segmentChip,
+                      active && styles.segmentChipActive,
+                      isDark &&
+                        !active && {
+                          borderColor: darkUi?.border,
+                          backgroundColor: darkUi?.surfaceAlt,
+                        },
+                    ]}
                     onPress={() => {
                       haptics.light();
                       setSelectedMetric(metric.key);
@@ -337,7 +386,13 @@ export function AppAttentionCard({
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={`Show apps by ${metric.label.toLowerCase()}`}
                   >
-                    <Text style={[styles.segmentChipText, active && styles.segmentChipTextActive]}>
+                    <Text
+                      style={[
+                        styles.segmentChipText,
+                        active && styles.segmentChipTextActive,
+                        isDark && !active && { color: darkUi?.textPrimary },
+                      ]}
+                    >
                       {metric.label}
                     </Text>
                   </Pressable>
@@ -349,10 +404,12 @@ export function AppAttentionCard({
           {usageLoading ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.loadingLabel}>Loading data…</Text>
+              <Text style={[styles.loadingLabel, isDark && { color: darkUi?.textSecondary }]}>
+                Loading data…
+              </Text>
             </View>
           ) : displayedApps.length === 0 ? (
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, isDark && { color: darkUi?.textSecondary }]}>
               No usage data found for this range yet. Keep using your apps and tap refresh.
             </Text>
           ) : (
@@ -385,14 +442,25 @@ export function AppAttentionCard({
 
                     {/* Headline + supporting text + progress bar */}
                     <View style={styles.listItemContent}>
-                      <Text style={styles.listItemHeadline} numberOfLines={1}>
+                      <Text
+                        style={[styles.listItemHeadline, isDark && { color: darkUi?.textPrimary }]}
+                        numberOfLines={1}
+                      >
                         {app.appName}
                       </Text>
-                      <Text style={styles.listItemSupporting} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.listItemSupporting,
+                          isDark && { color: darkUi?.textMuted },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {app.packageName}
                       </Text>
                       {/* Thin progress bar (relative to max) */}
-                      <View style={styles.progressTrack}>
+                      <View
+                        style={[styles.progressTrack, isDark && { backgroundColor: darkUi?.border }]}
+                      >
                         <View style={[styles.progressFill, { width: barWidth }]} />
                       </View>
                     </View>
@@ -432,7 +500,10 @@ export function AppAttentionCard({
               {/* View More button */}
               {showViewMore && (
                 <TouchableOpacity
-                  style={styles.viewMoreButton}
+                  style={[
+                    styles.viewMoreButton,
+                    isDark && { borderTopColor: darkUi?.border },
+                  ]}
                   onPress={handleViewMore}
                   accessibilityRole="button"
                   accessibilityLabel="View all apps"

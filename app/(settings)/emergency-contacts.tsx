@@ -17,6 +17,10 @@ import {
 import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
 import { router, useFocusEffect } from 'expo-router';
 
+import {
+  SettingsDescriptionCard,
+  SettingsPageHeader,
+} from '@/components/settings/settings-page-header';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
@@ -356,21 +360,7 @@ export default function EmergencyContactsScreen() {
   if (Platform.OS !== 'android') {
     return (
       <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
-        <View
-          style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
-          </View>
-          <View style={styles.headerSpacer} />
-        </View>
+        <SettingsPageHeader title="Emergency Contacts" paddingTop={insets.top} />
         <View style={styles.centerContainer}>
           <MaterialIcons name="phone-android" size={48} color={isDark ? D_MUTED : COLORS.text.muted} />
           <Text style={[styles.unsupportedTitle, isDark && { color: D_FG }]}>Android Only</Text>
@@ -388,21 +378,7 @@ export default function EmergencyContactsScreen() {
   if (loading) {
     return (
       <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
-        <View
-          style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
-          </View>
-          <View style={styles.headerSpacer} />
-        </View>
+        <SettingsPageHeader title="Emergency Contacts" paddingTop={insets.top} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={isDark ? D_ACCENT : COLORS.primary} />
           <Text style={[styles.loadingText, isDark && { color: D_SOFT }]}>Loading…</Text>
@@ -413,18 +389,7 @@ export default function EmergencyContactsScreen() {
 
   return (
     <View style={[styles.container, isDark && { backgroundColor: D_BG }]}>
-      {/* Header */}
-      <View
-        style={[styles.header, isDark && { backgroundColor: D_BG, borderBottomColor: D_BORDER }, { paddingTop: insets.top }]}
-      >
-        <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
-          <MaterialIcons name="arrow-back" size={24} color={isDark ? D_FG : COLORS.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={[styles.headerTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
-        </View>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SettingsPageHeader title="Emergency Contacts" paddingTop={insets.top} onBack={handleBack} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -433,24 +398,11 @@ export default function EmergencyContactsScreen() {
       >
         {/* ── Description Card ── */}
         <View style={styles.section}>
-          <View
-            style={[
-              styles.descriptionCard,
-              isDark && {
-                backgroundColor: 'rgba(93, 112, 82, 0.18)',
-                borderColor: 'rgba(184, 196, 168, 0.35)',
-              },
-            ]}
-          >
-            <MaterialIcons name="phone-in-talk" size={20} color={isDark ? D_ACCENT : COLORS.primary} />
-            <View style={styles.descriptionTextContainer}>
-              <Text style={[styles.descriptionTitle, isDark && { color: D_FG }]}>Emergency Contacts</Text>
-              <Text style={[styles.descriptionText, isDark && { color: D_SOFT }]}>
-                When Landline Mode is active, these contacts can reach you with sound. All other
-                notifications will be logged silently.
-              </Text>
-            </View>
-          </View>
+          <SettingsDescriptionCard
+            icon="phone-in-talk"
+            title="Emergency Contacts"
+            body="When Landline Mode is active, these contacts can reach you with sound. All other notifications will be logged silently."
+          />
         </View>
 
         {/* ── Contact List ── */}
@@ -729,53 +681,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.full,
-  },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: COLORS.foreground,
-    fontFamily: 'Fraunces_700Bold',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  saveButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: COLORS.primary,
-    borderRadius: Radius.md,
-  },
-  saveButtonDisabled: {
-    opacity: 0.4,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    color: COLORS.text.onPrimary,
-    fontFamily: 'Nunito_700Bold',
-  },
-  saveButtonTextMuted: {
-    color: COLORS.text.muted,
-  },
-
   // Scroll content
   scrollContent: {
     paddingHorizontal: Spacing.lg,
@@ -851,34 +756,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.md,
-  },
-
-  // Description card
-  descriptionCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-    backgroundColor: `${COLORS.primary}08`,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: `${COLORS.primary}20`,
-    padding: Spacing.lg,
-  },
-  descriptionTextContainer: {
-    flex: 1,
-  },
-  descriptionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.foreground,
-    fontFamily: 'Nunito_700Bold',
-    marginBottom: Spacing.xs,
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: COLORS.text.secondary,
-    fontFamily: 'Nunito_400Regular',
-    lineHeight: 20,
   },
 
   // Add from contacts button

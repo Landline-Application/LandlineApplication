@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } fr
 
 import NotebookLogView from '@/components/notifications/notebook-log-view';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { TourAnchor } from '@/components/usage-tutorial/tour-anchor';
 import { COLORS, Radius, Spacing, TouchTargets } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
@@ -76,7 +77,7 @@ export default function NotificationsScreen() {
           isDark && { backgroundColor: darkUi?.bg, borderBottomColor: darkUi?.border },
         ]}
       >
-        <View style={styles.headerLeft}>
+        <TourAnchor id="log-header" style={styles.headerLeft}>
           <Text style={[styles.headerTitle, isDark && { color: darkUi?.textPrimary }]}>Log</Text>
           {isActive && (
             <View style={styles.livePill}>
@@ -84,47 +85,51 @@ export default function NotificationsScreen() {
               <Text style={styles.livePillText}>Live</Text>
             </View>
           )}
-        </View>
+        </TourAnchor>
 
         {/* M3 Standard icon button — clear (destructive, lowest emphasis) */}
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={handleClearAll}
-          accessibilityRole="button"
-          accessibilityLabel="Clear all notifications"
-          disabled={isLoading || notifications.length === 0}
-        >
-          <MaterialIcons
-            name="delete-outline"
-            size={22}
-            color={
-              notifications.length === 0
-                ? isDark
-                  ? darkUi?.textMuted
-                  : COLORS.text.muted
-                : COLORS.error
-            }
-          />
-        </TouchableOpacity>
+        <TourAnchor id="log-clear">
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleClearAll}
+            accessibilityRole="button"
+            accessibilityLabel="Clear all notifications"
+            disabled={isLoading || notifications.length === 0}
+          >
+            <MaterialIcons
+              name="delete-outline"
+              size={22}
+              color={
+                notifications.length === 0
+                  ? isDark
+                    ? darkUi?.textMuted
+                    : COLORS.text.muted
+                  : COLORS.error
+              }
+            />
+          </TouchableOpacity>
+        </TourAnchor>
       </View>
 
       {/* ── Content ── */}
-      {isLoading && notifications.length === 0 ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={[styles.loadingText, isDark && { color: darkUi?.textSecondary }]}>
-            Loading notifications…
-          </Text>
-        </View>
-      ) : (
-        <NotebookLogView
-          notifications={notifications}
-          onRefresh={loadNotifications}
-          onDelete={removeNotification}
-          isActive={isActive}
-          isDark={isDark}
-        />
-      )}
+      <TourAnchor id="log-feed" style={styles.feed}>
+        {isLoading && notifications.length === 0 ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loadingText, isDark && { color: darkUi?.textSecondary }]}>
+              Loading notifications…
+            </Text>
+          </View>
+        ) : (
+          <NotebookLogView
+            notifications={notifications}
+            onRefresh={loadNotifications}
+            onDelete={removeNotification}
+            isActive={isActive}
+            isDark={isDark}
+          />
+        )}
+      </TourAnchor>
     </View>
   );
 }
@@ -133,6 +138,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  feed: {
+    flex: 1,
   },
 
   // ── Header ────────────────────────────────────────────────────────────────

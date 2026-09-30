@@ -9,7 +9,7 @@ import { FormLayout } from '@/components/ui/form-layout';
 import { RolodexCard } from '@/components/ui/roledex-card';
 import { COLORS } from '@/constants/theme';
 import { getPhoneConfirmation, setPhoneConfirmation } from '@/utils/firebase/auth';
-import { markOnboardingComplete } from '@/utils/onboarding-storage';
+import { completeOnboardingAndQueueTutorial } from '@/utils/usage-tutorial-storage';
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -63,9 +63,9 @@ export default function VerifyPhoneScreen() {
         await confirmation.confirm(finalCode);
         setPhoneConfirmation(null);
         try {
-          await markOnboardingComplete();
+          await completeOnboardingAndQueueTutorial();
         } catch (e) {
-          console.warn('markOnboardingComplete', e);
+          console.warn('completeOnboardingAndQueueTutorial', e);
         }
         router.replace('/(tabs)');
       } catch (error: unknown) {

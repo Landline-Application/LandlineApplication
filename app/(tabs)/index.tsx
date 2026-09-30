@@ -19,6 +19,7 @@ import { RotaryDialButton } from '@/components/home/rotary-dial-button';
 import { SessionCard } from '@/components/home/session-card';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { TourAnchor, TourScrollView } from '@/components/usage-tutorial/tour-anchor';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
@@ -255,7 +256,8 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, isDark && { backgroundColor: darkUi?.background }]}>
-      <ScrollView
+      <TourScrollView
+        scrollKey="landline"
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}
@@ -271,13 +273,13 @@ export default function HomeScreen() {
         </View>
 
         {/* Main Toggle Area - Rotary Dial Button */}
-        <View style={styles.toggleContainer}>
+        <TourAnchor id="landline-dial" scrollKey="landline" style={styles.toggleContainer}>
           <RotaryDialButton
             active={isActive}
             onPress={isActive ? handleDeactivate : handleActivate}
             disabled={false}
           />
-        </View>
+        </TourAnchor>
 
         {/* Session Info (when active) */}
         {isActive && (
@@ -365,7 +367,9 @@ export default function HomeScreen() {
         </View>
 
         {/* Info Section */}
-        <View
+        <TourAnchor
+          id="landline-how"
+          scrollKey="landline"
           style={[
             styles.infoSection,
             isDark && { backgroundColor: darkUi?.surface, borderColor: darkUi?.border },
@@ -418,8 +422,8 @@ export default function HomeScreen() {
               Emergency contacts can still reach you
             </Text>
           </View>
-        </View>
-      </ScrollView>
+        </TourAnchor>
+      </TourScrollView>
 
       {/* Mode Selection Modal */}
       <Modal

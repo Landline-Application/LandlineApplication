@@ -16,11 +16,13 @@ import React from 'react';
 import { Animated, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import * as Haptics from 'expo-haptics';
+import { type BottomTabBarProps } from 'expo-router/tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TourAnchor } from '@/components/usage-tutorial/tour-anchor';
+import { registerTutorialTabNavigator } from '@/components/usage-tutorial/open-tutorial-tab';
 import { COLORS, Shadows, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
-import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // M3 spec dimensions
 const NAV_BAR_HEIGHT = 80;
@@ -149,6 +151,10 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
   const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
 
+  React.useEffect(() => {
+    registerTutorialTabNavigator(navigation);
+  }, [navigation]);
+
   const visibleRoutes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
     // expo-router sets tabBarItemStyle.display='none' when href is null
@@ -203,9 +209,17 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
           });
         };
 
-        return (
+        const anchorId =
+          route.name === 'notifications'
+            ? 'tab-log'
+            : route.name === 'index'
+              ? 'tab-landline'
+              : route.name === 'settings'
+                ? 'tab-settings'
+                : null;
+
+        const item = (
           <NavItem
-            key={route.key}
             label={label}
             icon={icon}
             focused={isFocused}
@@ -214,6 +228,20 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={options.tabBarButtonTestID}
           />
+        );
+
+        if (!anchorId) {
+          return (
+            <View key={route.key} style={styles.tabSlot}>
+              {item}
+            </View>
+          );
+        }
+
+        return (
+          <TourAnchor key={route.key} id={anchorId} requireFocus={false} style={styles.tabSlot}>
+            {item}
+          </TourAnchor>
         );
       })}
     </View>
@@ -228,6 +256,10 @@ const styles = StyleSheet.create({
     ...Shadows.sm,
     elevation: 2,
   } as ViewStyle,
+
+  tabSlot: {
+    flex: 1,
+  },
 
   itemContainer: {
     flex: 1,

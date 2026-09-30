@@ -162,8 +162,8 @@ function applyColorMap(target: Record<string, any>, source: Record<string, any>)
 }
 
 /**
- * Mutates shared design tokens so existing style modules use the selected palette
- * after app reload.
+ * Mutates shared design tokens so components reading COLORS at render time
+ * pick up the active palette when the theme changes.
  */
 export function applyThemeColors(isDark: boolean) {
   applyColorMap(COLORS as unknown as Record<string, any>, {
