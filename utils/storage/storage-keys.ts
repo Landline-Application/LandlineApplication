@@ -37,6 +37,8 @@ export const NATIVE_STORAGE = {
   // Keys within SharedPreferences
   KEYS: {
     IS_LANDLINE_MODE_ACTIVE: 'is_landline_mode_active',
+    LANDLINE_SCHEDULES: 'landline_schedules_json',
+    SCHEDULE_MANUAL_OVERRIDE_UNTIL: 'schedule_manual_override_until_ms',
     NOTIFICATION_LOGS_DATA: 'notification_logs',
     /** User-facing: notification permissions / bypass + emergency (Landline Mode) */
     NOTIFICATION_FILTER_ENABLED: 'notification_filter_enabled',

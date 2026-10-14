@@ -12,6 +12,8 @@ import { isUsageTutorialPending } from '@/utils/usage-tutorial-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HOLE_PAD = 8;
+/** Measured frames sit about one settings row below the control they belong to. */
+const SPOTLIGHT_LIFT = 64;
 
 /**
  * Points at one real control at a time and walks through every tab.
@@ -58,7 +60,7 @@ export function UsageTutorialOverlay() {
   }
 
   const hole = clipHole(
-    spotlight && spotlight.id === step.target ? spotlight : null,
+    liftSpotlight(spotlight && spotlight.id === step.target ? spotlight : null),
     screenH,
   );
   const isFirst = stepIndex === 0;
@@ -144,6 +146,11 @@ export function UsageTutorialOverlay() {
       </View>
     </View>
   );
+}
+
+function liftSpotlight(hole: TutorialSpotlight | null): TutorialSpotlight | null {
+  if (!hole) return null;
+  return { ...hole, y: hole.y - SPOTLIGHT_LIFT };
 }
 
 function clipHole(hole: TutorialSpotlight | null, screenH: number): TutorialSpotlight | null {

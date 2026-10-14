@@ -152,8 +152,18 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
   const insets = useSafeAreaInsets();
 
   React.useEffect(() => {
-    registerTutorialTabNavigator(navigation);
-  }, [navigation]);
+    registerTutorialTabNavigator({
+      navigate: (screen) => {
+        const route = state.routes.find((item) => item.name === screen);
+        if (!route) return;
+        navigation.dispatch({
+          type: 'NAVIGATE',
+          target: state.key,
+          payload: { name: route.name, params: route.params },
+        });
+      },
+    });
+  }, [navigation, state]);
 
   const visibleRoutes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
@@ -198,7 +208,15 @@ export function NavigationBar({ state, descriptors, navigation }: BottomTabBarPr
           });
 
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
+            // Send the action to this tab navigator so the page changes with the highlight.
+            navigation.dispatch({
+              type: 'NAVIGATE',
+              target: state.key,
+              payload: {
+                name: route.name,
+                params: route.params,
+              },
+            });
           }
         };
 

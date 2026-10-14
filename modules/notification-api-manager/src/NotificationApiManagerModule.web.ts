@@ -125,6 +125,32 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
     return '[]';
   }
 
+  // Recurring schedules (web stubs)
+  getLandlineSchedulesJson() {
+    return '[]';
+  }
+  setLandlineSchedulesJson() {
+    return false;
+  }
+  noteLandlineScheduleManualOverride() {
+    return false;
+  }
+  canScheduleExactAlarms() {
+    return false;
+  }
+  requestExactAlarmPermission() {
+    return false;
+  }
+  getScheduleSessionStartMs() {
+    return 0;
+  }
+  consumePendingScheduleSession() {
+    return { startMs: 0, endMs: 0 };
+  }
+  ensureLandlineSchedulesArmed() {
+    return false;
+  }
+
   // Data Management
   async clearAllData() {
     return false;
@@ -132,3 +158,30 @@ class NotificationApiManagerModule extends NativeModule<NotificationApiManagerMo
 }
 
 export default registerWebModule(NotificationApiManagerModule, 'NotificationApiManagerModule');
+
+export function areLandlineSchedulesSupported() {
+  return false;
+}
+export function getLandlineSchedules() {
+  return [];
+}
+export function setLandlineSchedules() {
+  return false;
+}
+export function noteLandlineScheduleManualOverride() {}
+export function canScheduleExactAlarms() {
+  return false;
+}
+export function requestExactAlarmPermission() {
+  return false;
+}
+export function getScheduleSessionStartMs() {
+  return 0;
+}
+export function consumePendingScheduleSession() {
+  return { startMs: 0, endMs: 0 };
+}
+export function ensureLandlineSchedulesArmed() {}
+export function addLandlineScheduleListener() {
+  return null;
+}

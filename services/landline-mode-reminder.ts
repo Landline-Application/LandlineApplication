@@ -5,7 +5,9 @@ import * as Notifications from 'expo-notifications';
 import type { NotificationResponse } from 'expo-notifications';
 
 import * as DndManager from '@/modules/dnd-manager';
-import NotificationApiManager from '@/modules/notification-api-manager';
+import NotificationApiManager, {
+  noteLandlineScheduleManualOverride,
+} from '@/modules/notification-api-manager';
 import {
   getReminderIntervalHoursAsync,
   isValidReminderIntervalHours,
@@ -119,6 +121,7 @@ async function snoozeLandlineReminder(): Promise<void> {
 export async function turnOffLandlineModeFromReminder(): Promise<void> {
   try {
     NotificationApiManager.setLandlineMode(false);
+    noteLandlineScheduleManualOverride();
     try {
       if (DndManager.hasPermission()) {
         await DndManager.setDNDEnabled(false);

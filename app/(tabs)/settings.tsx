@@ -33,7 +33,7 @@ import {
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { useUsageTutorialStore } from '@/hooks/use-usage-tutorial-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
-import NotificationApiManager from '@/modules/notification-api-manager';
+import NotificationApiManager, { getLandlineSchedules } from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
 import {
   RETENTION_OPTIONS,
@@ -72,6 +72,10 @@ export default function SettingsScreen() {
   );
   const [editNameModalVisible, setEditNameModalVisible] = useState(false);
   const [editNameDraft, setEditNameDraft] = useState('');
+  const [scheduleSubtitle, setScheduleSubtitle] = useState(
+    'Turn Landline Mode on and off automatically',
+  );
+  const [hasEnabledSchedule, setHasEnabledSchedule] = useState(false);
 
   // Modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -127,6 +131,23 @@ export default function SettingsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadStorageInfo();
+      if (Platform.OS !== 'android') return;
+      const schedules = getLandlineSchedules();
+      const enabledCount = schedules.filter((schedule) => schedule.enabled).length;
+      setHasEnabledSchedule(enabledCount > 0);
+      if (schedules.length === 0) {
+        setScheduleSubtitle('Turn Landline Mode on and off automatically');
+      } else if (enabledCount === 0) {
+        setScheduleSubtitle(
+          schedules.length === 1
+            ? '1 saved schedule, paused'
+            : `${schedules.length} saved schedules, paused`,
+        );
+      } else {
+        setScheduleSubtitle(
+          enabledCount === 1 ? '1 schedule enabled' : `${enabledCount} schedules enabled`,
+        );
+      }
     }, [loadStorageInfo]),
   );
 
@@ -535,6 +556,41 @@ export default function SettingsScreen() {
             </TourAnchor>
 
             <View style={styles.itemDivider} />
+
+            {Platform.OS === 'android' && (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    router.push('/schedules' as Href);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Schedule. Turn Landline Mode on and off automatically"
+                >
+                  <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                    <View style={styles.menuItemIcon}>
+                      <MaterialIcons name="schedule" size={22} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.menuItemContent}>
+                      <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                        Schedule
+                      </Text>
+                      <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                        {scheduleSubtitle}
+                      </Text>
+                    </View>
+                    {hasEnabledSchedule && (
+                      <View style={styles.activeIndicator}>
+                        <View style={styles.activeIndicatorDot} />
+                      </View>
+                    )}
+                    <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.itemDivider} />
+              </>
+            )}
 
             <TourAnchor id="settings-auto-reply" scrollKey="settings">
             <TouchableOpacity

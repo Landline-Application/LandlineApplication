@@ -1,4 +1,6 @@
-import { requireNativeModule } from 'expo-modules-core';
+import { EventEmitter, requireNativeModule, type EventSubscription } from 'expo-modules-core';
+
+import { parseLandlineSchedules, type LandlineSchedule } from '@/utils/landline-schedule';
 
 /**
  * This shape must match what your Kotlin module exposes:
@@ -78,6 +80,16 @@ type NotificationApiNativeModule = {
   clearAllData(): Promise<boolean>;
   // Notification Retention - delete notifications older than cutoff timestamp
   deleteNotificationsOlderThan(cutoffTimestamp: number): Promise<number>;
+  // Recurring Landline Mode schedules (Android)
+  getLandlineSchedulesJson(): string;
+  setLandlineSchedulesJson(json: string): boolean;
+  noteLandlineScheduleManualOverride(): boolean;
+  canScheduleExactAlarms(): boolean;
+  requestExactAlarmPermission(): boolean;
+  getScheduleSessionStartMs(): number;
+  consumePendingScheduleSession(): { startMs: number; endMs: number };
+  ensureLandlineSchedulesArmed(): boolean;
+  addListener(eventName: string, listener: (event: { active: boolean }) => void): EventSubscription;
 };
 
 // Stale dev clients may omit newer native methods; avoid crashing until `expo run:android` picks up Kotlin.
@@ -131,6 +143,73 @@ export function setLandlineMode(isActive: boolean) {
 
 export function isLandlineModeActive() {
   return Native.isLandlineModeActive();
+}
+
+function callScheduleNative<T>(name: string, fallback: T, ...args: unknown[]): T {
+  const fn = Native[name];
+  if (typeof fn !== 'function') return fallback;
+  try {
+    return (fn as (...params: unknown[]) => T).apply(Native, args);
+  } catch (error) {
+    console.warn(`${name} failed`, error);
+    return fallback;
+  }
+}
+
+export function areLandlineSchedulesSupported(): boolean {
+  return typeof Native.getLandlineSchedulesJson === 'function';
+}
+
+export function getLandlineSchedules(): LandlineSchedule[] {
+  const json = callScheduleNative('getLandlineSchedulesJson', '[]');
+  return parseLandlineSchedules(typeof json === 'string' ? json : '[]');
+}
+
+export function setLandlineSchedules(schedules: LandlineSchedule[]): boolean {
+  return callScheduleNative<boolean>('setLandlineSchedulesJson', false, JSON.stringify(schedules));
+}
+
+export function noteLandlineScheduleManualOverride(): void {
+  callScheduleNative('noteLandlineScheduleManualOverride', false);
+}
+
+export function canScheduleExactAlarms(): boolean {
+  return callScheduleNative<boolean>('canScheduleExactAlarms', true);
+}
+
+export function requestExactAlarmPermission(): boolean {
+  return callScheduleNative<boolean>('requestExactAlarmPermission', false);
+}
+
+export function getScheduleSessionStartMs(): number {
+  const value = callScheduleNative('getScheduleSessionStartMs', 0);
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+export function consumePendingScheduleSession(): { startMs: number; endMs: number } {
+  const value = callScheduleNative('consumePendingScheduleSession', { startMs: 0, endMs: 0 });
+  if (!value || typeof value !== 'object') return { startMs: 0, endMs: 0 };
+  const startMs = 'startMs' in value && typeof value.startMs === 'number' ? value.startMs : 0;
+  const endMs = 'endMs' in value && typeof value.endMs === 'number' ? value.endMs : 0;
+  return { startMs, endMs };
+}
+
+export function ensureLandlineSchedulesArmed(): void {
+  callScheduleNative('ensureLandlineSchedulesArmed', false);
+}
+
+export function addLandlineScheduleListener(
+  listener: (event: { active: boolean }) => void,
+): { remove: () => void } | null {
+  if (typeof Native.addListener !== 'function') return null;
+  try {
+    const emitter = new EventEmitter(Native);
+    const subscription = emitter.addListener('onLandlineScheduleApplied', listener);
+    return { remove: () => subscription.remove() };
+  } catch (error) {
+    console.warn('Landline schedule listener unavailable', error);
+    return null;
+  }
 }
 
 export function getLoggedNotifications() {
@@ -331,6 +410,16 @@ export default {
   requestSmsNotificationPermission,
   setLandlineMode,
   isLandlineModeActive,
+  areLandlineSchedulesSupported,
+  getLandlineSchedules,
+  setLandlineSchedules,
+  noteLandlineScheduleManualOverride,
+  canScheduleExactAlarms,
+  requestExactAlarmPermission,
+  getScheduleSessionStartMs,
+  consumePendingScheduleSession,
+  ensureLandlineSchedulesArmed,
+  addLandlineScheduleListener,
   getLoggedNotifications,
   clearLoggedNotifications,
   removeLoggedNotifications,

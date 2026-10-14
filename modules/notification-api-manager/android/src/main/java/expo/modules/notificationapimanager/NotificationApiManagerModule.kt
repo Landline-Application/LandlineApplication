@@ -22,6 +22,19 @@ class NotificationApiManagerModule : Module() {
         // JS name: requireNativeModule('NotificationApiManager')
         Name("NotificationApiManager")
 
+        Events("onLandlineScheduleApplied")
+
+        OnCreate {
+            val module = this@NotificationApiManagerModule
+            LandlineScheduleBridge.listener = { active ->
+                module.sendEvent("onLandlineScheduleApplied", mapOf("active" to active))
+            }
+        }
+
+        OnDestroy {
+            LandlineScheduleBridge.listener = null
+        }
+
         // Quick smoke test
         Function("hello") {
             "Hello from NotificationApiManager!"
@@ -230,6 +243,52 @@ class NotificationApiManagerModule : Module() {
             val ctx = appContext.reactContext ?: return@Function false
             val prefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
             prefs.getBoolean("is_landline_mode_active", false)
+        }
+
+        Function("getLandlineSchedulesJson") {
+            val ctx = appContext.reactContext ?: return@Function "[]"
+            LandlineScheduleController.readJson(ctx)
+        }
+
+        Function("setLandlineSchedulesJson") { json: String ->
+            val ctx = appContext.reactContext ?: return@Function false
+            LandlineScheduleController.replaceSchedules(ctx, json)
+        }
+
+        Function("noteLandlineScheduleManualOverride") {
+            val ctx = appContext.reactContext ?: return@Function false
+            LandlineScheduleController.noteManualOverride(ctx)
+            true
+        }
+
+        Function("canScheduleExactAlarms") {
+            val ctx = appContext.reactContext ?: return@Function false
+            LandlineScheduleAlarm.canScheduleExact(ctx)
+        }
+
+        Function("requestExactAlarmPermission") {
+            val ctx = appContext.reactContext ?: return@Function false
+            LandlineScheduleAlarm.requestExactAlarmPermission(ctx)
+        }
+
+        Function("getScheduleSessionStartMs") {
+            val ctx = appContext.reactContext ?: return@Function 0.0
+            LandlineScheduleController.sessionStartMs(ctx).toDouble()
+        }
+
+        Function("consumePendingScheduleSession") {
+            val ctx = appContext.reactContext ?: return@Function mapOf(
+                "startMs" to 0.0,
+                "endMs" to 0.0
+            )
+            val pending = LandlineScheduleController.consumePendingSession(ctx)
+            mapOf("startMs" to pending.first.toDouble(), "endMs" to pending.second.toDouble())
+        }
+
+        Function("ensureLandlineSchedulesArmed") {
+            val ctx = appContext.reactContext ?: return@Function false
+            LandlineScheduleController.onClockOrBoot(ctx)
+            true
         }
 
         // Notification whitelist (Landline Mode): allowed apps + emergency phone digits
@@ -445,6 +504,7 @@ class NotificationApiManagerModule : Module() {
             
             try {
                 // Clear Landline mode preferences
+                LandlineScheduleAlarm.cancel(ctx)
                 val modePrefs = ctx.getSharedPreferences("landline_mode_prefs", Context.MODE_PRIVATE)
                 modePrefs.edit().clear().apply()
                 

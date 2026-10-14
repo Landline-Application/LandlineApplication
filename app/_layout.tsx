@@ -13,6 +13,10 @@ import { ThemeContextProvider, useAppTheme } from '@/contexts/theme-context';
 import { useAppState } from '@/hooks/use-app-state';
 import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import {
+  addLandlineScheduleListener,
+  ensureLandlineSchedulesArmed,
+} from '@/modules/notification-api-manager';
 import { initLandlineReminderSubsystem } from '@/services/landline-mode-reminder';
 import '@/services/landline-reminder-task';
 import { initializeRetentionSettings, runCleanupIfNeeded } from '@/services/notification-retention';
@@ -148,6 +152,13 @@ function NavigationGate() {
   const initialRouteDone = useRef(false);
 
   useEffect(() => {
+    const scheduleSubscription =
+      Platform.OS === 'android'
+        ? addLandlineScheduleListener((event) => {
+            void useLandlineStore.getState().syncScheduledLandlineMode(event.active);
+          })
+        : null;
+
     async function initialize() {
       try {
         await migrateFromOldAcceptance();
@@ -157,6 +168,7 @@ function NavigationGate() {
         await initializeRetentionSettings();
 
         if (Platform.OS === 'android') {
+          ensureLandlineSchedulesArmed();
           await initLandlineReminderSubsystem();
         }
 
@@ -183,7 +195,8 @@ function NavigationGate() {
         setIsReady(true);
       }
     }
-    initialize();
+    void initialize();
+    return () => scheduleSubscription?.remove();
   }, []);
 
   useEffect(() => {

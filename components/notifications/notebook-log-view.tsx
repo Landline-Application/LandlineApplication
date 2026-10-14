@@ -7,7 +7,15 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 
@@ -91,6 +99,13 @@ function appInitials(appName: string): string {
     .join('');
 }
 
+function notificationMatchesQuery(entry: NotebookLogEntry, query: string): boolean {
+  if (!query) return true;
+  return [entry.appName, entry.title, entry.text, entry.replyText].some((field) =>
+    field?.toLowerCase().includes(query),
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function NotebookLogView({
@@ -113,8 +128,12 @@ export default function NotebookLogView({
     : null;
 
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
@@ -164,13 +183,15 @@ export default function NotebookLogView({
     return ['All', ...apps];
   }, [notifications]);
 
-  // Filter notifications
+  // Filter notifications by app chip and search text
   const filtered = useMemo(
     () =>
-      selectedFilter === 'All'
-        ? notifications
-        : notifications.filter((n) => n.appName === selectedFilter),
-    [notifications, selectedFilter],
+      notifications.filter(
+        (n) =>
+          (selectedFilter === 'All' || n.appName === selectedFilter) &&
+          notificationMatchesQuery(n, normalizedQuery),
+      ),
+    [notifications, selectedFilter, normalizedQuery],
   );
 
   // Group by app for the feed
@@ -187,8 +208,58 @@ export default function NotebookLogView({
     );
   }, [filtered]);
 
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, []);
+
+  const hasNoMatches = filtered.length === 0 && notifications.length > 0;
+
   return (
     <View style={[styles.root, isDark && { backgroundColor: darkUi?.bg }]}>
+      {/* ── Search ── */}
+      {notifications.length > 0 && (
+        <View
+          style={[
+            styles.searchBar,
+            isDark && {
+              backgroundColor: darkUi?.surfaceAlt,
+              borderColor: darkUi?.border,
+            },
+          ]}
+        >
+          <MaterialIcons
+            name="search"
+            size={20}
+            color={isDark ? darkUi?.textMuted : COLORS.text.muted}
+          />
+          <TextInput
+            style={[styles.searchInput, isDark && { color: darkUi?.textPrimary }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search apps, titles, or messages"
+            placeholderTextColor={isDark ? darkUi?.textMuted : COLORS.text.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            accessibilityLabel="Search notifications"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable
+              onPress={clearSearch}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
+              <MaterialIcons
+                name="close"
+                size={18}
+                color={isDark ? darkUi?.textMuted : COLORS.text.muted}
+              />
+            </Pressable>
+          )}
+        </View>
+      )}
+
       {/* ── Filter chip row ── */}
       {filterOptions.length > 1 && (
         <View
@@ -241,6 +312,8 @@ export default function NotebookLogView({
         style={styles.feed}
         contentContainerStyle={styles.feedContent}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -260,18 +333,22 @@ export default function NotebookLogView({
               ]}
             >
               <MaterialIcons
-                name={isActive ? 'hearing' : 'notifications-none'}
+                name={
+                  hasNoMatches ? 'search-off' : isActive ? 'hearing' : 'notifications-none'
+                }
                 size={36}
                 color={isDark ? darkUi?.textMuted : COLORS.text.muted}
               />
             </View>
             <Text style={[styles.emptyTitle, isDark && { color: darkUi?.textPrimary }]}>
-              {isActive ? 'Listening…' : 'Nothing here yet'}
+              {hasNoMatches ? 'No matches' : isActive ? 'Listening…' : 'Nothing here yet'}
             </Text>
             <Text style={[styles.emptyBody, isDark && { color: darkUi?.textSecondary }]}>
-              {isActive
-                ? 'Notifications will appear here as they arrive.'
-                : 'Activate Landline Mode to start capturing notifications.'}
+              {hasNoMatches
+                ? 'Try a different app, title, or message.'
+                : isActive
+                  ? 'Notifications will appear here as they arrive.'
+                  : 'Activate Landline Mode to start capturing notifications.'}
             </Text>
           </View>
         )}
@@ -279,7 +356,13 @@ export default function NotebookLogView({
         {/* Notification count summary */}
         {filtered.length > 0 && (
           <Text style={[styles.countLabel, isDark && { color: darkUi?.textMuted }]}>
-            {filtered.length} {filtered.length === 1 ? 'notification' : 'notifications'}
+            {isSearching
+              ? `${filtered.length} of ${
+                  selectedFilter === 'All'
+                    ? notifications.length
+                    : notifications.filter((n) => n.appName === selectedFilter).length
+                } notifications`
+              : `${filtered.length} ${filtered.length === 1 ? 'notification' : 'notifications'}`}
             {selectedFilter !== 'All' ? ` · ${selectedFilter}` : ''}
           </Text>
         )}
@@ -437,6 +520,29 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+
+  // ── Search ────────────────────────────────────────────────────────────────
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    minHeight: TouchTargets.md,
+    backgroundColor: COLORS.surface.elevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: Spacing.xs,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    color: COLORS.text.primary,
+    fontSize: 15,
+    fontFamily: 'Nunito_400Regular',
   },
 
   // ── Filter chip bar ──────────────────────────────────────────────────────

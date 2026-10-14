@@ -4,7 +4,9 @@ import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
 import { useAchievementsStore } from '@/hooks/use-achievements-store';
 import NotificationApiManager, {
-  isNotificationFilterEffective,
+  consumePendingScheduleSession,
+  getScheduleSessionStartMs,
+  noteLandlineScheduleManualOverride,
   toNotificationLogKey,
 } from '@/modules/notification-api-manager';
 import {
@@ -54,6 +56,7 @@ interface LandlineModeState {
   activateLandlineMode: (mode?: SessionMode, durationMinutes?: number) => Promise<void>;
   deactivateLandlineMode: () => Promise<void>;
   checkStatus: () => Promise<void>;
+  syncScheduledLandlineMode: (active?: boolean) => Promise<void>;
   refreshNotifications: () => Promise<void>;
   removeNotification: (entry: NotebookLogEntry) => Promise<boolean>;
   requestPermission: () => Promise<void>;
@@ -95,27 +98,63 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
       const dndPerm = DndManager.hasPermission();
       const active = NotificationApiManager.isLandlineModeActive();
       const logs = await NotificationApiManager.getLoggedNotifications();
+      const pendingSession = consumePendingScheduleSession();
 
       let sessionStart: Date | null = null;
       let sessionMode: SessionMode | null = null;
       let sessionEnd: Date | null = null;
+      if (pendingSession.endMs > pendingSession.startMs) {
+        const notificationsBlocked = Array.isArray(logs)
+          ? logs.filter((entry) => {
+              const postTime = typeof entry.postTime === 'number' ? entry.postTime : 0;
+              return postTime >= pendingSession.startMs && postTime <= pendingSession.endMs;
+            }).length
+          : 0;
+        useAchievementsStore.getState().recordSessionEnded({
+          durationMs: pendingSession.endMs - pendingSession.startMs,
+          notificationsBlocked,
+        });
+        try {
+          await AsyncStorage.multiRemove([
+            SESSION_START_KEY,
+            SESSION_MODE_KEY,
+            SESSION_END_TIME_KEY,
+          ]);
+        } catch (storageErr) {
+          console.warn('Failed to clear scheduled session data:', storageErr);
+        }
+      }
+
       if (active) {
         try {
           const stored = await AsyncStorage.getItem(SESSION_START_KEY);
-          const fallbackTs = Date.now();
-          sessionStart = stored ? new Date(parseInt(stored, 10)) : new Date(fallbackTs);
-          if (!stored) {
-            await AsyncStorage.setItem(SESSION_START_KEY, fallbackTs.toString());
+          const storedMs = stored ? parseInt(stored, 10) : 0;
+          const nativeMs = getScheduleSessionStartMs();
+          const scheduleOwnsSession =
+            nativeMs > 0 && (storedMs === 0 || Math.abs(storedMs - nativeMs) >= 60_000);
+          const fallbackTs = scheduleOwnsSession ? nativeMs : storedMs || Date.now();
+          sessionStart = new Date(Number.isFinite(fallbackTs) ? fallbackTs : Date.now());
+          if (!stored || scheduleOwnsSession) {
+            await AsyncStorage.setItem(SESSION_START_KEY, sessionStart.getTime().toString());
           }
-          const storedMode = (await AsyncStorage.getItem(SESSION_MODE_KEY)) as SessionMode | null;
-          sessionMode = storedMode || 'indefinite';
-          const storedEnd = await AsyncStorage.getItem(SESSION_END_TIME_KEY);
-          sessionEnd = storedEnd ? new Date(parseInt(storedEnd, 10)) : null;
+          if (scheduleOwnsSession) {
+            sessionMode = 'indefinite';
+            sessionEnd = null;
+            await AsyncStorage.setItem(SESSION_MODE_KEY, 'indefinite');
+            await AsyncStorage.removeItem(SESSION_END_TIME_KEY);
+          } else {
+            const storedMode = (await AsyncStorage.getItem(SESSION_MODE_KEY)) as SessionMode | null;
+            sessionMode = storedMode || 'indefinite';
+            const storedEnd = await AsyncStorage.getItem(SESSION_END_TIME_KEY);
+            sessionEnd = storedEnd ? new Date(parseInt(storedEnd, 10)) : null;
+          }
         } catch (storageErr) {
           console.warn('Failed to read session data:', storageErr);
           sessionStart = new Date();
           sessionMode = 'indefinite';
         }
+      } else {
+        void cancelLandlineModeReminderScheduled();
       }
 
       set({
@@ -195,6 +234,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         get().startAutoRefresh();
         await get().refreshNotifications();
         void scheduleLandlineReminderFromSessionStart(now.getTime());
+        noteLandlineScheduleManualOverride();
       } else {
         throw new Error('Failed to activate Landline Mode');
       }
@@ -259,6 +299,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
           console.warn('Failed to clear session data:', storageErr);
         }
         await cancelLandlineModeReminderScheduled();
+        noteLandlineScheduleManualOverride();
       }
 
       // Clear countdown interval if exists
@@ -287,6 +328,23 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  syncScheduledLandlineMode: async (active?: boolean) => {
+    if (Platform.OS !== 'android') return;
+    if (active === true) {
+      set({ isActive: true });
+      get().startAutoRefresh();
+    } else if (active === false) {
+      get().stopAutoRefresh();
+      set({
+        isActive: false,
+        sessionStartTime: null,
+        sessionMode: null,
+        sessionEndTime: null,
+      });
+    }
+    await get().checkStatus();
   },
 
   // Action: Remove a single logged notification (swipe-to-delete)
