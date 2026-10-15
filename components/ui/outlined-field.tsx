@@ -9,7 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { COLORS, Radius, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-themes';
 
 export interface OutlinedFieldProps extends Omit<TextInputProps, 'onChange' | 'style'> {
   label?: string;
@@ -31,13 +32,14 @@ export function OutlinedField({
   style,
   ...rest
 }: OutlinedFieldProps) {
+  const { theme, density } = useTheme();
   const [focused, setFocused] = useState(false);
 
   const borderColor = error
-    ? COLORS.destructive
+    ? theme.colors.danger
     : focused
-      ? COLORS.primary
-      : COLORS.border;
+      ? theme.colors.primary
+      : theme.colors.border;
 
   const handleFocus = useCallback(() => setFocused(true), []);
   const handleBlur = useCallback(() => setFocused(false), []);
@@ -45,12 +47,18 @@ export function OutlinedField({
   return (
     <View style={[styles.wrapper, style]}>
       {label ? (
-        <Text style={styles.label}>{label.toUpperCase()}</Text>
+        <Text style={[styles.label, { color: theme.colors.muted }]}>{label.toUpperCase()}</Text>
       ) : null}
       <View
         style={[
           styles.inputRow,
-          { borderColor },
+          {
+            borderColor,
+            borderRadius: density.borderRadius,
+            height: density.minTouch,
+            paddingHorizontal: density.padding,
+            backgroundColor: theme.colors.surface,
+          },
           disabled && styles.disabled,
         ]}
       >
@@ -61,12 +69,12 @@ export function OutlinedField({
           onFocus={handleFocus}
           onBlur={handleBlur}
           editable={!disabled}
-          placeholderTextColor={COLORS.text.muted}
-          style={styles.input}
+          placeholderTextColor={theme.colors.muted}
+          style={[styles.input, { color: theme.colors.text }]}
           {...rest}
         />
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: theme.colors.danger }]}>{error}</Text> : null}
     </View>
   );
 }
@@ -81,16 +89,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.labelSm.fontSize,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
-    color: COLORS.text.secondary,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.lg,
     borderWidth: 1.5,
-    backgroundColor: COLORS.surface.base,
     gap: Spacing.sm,
   },
   disabled: {
@@ -103,12 +106,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: Typography.body.fontSize,
-    color: COLORS.text.primary,
     padding: 0,
   },
   error: {
     fontFamily: 'Nunito_400Regular',
     fontSize: Typography.caption.fontSize,
-    color: COLORS.destructive,
   },
 });

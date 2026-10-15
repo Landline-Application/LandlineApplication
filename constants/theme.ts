@@ -403,3 +403,69 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+// ===== DENSITY & THEMES =====
+export type Density = 'compact' | 'comfortable' | 'spacious';
+
+export const DensityScale: Record<Density, { touchTarget: number; padding: number; radius: number; gap: number }> = {
+  compact: { touchTarget: 44, padding: 10, radius: 12, gap: 8 },
+  comfortable: { touchTarget: 48, padding: 14, radius: 16, gap: 12 },
+  spacious: { touchTarget: 56, padding: 18, radius: 20, gap: 16 },
+};
+
+export interface ThemeDefinition {
+  id: string;
+  label: string;
+  isDark: boolean;
+  colors: Partial<typeof COLORS>;
+  typography: Partial<typeof Typography>;
+  density: Partial<Record<Density, { touchTarget: number; padding: number; radius: number; gap: number }>>;
+}
+
+export const THEMES: Record<string, ThemeDefinition> = {
+  light: {
+    id: 'light',
+    label: 'Light',
+    isDark: false,
+    colors: {},
+    typography: {},
+    density: {},
+  },
+  dark: {
+    id: 'dark',
+    label: 'Dark',
+    isDark: true,
+    colors: DARK_MODE,
+    typography: {},
+    density: {},
+  },
+  easy: {
+    id: 'easy',
+    label: 'Easy / Elderly',
+    isDark: false,
+    colors: {
+      primary: '#1A56DB',
+      primaryForeground: '#FFFFFF',
+      text: { primary: '#000000', secondary: '#2C2C24', muted: '#4B5563', onPrimary: '#FFFFFF', onSecondary: '#FFFFFF', onAccent: '#4A4A40' },
+      background: '#FFFFFF',
+      surface: { base: '#FFFFFF', elevated: '#F5F3EE', card: '#FFFFFF', overlay: 'rgba(0,0,0,0.05)', border: '#D1D5DB' },
+      border: '#D1D5DB',
+      destructive: '#B91C1C',
+      success: '#15803D',
+    },
+    typography: {
+      body: { fontSize: 20, fontWeight: '400' as const, lineHeight: 30, fontFamily: 'Nunito' },
+      bodyLg: { fontSize: 22, fontWeight: '400' as const, lineHeight: 32, fontFamily: 'Nunito' },
+      label: { fontSize: 20, fontWeight: '600' as const, lineHeight: 28, fontFamily: 'Nunito' },
+      labelLg: { fontSize: 22, fontWeight: '600' as const, lineHeight: 30, fontFamily: 'Nunito' },
+      h1: { fontSize: 40, fontWeight: '700' as const, lineHeight: 48, fontFamily: 'Fraunces' },
+      h2: { fontSize: 34, fontWeight: '700' as const, lineHeight: 42, fontFamily: 'Fraunces' },
+      h3: { fontSize: 28, fontWeight: '700' as const, lineHeight: 36, fontFamily: 'Fraunces' },
+    },
+    density: {
+      compact: { touchTarget: 56, padding: 16, radius: 16, gap: 14 },
+      comfortable: { touchTarget: 60, padding: 18, radius: 18, gap: 16 },
+      spacious: { touchTarget: 64, padding: 22, radius: 20, gap: 20 },
+    },
+  },
+};

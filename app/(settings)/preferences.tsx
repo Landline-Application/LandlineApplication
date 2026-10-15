@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   Alert,
@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { THEMES, type ThemeId } from '@/config/themes';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
@@ -34,7 +35,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useAppTheme();
+  const { isDark, themeId, setTheme } = useAppTheme();
 
   // Retention — read directly from store (reactive to changes)
   const retentionDays = usePreferencesStore(
@@ -52,6 +53,10 @@ export default function PreferencesScreen() {
     useState<RetentionDays>(retentionDays);
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
   const [selectedReminderHours, setSelectedReminderHours] = useState(landlineReminderIntervalHours);
+
+  // Design (theme) modal state
+  const [designModalVisible, setDesignModalVisible] = useState(false);
+  const [selectedThemeId, setSelectedThemeId] = useState<ThemeId>(themeId as ThemeId);
 
   const nextCleanupText = useMemo(
     () => formatNextCleanupRelative(retentionDays, getLastCleanupTimestamp()),
@@ -101,6 +106,21 @@ export default function PreferencesScreen() {
 
   function reminderIntervalLabel(hours: number) {
     return hours === 1 ? 'Every hour' : `Every ${hours} hours`;
+  }
+
+  function openDesignModal() {
+    setSelectedThemeId(themeId as ThemeId);
+    setDesignModalVisible(true);
+  }
+
+  function closeDesignModal() {
+    setDesignModalVisible(false);
+  }
+
+  function handleSaveDesign() {
+    setTheme(selectedThemeId);
+    closeDesignModal();
+    haptics.light();
   }
 
   const d = isDark
@@ -184,6 +204,40 @@ export default function PreferencesScreen() {
                 <View style={styles.retentionValueContainer}>
                   <Text style={[styles.retentionValue, isDark && { color: COLORS.primary }]}>
                     {getRetentionLabel(retentionDays)}
+                  </Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={isDark ? d?.sub ?? COLORS.text.muted : COLORS.text.muted}
+                  />
+                </View>
+              </View>
+            </Card>
+          </TouchableOpacity>
+        </View>
+
+        {/* Design */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeader, isDark && { color: COLORS.primary }]}>Design</Text>
+
+          <TouchableOpacity
+            onPress={() => {
+              haptics.light();
+              openDesignModal();
+            }}
+            activeOpacity={0.7}
+          >
+            <Card variant="elevated" padding="md" style={styles.prefCard}>
+              <View style={styles.prefRow}>
+                <View style={styles.prefTextBlock}>
+                  <Text style={[styles.prefTitle, isDark && { color: d?.text }]}>Appearance</Text>
+                  <Text style={[styles.prefSubtitle, isDark && { color: d?.sub }]}>
+                    Choose a theme, including a larger-text mode for easier reading.
+                  </Text>
+                </View>
+                <View style={styles.retentionValueContainer}>
+                  <Text style={[styles.retentionValue, isDark && { color: COLORS.primary }]}>
+                    {THEMES[themeId]?.label ?? 'Light'}
                   </Text>
                   <MaterialIcons
                     name="chevron-right"
@@ -388,6 +442,85 @@ export default function PreferencesScreen() {
                 <Button
                   label="Save"
                   onPress={() => void handleSaveReminderInterval()}
+                  variant="primary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </View>
+          </Card>
+        </View>
+      </Modal>
+
+      {/* Design / Appearance Modal */}
+      <Modal
+        visible={designModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeDesignModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" padding="lg" style={styles.retentionModalContent}>
+            <Text style={[styles.modalTitle, isDark && { color: d?.text }]}>Appearance</Text>
+            <Text style={[styles.modalBody, isDark && { color: d?.sub }]}>
+              Pick how Landline looks. Easy / Elderly uses larger text and buttons.
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {Object.values(THEMES).map((theme) => {
+                const isSelected = selectedThemeId === theme.id;
+                return (
+                  <TouchableOpacity
+                    key={theme.id}
+                    style={[
+                      styles.retentionOption,
+                      isSelected && styles.retentionOptionSelected,
+                      isDark &&
+                        !isSelected && {
+                          backgroundColor: '#3d3d3d',
+                          borderWidth: 0,
+                        },
+                    ]}
+                    onPress={() => {
+                      haptics.light();
+                      setSelectedThemeId(theme.id as ThemeId);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.retentionOptionRadio,
+                        isSelected && styles.retentionOptionRadioSelected,
+                      ]}
+                    >
+                      {isSelected && <View style={styles.retentionOptionRadioInner} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.retentionOptionText,
+                        isSelected && styles.retentionOptionTextSelected,
+                        isDark && !isSelected && { color: d?.text },
+                      ]}
+                    >
+                      {theme.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.retentionModalFooter}>
+              <View style={styles.modalButtons}>
+                <Button
+                  label="Cancel"
+                  onPress={closeDesignModal}
+                  variant="secondary"
+                  size="md"
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Save"
+                  onPress={handleSaveDesign}
                   variant="primary"
                   size="md"
                   style={{ flex: 1 }}

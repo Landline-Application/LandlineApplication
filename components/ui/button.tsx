@@ -12,9 +12,8 @@ import {
 
 import { COLORS, Motion, Radius, Spacing, TouchTargets, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { haptics } from '@/services/haptics';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'text';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -33,8 +32,6 @@ export interface ButtonProps {
   accessibilityLabel?: string;
 }
 
-// ── Variant & size lookup tables ──────────────────────────────────────────────
-
 const containerSizes: Record<ButtonSize, ViewStyle> = {
   sm: { height: TouchTargets.sm, paddingHorizontal: Spacing.md },
   md: { height: TouchTargets.md, paddingHorizontal: Spacing.lg },
@@ -48,8 +45,6 @@ const textSizes: Record<ButtonSize, TextStyle> = {
   lg: { fontSize: Typography.labelLg.fontSize },
   xl: { fontSize: Typography.labelLg.fontSize },
 };
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export function Button({
   label,
@@ -65,30 +60,49 @@ export function Button({
   accessibilityLabel,
 }: ButtonProps) {
   const { isDark } = useAppTheme();
+  const { theme, density, isEasy } = useThemeTokens();
+  const c = theme.colors;
+
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const isDisabled = disabled || loading;
+
   const containerVariants: Record<ButtonVariant, ViewStyle> = {
-    primary: { backgroundColor: COLORS.primary },
-    secondary: { backgroundColor: COLORS.secondary },
+    primary: { backgroundColor: isEasy ? c.primary : COLORS.primary },
+    secondary: isEasy
+      ? { backgroundColor: c.surface, borderWidth: 2, borderColor: c.primary }
+      : { backgroundColor: COLORS.secondary },
     ghost: {
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: isDark ? '#DDDDDD' : COLORS.primary,
+      borderWidth: isEasy ? 2 : 1.5,
+      borderColor: isDark ? '#DDDDDD' : isEasy ? c.primary : COLORS.primary,
     },
-    danger: { backgroundColor: COLORS.destructive },
+    danger: { backgroundColor: isEasy ? c.danger : COLORS.destructive },
     text: { backgroundColor: 'transparent' },
   };
+
   const textVariants: Record<ButtonVariant, TextStyle> = {
-    primary: { color: COLORS.text.onPrimary },
-    secondary: { color: COLORS.text.onSecondary },
-    ghost: { color: isDark ? '#FFFFFF' : COLORS.primary },
-    danger: { color: COLORS.text.onPrimary },
+    primary: { color: isEasy ? c.primaryText : COLORS.text.onPrimary },
+    secondary: { color: isEasy ? c.primary : COLORS.text.onSecondary },
+    ghost: { color: isDark ? '#FFFFFF' : isEasy ? c.primary : COLORS.primary },
+    danger: { color: isEasy ? c.primaryText : COLORS.text.onPrimary },
     text: {
-      color: isDark ? '#F3F3F3' : COLORS.text.secondary,
+      color: isDark ? '#F3F3F3' : isEasy ? c.muted : COLORS.text.secondary,
       fontFamily: 'Nunito_400Regular',
-      opacity: 0.8,
+      opacity: isEasy ? 1 : 0.8,
     },
   };
+
+  const easyContainer: ViewStyle | undefined = isEasy
+    ? {
+        height: Math.max(TouchTargets[size], density.minTouch),
+        paddingHorizontal: density.padding * 1.5,
+        borderRadius: density.borderRadius,
+      }
+    : undefined;
+
+  const easyText: TextStyle | undefined = isEasy
+    ? { fontSize: density.fontSize, fontFamily: theme.fonts.medium }
+    : undefined;
 
   const handlePressIn = useCallback(() => {
     Animated.timing(scaleAnim, {
@@ -114,7 +128,13 @@ export function Button({
   }, [isDisabled, hapticEnabled, handlePressOut, onPress]);
 
   const loaderColor =
-    variant === 'ghost' || variant === 'text' ? COLORS.primary : COLORS.text.onPrimary;
+    variant === 'ghost' || variant === 'text'
+      ? isEasy
+        ? c.primary
+        : COLORS.primary
+      : isEasy
+        ? c.primaryText
+        : COLORS.text.onPrimary;
 
   return (
     <Animated.View
@@ -132,6 +152,7 @@ export function Button({
           styles.base,
           containerVariants[variant],
           containerSizes[size],
+          easyContainer,
           { width: fullWidth ? '100%' : 'auto' },
           isDisabled && { opacity: 0.4 },
         ]}
@@ -139,7 +160,7 @@ export function Button({
         {loading ? (
           <ActivityIndicator color={loaderColor} />
         ) : (
-          <Text style={[styles.label, textVariants[variant], textSizes[size], textStyle]}>
+          <Text style={[styles.label, textVariants[variant], textSizes[size], easyText, textStyle]}>
             {label}
           </Text>
         )}

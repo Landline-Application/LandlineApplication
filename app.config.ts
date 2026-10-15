@@ -102,7 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       router: {},
       eas: {
-        projectId: process.env.EAS_PROJECT_ID ?? '6eca4977-93f1-4209-a7b4-ed6cced9a82a',
+        projectId:"54d04e23-804c-4520-8137-07b0d0773ac2",
       },
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },

@@ -1,11 +1,11 @@
-import React from 'react';
 
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { THEMES, type ThemeId } from '@/config/themes';
 import { COLORS, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { haptics } from '@/services/haptics';
@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DesignScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark, setDarkMode } = useAppTheme();
+  const { isDark, themeId, setTheme } = useAppTheme();
   const darkUi = isDark
     ? {
         bg: '#5f5f5f',
@@ -59,24 +59,40 @@ export default function DesignScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: darkUi?.textPrimary }]}>Theme</Text>
           <Card variant="elevated" padding="md" style={styles.prefCard}>
-            <View style={styles.prefRow}>
-              <View style={styles.prefTextBlock}>
-                <Text style={[styles.prefTitle, isDark && { color: darkUi?.textPrimary }]}>Dark mode</Text>
-                <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
-                  Use a darker app appearance for low-light environments.
-                </Text>
-              </View>
-              <Switch
-                value={isDark}
-                onValueChange={(nextValue) => {
-                  setDarkMode(nextValue);
-                  haptics.light();
-                }}
-                trackColor={{ false: COLORS.accent, true: COLORS.primary }}
-                thumbColor={COLORS.surface.base}
-                accessibilityLabel="Toggle dark mode"
-              />
-            </View>
+            {Object.values(THEMES).map((theme, index) => {
+              const isSelected = themeId === theme.id;
+              return (
+                <TouchableOpacity
+                  key={theme.id}
+                  onPress={() => {
+                    setTheme(theme.id as ThemeId);
+                    haptics.light();
+                  }}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.themeOption,
+                    index > 0 && styles.themeOptionBorder,
+                    isDark && index > 0 && { borderTopColor: darkUi?.border },
+                  ]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <View style={styles.prefTextBlock}>
+                    <Text style={[styles.prefTitle, isDark && { color: darkUi?.textPrimary }]}>
+                      {theme.label}
+                    </Text>
+                    {theme.id === 'easy' && (
+                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
+                        Larger text and buttons for easier reading.
+                      </Text>
+                    )}
+                  </View>
+                  <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                    {isSelected && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </Card>
         </View>
       </ScrollView>
@@ -137,12 +153,16 @@ const styles = StyleSheet.create({
   prefCard: {
     ...Shadows.sm,
   },
-  prefRow: {
+  themeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     gap: Spacing.md,
+  },
+  themeOptionBorder: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surface.border,
   },
   prefTextBlock: {
     flex: 1,
@@ -160,5 +180,23 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     lineHeight: 18,
     fontFamily: 'Nunito_400Regular',
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.text.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: COLORS.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
   },
 });

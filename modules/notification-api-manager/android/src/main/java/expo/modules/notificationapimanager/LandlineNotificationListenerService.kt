@@ -41,9 +41,10 @@ class LandlineNotificationListenerService : NotificationListenerService() {
          * TEMPORARY: Auto-reply is disabled while product flow/logic is being finalized.
          * Leave code paths in place, but never send replies.
          */
-        private const val AUTO_REPLY_TEMP_DISABLED = true
+        private const val AUTO_REPLY_TEMP_DISABLED = false
         private const val PREFS_NAME = "landline_mode_prefs"
         private const val KEY_LANDLINE_MODE = "is_landline_mode_active"
+        
 
         /** When enabled and at least one app or emergency number is set, non-matching notifications are cancelled. */
         private const val KEY_NOTIFICATION_FILTER_ENABLED = "notification_filter_enabled"
@@ -417,13 +418,17 @@ class LandlineNotificationListenerService : NotificationListenerService() {
 
             // Skip re-posts of notifications we already replied to (app updates same key
             // after a RemoteInput reply to show the sent message bubble).
-            if (repliedWithMessage.containsKey(sbn.key)) {
-                Log.d(TAG, "Skipping confirmation re-notification for already-replied key: ${sbn.key}")
+            val sentByUs = repliedWithMessage[sbn.key]
+            if (sentByUs != null && text == sentByUs) {
+                Log.d(TAG, "Skipping confirmation re-notification for our own reply: ${sbn.key}")
                 return
             }
 
             val appName = getAppName(packageName)
-            val isEmergencyContactNotification = isFromEmergencyContact(title, text)
+            val senderHints = extractSenderHints(notification)
+            val isEmergencyContactNotification =
+                isFromEmergencyContact(title, text) ||
+            senderHints.any { isFromEmergencyContact(it, "") }
 
             val isCallNotification =
                 notification.category == Notification.CATEGORY_CALL
@@ -489,8 +494,11 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             loggedNotificationContent[sbn.key] = contentKey
 
             // TEMPORARY: auto-reply is disabled while flow/logic is finalized.
-            // Keep logging and emergency detection intact.
-            val autoReplied = false
+       
+            val autoReplied = autoReplyEnabled &&
+                isEmergencyContactNotification &&
+                !isCallNotification &&
+                tryOutOfOfficeReply(sbn, notification, packageName, title, text, senderHints)
 
             if (isEmergencyContactNotification && repeatCallerKey != null) {
                 synchronized(repeatCallTrackingLock) {
@@ -798,7 +806,63 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         val allowedApps = prefs.getStringSet(KEY_ALLOWED_APPS, emptySet()) ?: emptySet()
         return allowedApps.isEmpty() || allowedApps.contains(packageName)
     }
+    private fun findMatchingEmergencyContact(
+    title: String,
+    text: String,
+    hints: List<String>
+): EmergencyContactEntry? {
+    return loadEmergencyContacts().firstOrNull { ec ->
+        matchesEmergencyContact(title, ec) ||
+            matchesEmergencyContact(text, ec) ||
+            hints.any { matchesEmergencyContact(it, ec) }
+    }
+}
+
+
+private fun tryOutOfOfficeReply(
+    sbn: StatusBarNotification,
+    notification: Notification,
+    packageName: String,
+    title: String,
+    text: String,
+    hints: List<String>
+): Boolean {
+    if (isGroupConversation(notification)) {
+        Log.d(TAG, "Group conversation - skipping out-of-office reply")
+        return false
+    }
+    if (!isAppAllowedForAutoReply(packageName)) return false
+    if (!hasReplyAction(notification)) return false
+
+    // Only reply if the sender is an emergency contact
+    findMatchingEmergencyContact(title, text, hints) ?: return false
+
+    val sent = handleAutoReply(notification, packageName) ?: return false
+    repliedWithMessage[sbn.key] = sent
+    Log.d(TAG, "Out-of-office reply sent via $packageName")
+    return true
+}
+
+/** True if this notification is from a group chat rather than a 1:1 thread. */
+private fun isGroupConversation(notification: Notification): Boolean {
+    val extras = notification.extras ?: return false
+
+    if (extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false)) return true
+
     
+    if (!extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE).isNullOrBlank()) return true
+
+    
+    val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+    if (style != null) {
+        if (style.isGroupConversation) return true
+        val senders = style.messages
+            .mapNotNull { it.person?.key ?: it.person?.name?.toString() }
+            .toSet()
+        if (senders.size > 1) return true
+    }
+    return false
+}
     /**
      * Check if notification has a reply action (RemoteInput)
      */
@@ -972,6 +1036,37 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         val fieldLast = fieldDigits.takeLast(10)
         return phoneLast == fieldLast
     }
+    /** Sender identifiers that survive content redaction (number extra, people list). */
+private fun extractSenderHints(notification: Notification): List<String> {
+    val extras = notification.extras ?: return emptyList()
+    val hints = mutableListOf<String>()
+
+    extras.getString("extra_im_notification_participant_normalized_destination")
+        ?.takeIf { it.isNotBlank() }?.let { hints.add(it) }
+
+    try {
+        @Suppress("DEPRECATION")
+        val people = extras.getParcelableArrayList<android.os.Parcelable>(Notification.EXTRA_PEOPLE_LIST)
+        people?.forEach { p ->
+            if (p is android.app.Person) {
+                p.uri?.let { hints.add(it) }
+                p.name?.toString()?.let { hints.add(it) }
+            }
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Could not read people list", e)
+    }
+
+    // Debug: shows what the redacted notification still exposes
+    for (key in extras.keySet()) {
+        if (key.contains("extra_im") || key.contains("people")) {
+            @Suppress("DEPRECATION")
+            Log.d(TAG, "hint extra $key = ${extras.get(key)}")
+        }
+    }
+    Log.d(TAG, "Sender hints: $hints")
+    return hints
+}
 
     private fun isFromEmergencyContact(title: String, text: String): Boolean {
         val contacts = loadEmergencyContacts()
