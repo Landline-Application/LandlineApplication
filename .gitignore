@@ -84,3 +84,6 @@ android/keystore.properties
 .cursorindexingignore
 .vscode/settings.json
 package-lock.json
+
+
+.env.local*
