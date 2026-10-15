@@ -87,3 +87,4 @@ package-lock.json
 
 
 .env.local*
+*.bak
