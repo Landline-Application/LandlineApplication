@@ -1,27 +1,39 @@
-import React, { useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { Dimensions, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Dimensions, StyleSheet, View, ViewStyle } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { StatusIndicator } from '@/components/ui/status-indicator';
-import { COLORS, Motion, Shadows } from '@/constants/theme';
+import { COLORS, Shadows } from '@/constants/theme';
 import { haptics } from '@/services/haptics';
 import Reanimated, {
-  Easing,
   cancelAnimation,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withDecay,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
-// One full rotation per 12 s → 30 deg/s
-const SPIN_DURATION_MS = 12000;
-const SPIN_DEG_PER_S = 360 / (SPIN_DURATION_MS / 1000);
+/** Clockwise travel from rest to the finger stop (one digit). */
+const MAX_WIND_DEG = 110;
+const HOLE_STEP_DEG = 26;
+
+const clockwiseDelta = (fromDeg: number, toDeg: number) => {
+  'worklet';
+  let delta = toDeg - fromDeg;
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
+  return delta;
+};
+
+const clamp = (value: number, min: number, max: number) => {
+  'worklet';
+  return Math.min(max, Math.max(min, value));
+};
 
 export interface RotaryDialButtonProps {
   active: boolean;
@@ -38,6 +50,9 @@ export const RotaryDialButton = ({
 }: RotaryDialButtonProps) => {
   const scale = useSharedValue(1);
   const rotationDeg = useSharedValue(0);
+  const startAngleDeg = useSharedValue(0);
+  const hitFingerStop = useSharedValue(false);
+  const lastTickIndex = useSharedValue(0);
 
   const dialSize = width * 0.82;
   const dialCenter = dialSize / 2;
@@ -57,28 +72,97 @@ export const RotaryDialButton = ({
     [dialCenter, holeDistance, holeRadius],
   );
 
-  useEffect(() => {
+  const handleToggle = useCallback(() => {
+    if (disabled) return;
     if (active) {
-      const current = rotationDeg.value;
-      const target = current + 360 * 6000;
-      const durationMs = ((target - current) / 360) * SPIN_DURATION_MS;
-      rotationDeg.value = withTiming(target, {
-        duration: durationMs,
-        easing: Easing.linear,
-      });
+      haptics.warning();
     } else {
-      cancelAnimation(rotationDeg);
-      rotationDeg.value = withDecay({
-        velocity: SPIN_DEG_PER_S,
-        deceleration: 0.997,
-      });
+      haptics.success();
     }
+    void onPress?.();
+  }, [active, disabled, onPress]);
 
-    return () => {
-      cancelAnimation(rotationDeg);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  const pressIn = useCallback(() => {
+    scale.value = withSpring(0.92, { damping: 20, stiffness: 400 });
+  }, [scale]);
+
+  const pressOut = useCallback(() => {
+    scale.value = withSpring(1, { damping: 18, stiffness: 280 });
+  }, [scale]);
+
+  const onTick = useCallback(() => {
+    haptics.light();
+  }, []);
+
+  const onFingerStop = useCallback(() => {
+    haptics.rigid();
+  }, []);
+
+  const gesture = useMemo(() => {
+    const tap = Gesture.Tap()
+      .enabled(!disabled)
+      .onBegin(() => {
+        runOnJS(pressIn)();
+        runOnJS(haptics.rigid)();
+      })
+      .onFinalize(() => {
+        runOnJS(pressOut)();
+      })
+      .onEnd(() => {
+        runOnJS(handleToggle)();
+      });
+
+    const pan = Gesture.Pan()
+      .enabled(!disabled)
+      .minDistance(8)
+      .onBegin((event) => {
+        cancelAnimation(rotationDeg);
+        hitFingerStop.value = false;
+        lastTickIndex.value = 0;
+        startAngleDeg.value =
+          (Math.atan2(event.y - dialCenter, event.x - dialCenter) * 180) / Math.PI;
+        runOnJS(pressIn)();
+      })
+      .onUpdate((event) => {
+        const currentAngle =
+          (Math.atan2(event.y - dialCenter, event.x - dialCenter) * 180) / Math.PI;
+        const wind = clamp(clockwiseDelta(startAngleDeg.value, currentAngle), 0, MAX_WIND_DEG);
+        rotationDeg.value = wind;
+
+        const tickIndex = Math.floor(wind / HOLE_STEP_DEG);
+        if (tickIndex > lastTickIndex.value) {
+          lastTickIndex.value = tickIndex;
+          runOnJS(onTick)();
+        }
+
+        if (wind >= MAX_WIND_DEG && !hitFingerStop.value) {
+          hitFingerStop.value = true;
+          runOnJS(onFingerStop)();
+        }
+      })
+      .onFinalize(() => {
+        rotationDeg.value = withSpring(0, {
+          damping: 14,
+          stiffness: 90,
+          overshootClamping: true,
+        });
+        runOnJS(pressOut)();
+      });
+
+    return Gesture.Exclusive(pan, tap);
+  }, [
+    dialCenter,
+    disabled,
+    handleToggle,
+    hitFingerStop,
+    lastTickIndex,
+    onFingerStop,
+    onTick,
+    pressIn,
+    pressOut,
+    rotationDeg,
+    startAngleDeg,
+  ]);
 
   const pressableStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -88,64 +172,45 @@ export const RotaryDialButton = ({
     transform: [{ rotate: `${rotationDeg.value}deg` }],
   }));
 
-  const handlePressIn = () => {
-    if (disabled) return;
-    scale.value = withSpring(Motion.scalePress, { damping: 25, stiffness: 300 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 25, stiffness: 300 });
-  };
-
-  const handlePress = async () => {
-    if (disabled) return;
-    haptics.medium();
-    await onPress?.();
-  };
-
   return (
     <View style={[styles.container, style]}>
       <View style={styles.shadowOuter} />
 
-      <LinearGradient
-        colors={[COLORS.primary, '#4A5A41', '#3D4A36']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.dialBase}
-      >
-        <Pressable
-          onPress={handlePress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled}
-          style={StyleSheet.absoluteFill}
-        />
+      <GestureDetector gesture={gesture}>
+        <Reanimated.View style={[styles.dialBase, pressableStyle]}>
+          <LinearGradient
+            colors={[COLORS.primary, '#4A5A41', '#3D4A36']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
 
-        <Reanimated.View style={[styles.centerDisplay, pressableStyle]} pointerEvents="none">
-          <LinearGradient colors={['#E6DCCD', '#D6C5B3']} style={StyleSheet.absoluteFill} />
-          <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
-        </Reanimated.View>
+          <View style={styles.centerDisplay} pointerEvents="none">
+            <LinearGradient colors={['#E6DCCD', '#D6C5B3']} style={StyleSheet.absoluteFill} />
+            <StatusIndicator active={active} color={COLORS.primary} size="lg" showGlow={active} />
+          </View>
 
-        <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
-          {holes.map((hole) => (
-            <View
-              key={hole.id}
-              style={[
-                styles.hole,
-                {
-                  top: hole.y,
-                  left: hole.x,
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.05)']}
-                style={StyleSheet.absoluteFill}
-              />
-            </View>
-          ))}
+          <Reanimated.View style={[styles.holeLayer, holeLayerStyle]} pointerEvents="none">
+            {holes.map((hole) => (
+              <View
+                key={hole.id}
+                style={[
+                  styles.hole,
+                  {
+                    top: hole.y,
+                    left: hole.x,
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.05)']}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+            ))}
+          </Reanimated.View>
         </Reanimated.View>
-      </LinearGradient>
+      </GestureDetector>
     </View>
   );
 };
