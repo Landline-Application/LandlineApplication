@@ -87,4 +87,5 @@ package-lock.json
 
 
 .env.local*
-*.bak
+*.bakgoogle-services.json
+android/app/google-services.json
