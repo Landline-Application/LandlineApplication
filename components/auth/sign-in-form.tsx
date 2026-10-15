@@ -25,7 +25,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, isOperationInProgress } = useAuth();
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isFormValid = validateEmail(email) && password.length >= 6;
@@ -37,6 +37,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
   };
 
   const handleSubmit = async () => {
+    if (isOperationInProgress) return;
     clearErrors();
     let valid = true;
     if (!validateEmail(email)) {
@@ -55,7 +56,9 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
       onSuccess();
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code;
-      if (code === 'auth/user-not-found') {
+      if (code === 'auth/operation-in-progress') {
+        // Silently ignore — the UI is already disabled.
+      } else if (code === 'auth/user-not-found') {
         setEmailError('No account found with this email');
       } else if (code === 'auth/wrong-password') {
         setPasswordError('Incorrect password');
@@ -73,12 +76,14 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
   };
 
   const handleGoogleSignIn = async () => {
+    if (isOperationInProgress) return;
     setIsLoading(true);
     try {
       await signInWithGoogle();
       onSuccess();
     } catch (error: unknown) {
-      if ((error as { code?: string })?.code !== 'SIGN_IN_CANCELLED') {
+      const code = (error as { code?: string })?.code;
+      if (code !== 'SIGN_IN_CANCELLED' && code !== 'auth/operation-in-progress') {
         Alert.alert(
           'Google Sign-In Failed',
           (error as Error)?.message || 'An unexpected error occurred.',
@@ -102,7 +107,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
-        editable={!isLoading}
+        editable={!isLoading && !isOperationInProgress}
         returnKeyType="next"
       />
 
@@ -115,7 +120,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
         }}
         error={passwordError}
         secureTextEntry={!showPassword}
-        editable={!isLoading}
+        editable={!isLoading && !isOperationInProgress}
         returnKeyType="done"
         onSubmitEditing={handleSubmit}
         trailingIcon={
@@ -157,17 +162,17 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
       {/* Primary CTA */}
       <Pressable
         onPress={handleSubmit}
-        disabled={!isFormValid || isLoading}
+        disabled={!isFormValid || isLoading || isOperationInProgress}
         style={({ pressed }) => [
           styles.primaryButton,
-          (!isFormValid || isLoading) && styles.primaryButtonDisabled,
-          pressed && isFormValid && !isLoading && styles.primaryButtonPressed,
+          (!isFormValid || isLoading || isOperationInProgress) && styles.primaryButtonDisabled,
+          pressed && isFormValid && !isLoading && !isOperationInProgress && styles.primaryButtonPressed,
         ]}
         accessibilityRole="button"
         accessibilityLabel="Sign in"
-        accessibilityState={{ disabled: !isFormValid || isLoading }}
+        accessibilityState={{ disabled: !isFormValid || isLoading || isOperationInProgress }}
       >
-        <Text style={styles.primaryButtonText}>{isLoading ? 'Signing in…' : 'Sign In'}</Text>
+        <Text style={styles.primaryButtonText}>{isLoading || isOperationInProgress ? 'Signing in…' : 'Sign In'}</Text>
       </Pressable>
 
       {/* OR divider */}
@@ -180,8 +185,12 @@ export function SignInForm({ onSuccess, onForgotPassword, onCreateAccount }: Sig
       {/* Google sign-in — outlined button, M3 pattern */}
       <Pressable
         onPress={handleGoogleSignIn}
-        disabled={isLoading}
-        style={({ pressed }) => [styles.outlinedButton, pressed && styles.outlinedButtonPressed]}
+        disabled={isLoading || isOperationInProgress}
+        style={({ pressed }) => [
+          styles.outlinedButton,
+          (isLoading || isOperationInProgress) && styles.primaryButtonDisabled,
+          pressed && !isLoading && !isOperationInProgress && styles.outlinedButtonPressed,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Continue with Google"
       >
