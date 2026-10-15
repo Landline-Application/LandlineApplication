@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -13,8 +13,6 @@ import {
   View,
 } from 'react-native';
 
-import { router, useFocusEffect, type Href } from 'expo-router';
-
 import { AppAttentionCard } from '@/components/settings/app-attention-card';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,14 +20,15 @@ import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { useAppTheme } from '@/contexts/theme-context';
-import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import {
   BADGE_CATALOG,
   achievementsProgressLabel,
   useAchievementsStore,
 } from '@/hooks/use-achievements-store';
+import { useAutoReplyStore } from '@/hooks/use-auto-reply-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
 import {
@@ -51,6 +50,7 @@ import {
   saveNotificationLogsCSVAndroid,
 } from '@/utils/notification-logs-csv';
 import { StorageManager } from '@/utils/storage/storage-manager';
+import { type Href, router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
@@ -76,7 +76,32 @@ export default function SettingsScreen() {
   // Deletion state
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-
+    const { theme, density, isEasy } = useThemeTokens();
+  const easy = isEasy
+    ? {
+        header: {
+          fontSize: density.fontSize * 1.25,
+          fontFamily: theme.fonts.bold,
+          color: theme.colors.primary,
+        },
+        title: {
+          fontSize: density.fontSize * 1.1,
+          fontFamily: theme.fonts.medium,
+          color: theme.colors.text,
+        },
+        subtitle: {
+          fontSize: density.fontSize * 0.9,
+          fontFamily: theme.fonts.regular,
+          color: theme.colors.muted,
+        },
+        row: { minHeight: density.minTouch * 1.4, paddingVertical: density.padding },
+        icon: {
+          width: density.minTouch * 0.85,
+          height: density.minTouch * 0.85,
+          borderRadius: density.minTouch * 0.43,
+        },
+      }
+    : null;
   // Storage state
   const [storageInfo, setStorageInfo] = useState<{
     totalKeys: number;
@@ -295,7 +320,7 @@ export default function SettingsScreen() {
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Account</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>Account</Text>
 
           {isAuthenticated ? (
             <Card variant="elevated" padding="lg" style={styles.card}>
@@ -441,7 +466,7 @@ export default function SettingsScreen() {
 
         {/* Achievements — opens dedicated badge list */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Achievements</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>Achievements</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -452,15 +477,15 @@ export default function SettingsScreen() {
               accessibilityRole="button"
               accessibilityLabel={`Achievements. ${achievementsSubtitle}`}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="emoji-events" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     Achievements
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     {achievementsSubtitle}
                   </Text>
                 </View>
@@ -472,7 +497,7 @@ export default function SettingsScreen() {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Preferences</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>Preferences</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -481,15 +506,15 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="tune" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     General settings
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Notification retention and more
                   </Text>
                 </View>
@@ -506,13 +531,13 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="reply" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Auto-Reply</Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>Auto-Reply</Text>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     {autoReplyEnabled
                       ? 'Enabled — auto-replying to messages'
                       : 'Set up automatic replies while focused'}
@@ -536,15 +561,15 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="contact-phone" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     Emergency Contacts
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Contacts that can reach you during Landline Mode
                   </Text>
                 </View>
@@ -562,13 +587,13 @@ export default function SettingsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                    <View style={styles.menuItemIcon}>
+                  <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                    <View style={[styles.menuItemIcon, easy?.icon]}>
                       <MaterialIcons name="phone-callback" size={22} color={COLORS.primary} />
                     </View>
                     <View style={styles.menuItemContent}>
-                      <Text style={styles.menuItemTitle}>Repeat-call bypass</Text>
-                      <Text style={styles.menuItemSubtitle}>
+                      <Text style={[styles.menuItemTitle, easy?.title]}>Repeat-call bypass</Text>
+                      <Text style={[styles.menuItemSubtitle, easy?.subtitle]}>
                         Let a second call from the same number through within a short window
                       </Text>
                     </View>
@@ -587,13 +612,13 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="palette" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Design</Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>Design</Text>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Theme and appearance preferences
                   </Text>
                 </View>
@@ -621,15 +646,15 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="feedback" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     Send Feedback
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Report bugs, request features, or share thoughts
                   </Text>
                 </View>
@@ -641,7 +666,7 @@ export default function SettingsScreen() {
 
         {/* App Permissions Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Permissions</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>App Permissions</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
               onPress={() => {
@@ -650,13 +675,13 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="lock" size={22} color={COLORS.primary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>Permissions</Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>Permissions</Text>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Review and grant app access
                   </Text>
                 </View>
@@ -669,14 +694,14 @@ export default function SettingsScreen() {
         {/* App Attention Section */}
         {Platform.OS === 'android' && (
           <View style={styles.section}>
-            <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Attention</Text>
+            <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>App Attention</Text>
             <AppAttentionCard limit={5} showViewMore />
           </View>
         )}
 
         {/* Tools Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>
             Tools & Diagnostics
           </Text>
           <Card variant="elevated" padding="none" style={styles.card}>
@@ -687,15 +712,15 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="notifications-off" size={22} color={COLORS.secondary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     Landline Mode
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     Configure silencing engine
                   </Text>
                 </View>
@@ -712,15 +737,15 @@ export default function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
-                <View style={styles.menuItemIcon}>
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }, easy?.row]}>
+                <View style={[styles.menuItemIcon, easy?.icon]}>
                   <MaterialIcons name="build" size={22} color={COLORS.secondary} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                  <Text style={[styles.menuItemTitle, easy?.title, isDark && { color: '#FFFFFF' }]}>
                     Debug Console
                   </Text>
-                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                  <Text style={[styles.menuItemSubtitle, easy?.subtitle, isDark && { color: '#F3F3F3' }]}>
                     System logs and developer tools
                   </Text>
                 </View>
@@ -731,7 +756,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Data Management</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>Data Management</Text>
           <Card variant="elevated" padding="lg" style={styles.card}>
             {/* Retention Period Row */}
             <TouchableOpacity
@@ -798,7 +823,7 @@ export default function SettingsScreen() {
 
         {/* Developer Testing */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Development</Text>
+          <Text style={[styles.sectionHeader, easy?.header, isDark && { color: '#FFFFFF' }]}>Development</Text>
           <Button
             label="Reset Terms Acceptance"
             onPress={resetTermsAcceptance}

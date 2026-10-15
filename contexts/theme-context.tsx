@@ -1,93 +1,86 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-
+import { DensityScale, THEMES, type Density } from '@/config/themes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DevSettings } from 'react-native';
 
 const THEME_KEY = '@app_theme_preference';
+const DENSITY_KEY = '@app_density_preference';
 
 interface ThemeContextType {
   isDark: boolean;
   isHydrated: boolean;
+  themeId: string;
+  density: Density;
   toggleTheme: () => void;
   setDarkMode: (isDark: boolean) => void;
+  setTheme: (id: string) => void;
+  setDensity: (d: Density) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
   isHydrated: false,
+  themeId: 'light',
+  density: 'comfortable',
   toggleTheme: () => {},
   setDarkMode: () => {},
+  setTheme: () => {},
+  setDensity: () => {},
 });
 
 function reloadAppForThemeChange() {
   if (__DEV__) {
     DevSettings.reload();
   } else {
-    // In production we avoid hard-failing if a reload API is unavailable.
-    // Theme still persists and applies on next launch.
     console.log('Theme changed. Restart app to fully apply static styles.');
   }
 }
 
-function persistThemePreference(nextIsDark: boolean) {
-  return AsyncStorage.setItem(THEME_KEY, nextIsDark ? 'dark' : 'light');
-}
-
 export function ThemeContextProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
-  const [isDark, setIsDark] = useState(systemScheme === 'dark');
+  const [themeId, setThemeId] = useState(systemScheme === 'dark' ? 'dark' : 'light');
+  const [density, setDensityState] = useState<Density>('comfortable');
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(THEME_KEY)
-      .then((stored) => {
-        if (stored !== null) {
-          setIsDark(stored === 'dark');
-        }
+    AsyncStorage.multiGet([THEME_KEY, DENSITY_KEY])
+      .then(([[, storedTheme], [, storedDensity]]) => {
+        if (storedTheme && THEMES[storedTheme]) setThemeId(storedTheme);
+        if (storedDensity && DensityScale[storedDensity as Density]) setDensityState(storedDensity as Density);
       })
-      .finally(() => {
-        setIsHydrated(true);
-      });
+      .finally(() => setIsHydrated(true));
+  }, []);
+
+  const isDark = THEMES[themeId]?.isDark ?? false;
+
+  const setTheme = useCallback((id: string) => {
+    if (!THEMES[id]) return;
+    setThemeId(id);
+    AsyncStorage.setItem(THEME_KEY, id).catch((e) => console.warn('Failed to persist theme:', e));
+    setTimeout(() => reloadAppForThemeChange(), 180);
+  }, []);
+
+  const setDensity = useCallback((d: Density) => {
+    setDensityState(d);
+    AsyncStorage.setItem(DENSITY_KEY, d).catch((e) => console.warn('Failed to persist density:', e));
+    setTimeout(() => reloadAppForThemeChange(), 180);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setIsDark((prev) => {
-      const next = !prev;
-      void persistThemePreference(next)
-        .catch((error) => {
-          console.warn('Failed to persist theme preference:', error);
-        })
-        .finally(() => {
-          setTimeout(() => {
-            reloadAppForThemeChange();
-          }, 180);
-        });
-      return next;
-    });
-  }, []);
+    setTheme(themeId === 'dark' ? 'light' : 'dark');
+  }, [themeId, setTheme]);
 
   const setDarkMode = useCallback((nextIsDark: boolean) => {
-    if (nextIsDark === isDark) return;
-    setIsDark(nextIsDark);
-    void persistThemePreference(nextIsDark)
-      .catch((error) => {
-        console.warn('Failed to persist theme preference:', error);
-      })
-      .finally(() => {
-        // Most screens build StyleSheet tokens at module load.
-        // Reloading ensures the entire UI rehydrates with the selected palette.
-        setTimeout(() => {
-          reloadAppForThemeChange();
-        }, 180);
-      });
-  }, [isDark]);
+    setTheme(nextIsDark ? 'dark' : 'light');
+  }, [setTheme]);
 
-  return (
-    <ThemeContext.Provider value={{ isDark, isHydrated, toggleTheme, setDarkMode }}>
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({ isDark, isHydrated, themeId, density, toggleTheme, setDarkMode, setTheme, setDensity }),
+    [isDark, isHydrated, themeId, density, toggleTheme, setDarkMode, setTheme, setDensity]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useAppTheme() {

@@ -1,11 +1,11 @@
-import React from 'react';
 
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { router } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
+import { THEMES, type ThemeId } from '@/config/themes';
 import { COLORS, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { haptics } from '@/services/haptics';
@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DesignScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark, setDarkMode } = useAppTheme();
+  const { isDark, themeId, setTheme } = useAppTheme();
   const darkUi = isDark
     ? {
         bg: '#5f5f5f',
@@ -59,7 +59,7 @@ export default function DesignScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: darkUi?.textPrimary }]}>Theme</Text>
           <Card variant="elevated" padding="md" style={styles.prefCard}>
-             {Object.values(THEMES).map((theme, index) => {
+            {Object.values(THEMES).map((theme, index) => {
               const isSelected = themeId === theme.id;
               return (
                 <TouchableOpacity
@@ -84,11 +84,6 @@ export default function DesignScreen() {
                     {theme.id === 'easy' && (
                       <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
                         Larger text and buttons for easier reading.
-                      </Text>
-                    )}
-                    {theme.id === 'school' && (
-                      <Text style={[styles.prefSubtitle, isDark && { color: darkUi?.textSecondary }]}>
-                        A calmer look for focused study.
                       </Text>
                     )}
                   </View>
@@ -159,12 +154,16 @@ const styles = StyleSheet.create({
   prefCard: {
     ...Shadows.sm,
   },
-  prefRow: {
+  themeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     gap: Spacing.md,
+  },
+  themeOptionBorder: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surface.border,
   },
   prefTextBlock: {
     flex: 1,
@@ -182,5 +181,23 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     lineHeight: 18,
     fontFamily: 'Nunito_400Regular',
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.text.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: COLORS.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
   },
 });

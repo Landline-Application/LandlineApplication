@@ -2,11 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import { LogBox, Platform, Text } from 'react-native';
 
-import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-
 import { applyThemeColors, COLORS } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ThemeContextProvider, useAppTheme } from '@/contexts/theme-context';
@@ -39,10 +34,13 @@ import {
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import type { Theme } from 'expo-router/react-navigation';
-import 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 LogBox.ignoreLogs(['Unable to activate keep awake']);
@@ -76,17 +74,17 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
+   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <ThemeContextProvider>
+        <ThemeContextProvider>
+          <AuthProvider>
             <RootThemeProvider>
               <NavigationGate />
               <StatusBar style="auto" />
             </RootThemeProvider>
-          </ThemeContextProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </ThemeContextProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

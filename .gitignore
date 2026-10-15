@@ -84,3 +84,8 @@ android/keystore.properties
 .cursorindexingignore
 .vscode/settings.json
 package-lock.json
+
+
+.env.local*
+*.bakgoogle-services.json
+android/app/google-services.json

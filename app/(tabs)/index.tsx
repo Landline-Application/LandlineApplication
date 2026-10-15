@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   Alert,
@@ -13,8 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
-
+import { EasyHome } from '@/components/home/easy-home';
 import { RotaryDialButton } from '@/components/home/rotary-dial-button';
 import { SessionCard } from '@/components/home/session-card';
 import { Card } from '@/components/ui/card';
@@ -23,7 +22,9 @@ import { COLORS, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
 import { useActiveRefresh } from '@/hooks/use-active-refresh';
 import { SessionMode, useLandlineStore } from '@/hooks/use-landline-store';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { haptics } from '@/services/haptics';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -54,7 +55,7 @@ interface NotificationSummary {
 }
 
 // Redirect to landline screen as the main entry point
-export default function HomeScreen() {
+function StandardHome() {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   // Get state from Zustand store (FIXED: no broken dependencies)
@@ -1011,3 +1012,8 @@ const styles = StyleSheet.create({
     color: COLORS.text.onPrimary,
   },
 });
+
+export default function HomeScreen() {
+  const { isEasy } = useThemeTokens();
+  return isEasy ? <EasyHome /> : <StandardHome />;
+}

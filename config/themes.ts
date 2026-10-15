@@ -44,9 +44,17 @@ export const themes: Record<string, Theme> = {
     fonts: { regular: 'Inter_400Regular', medium: 'Inter_500Medium', bold: 'Inter_700Bold' },
     density: baseLayout,
   },
+   school: {
+    id: 'school',
+    label: 'School',
+    isDark: true,
+    colors: { background: '#0B0F19', surface: '#151A26', primary: '#3B82F6', primaryText: '#FFFFFF', text: '#F3F4F6', muted: '#9CA3AF', border: '#2A3140', danger: '#EF4444', success: '#22C55E' },
+    fonts: { regular: 'Inter_400Regular', medium: 'Inter_500Medium', bold: 'Inter_700Bold' },
+    density: baseLayout,
+  },
   easy: {
     id: 'easy',
-    label: 'Easy Mode',
+    label: 'Easy',
     isDark: false,
     colors: { background: '#FFFFFF', surface: '#FFFFFF', primary: '#1A56DB', primaryText: '#FFFFFF', text: '#000000', muted: '#4B5563', border: '#D1D5DB', danger: '#B91C1C', success: '#15803D' },
     fonts: { regular: 'Nunito_400Regular', medium: 'Nunito_600SemiBold', bold: 'Nunito_700Bold' },
@@ -56,16 +64,10 @@ export const themes: Record<string, Theme> = {
       spacious: { padding: 22, gap: 18, fontSize: 22, borderRadius: 18, minTouch: 64 },
     },
   },
-  school: {
-    id: 'school',
-    label: 'School',
-    isDark: false,
-    colors: { background: '#F9FAFB', surface: '#FFFFFF', primary: '#0F766E', primaryText: '#FFFFFF', text: '#111827', muted: '#6B7280', border: '#E5E7EB', danger: '#DC2626', success: '#15803D' },
-    fonts: { regular: 'Inter_400Regular', medium: 'Inter_500Medium', bold: 'Inter_700Bold' },
-    density: baseLayout,
-  },
 };
 
 export type ThemeId = keyof typeof themes;
+
+// Aliases for consuming code
 export const THEMES = themes;
 export const DensityScale = baseLayout;

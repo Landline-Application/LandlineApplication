@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -43,7 +43,11 @@ const TEMPLATES: { label: string; message: string }[] = [
   {
     label: 'Away',
     message: "I'm away from my phone right now. I'll get back to you shortly.",
-  },
+  },{
+  label: 'Out of Office',
+  message:
+    "I'm currently out of office and checking messages less often. If it's urgent, please call me.",
+}
 ];
 
 const APP_PRESETS: { label: string; description: string; packages: string[] }[] = [
@@ -108,7 +112,7 @@ export default function AutoReplyScreen() {
     requestPermission,
   } = useAutoReplyStore();
 
-  const autoReplyDisabled = true;
+  const autoReplyDisabled = false;
   const [customMessage, setCustomMessage] = useState('');
   const [isSavingMessage, setIsSavingMessage] = useState(false);
 
