@@ -10,7 +10,7 @@ import NotificationApiManager, {
   toNotificationLogKey,
 } from '@/modules/notification-api-manager';
 import {
-    cancelLandlineModeReminderScheduled,
+    clearLandlineModeReminder,
     ensureLandlineReminderScheduledIfNeeded,
     scheduleLandlineReminderFromSessionStart,
 } from '@/services/landline-mode-reminder';
@@ -154,7 +154,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
           sessionMode = 'indefinite';
         }
       } else {
-        void cancelLandlineModeReminderScheduled();
+        void clearLandlineModeReminder();
       }
 
       set({
@@ -298,7 +298,7 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
         } catch (storageErr) {
           console.warn('Failed to clear session data:', storageErr);
         }
-        await cancelLandlineModeReminderScheduled();
+        await clearLandlineModeReminder();
         noteLandlineScheduleManualOverride();
       }
 

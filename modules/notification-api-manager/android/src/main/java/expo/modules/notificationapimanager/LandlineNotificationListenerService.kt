@@ -113,8 +113,12 @@ class LandlineNotificationListenerService : NotificationListenerService() {
                     val lastMessage = messages.last()
                     val text = lastMessage.text?.toString()
                     if (!text.isNullOrBlank() && !isCensored(text)) {
-                        Log.d(TAG, "Got text from MessagingStyle (last message): ${text.take(50)}")
-                        return text
+                        // Group threads: prefix sender so the log shows who spoke, not only the group title.
+                        val sender = lastMessage.person?.name?.toString()?.trim().orEmpty()
+                        val display =
+                            if (style.isGroupConversation && sender.isNotEmpty()) "$sender: $text" else text
+                        Log.d(TAG, "Got text from MessagingStyle (last message): ${display.take(50)}")
+                        return display
                     }
                 }
             }
@@ -188,6 +192,18 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         fun extractNotificationTitle(notification: Notification): String {
             val extras = notification.extras ?: return ""
 
+            // Group chats: prefer the conversation title so the log shows the group, not a sender.
+            val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+            if (style != null && style.isGroupConversation) {
+                val conversation = style.conversationTitle?.toString()?.trim().orEmpty()
+                if (conversation.isNotEmpty()) {
+                    return conversation
+                }
+                extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { return it }
+            }
+
             // Try standard EXTRA_TITLE first
             var title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
 
@@ -207,6 +223,19 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
 
             return title
+        }
+
+        /** Sender display names from MessagingStyle (used for emergency matching in group chats). */
+        fun extractMessagingSenderNames(notification: Notification): List<String> {
+            val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+                ?: return emptyList()
+            val names = linkedSetOf<String>()
+            style.messages?.forEach { message ->
+                message.person?.name?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { names.add(it) }
+            }
+            // Some apps only set the conversation user / last sender on the style itself.
+            style.user?.name?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { names.add(it) }
+            return names.toList()
         }
 
         private fun isCensored(text: String): Boolean {
@@ -423,7 +452,7 @@ class LandlineNotificationListenerService : NotificationListenerService() {
             }
 
             val appName = getAppName(packageName)
-            val isEmergencyContactNotification = isFromEmergencyContact(title, text)
+            val isEmergencyContactNotification = isFromEmergencyContact(notification, title, text)
 
             val isCallNotification =
                 notification.category == Notification.CATEGORY_CALL
@@ -952,16 +981,15 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         return phone.replace(Regex("[^0-9+]"), "")
     }
 
-    private fun matchesEmergencyContact(field: String, ec: EmergencyContactEntry): Boolean {
+    private fun matchesEmergencyContactName(field: String, ec: EmergencyContactEntry): Boolean {
+        if (field.isBlank() || ec.name.isBlank()) return false
+        // SMS / messaging apps show the saved contact name as the notification title (1:1)
+        // or as the MessagingStyle sender (group chats).
+        return field.trim().equals(ec.name.trim(), ignoreCase = true)
+    }
+
+    private fun matchesEmergencyContactPhone(field: String, ec: EmergencyContactEntry): Boolean {
         if (field.isBlank()) return false
-
-        // 1. Match by contact name (case-insensitive).
-        //    SMS apps show the saved contact name as the notification title.
-        if (ec.name.isNotBlank() && field.trim().equals(ec.name.trim(), ignoreCase = true)) {
-            return true
-        }
-
-        // 2. Match by phone number digits (last 10 digits for flexibility).
         val normalizedPhone = normalizePhone(ec.phone)
         if (normalizedPhone.length < 7) return false
 
@@ -973,16 +1001,52 @@ class LandlineNotificationListenerService : NotificationListenerService() {
         return phoneLast == fieldLast
     }
 
-    private fun isFromEmergencyContact(title: String, text: String): Boolean {
+    /**
+     * Decide whether a notification is from a saved emergency contact.
+     *
+     * Phone digits may match in any title/text field.
+     * Name matching is limited to calls, messages, and MessagingStyle notifications so a
+     * random app titled with the same name does not ring through (SCRUM-94).
+     * Group chats match on MessagingStyle sender names, not the group title (SCRUM-95).
+     */
+    private fun isFromEmergencyContact(notification: Notification, title: String, text: String): Boolean {
         val contacts = loadEmergencyContacts()
         if (contacts.isEmpty()) {
             Log.w(TAG, "No emergency contacts loaded - check that contacts were saved correctly")
             return false
         }
-        Log.d(TAG, "Checking against ${contacts.size} emergency contact(s): ${contacts.map { it.name + "/" + it.phone }}")
-        val match = contacts.any {
-            matchesEmergencyContact(title, it) || matchesEmergencyContact(text, it)
+
+        val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+        val isGroup = style?.isGroupConversation == true
+        val senderNames = extractMessagingSenderNames(notification)
+        val category = notification.category
+        val allowNameMatch =
+            category == Notification.CATEGORY_CALL ||
+                category == Notification.CATEGORY_MESSAGE ||
+                style != null
+
+        Log.d(
+            TAG,
+            "Checking against ${contacts.size} emergency contact(s): ${contacts.map { it.name + "/" + it.phone }}; " +
+                "group=$isGroup senders=$senderNames allowNameMatch=$allowNameMatch"
+        )
+
+        val match = contacts.any { ec ->
+            val phoneHit =
+                matchesEmergencyContactPhone(title, ec) || matchesEmergencyContactPhone(text, ec)
+            if (phoneHit) return@any true
+            if (!allowNameMatch) return@any false
+
+            // Group: match who sent the message, never the group title alone.
+            if (isGroup) {
+                return@any senderNames.any { matchesEmergencyContactName(it, ec) }
+            }
+
+            // 1:1 / call: title is usually the contact name; also check MessagingStyle senders.
+            matchesEmergencyContactName(title, ec) ||
+                senderNames.any { matchesEmergencyContactName(it, ec) }
         }
+
         Log.d(TAG, "isFromEmergencyContact(title='$title', text='${text.take(40)}'): $match")
         return match
     }

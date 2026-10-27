@@ -58,6 +58,21 @@ export async function cancelLandlineModeReminderScheduled(): Promise<void> {
   }
 }
 
+/** Clears a reminder already sitting in the notification shade (not only future schedules). */
+export async function dismissLandlineModeReminderPosted(): Promise<void> {
+  try {
+    await Notifications.dismissNotificationAsync(LANDLINE_REMINDER_NOTIFICATION_ID);
+  } catch {
+    /* id may not be posted */
+  }
+}
+
+/** Cancel the next schedule and remove any reminder already visible in the shade. */
+export async function clearLandlineModeReminder(): Promise<void> {
+  await cancelLandlineModeReminderScheduled();
+  await dismissLandlineModeReminderPosted();
+}
+
 function clampFutureTriggerDate(at: Date): Date {
   const min = Date.now() + 60_000;
   if (at.getTime() < min) {
@@ -78,7 +93,8 @@ export async function scheduleLandlineReminderAt(triggerAt: Date): Promise<void>
 
     const when = clampFutureTriggerDate(triggerAt);
 
-    await cancelLandlineModeReminderScheduled();
+    // Drop any already-posted reminder so reschedule / snooze does not leave a stale row in the shade.
+    await clearLandlineModeReminder();
 
     await Notifications.scheduleNotificationAsync({
       identifier: LANDLINE_REMINDER_NOTIFICATION_ID,
@@ -110,6 +126,8 @@ export async function scheduleLandlineReminderFromSessionStart(
 }
 
 async function snoozeLandlineReminder(): Promise<void> {
+  // Drop the posted notice first so Keep on does not leave it stuck in the shade.
+  await dismissLandlineModeReminderPosted();
   const hours = await getReminderIntervalHoursAsync();
   const at = new Date(Date.now() + hours * 60 * 60 * 1000);
   await scheduleLandlineReminderAt(at);
@@ -129,7 +147,7 @@ export async function turnOffLandlineModeFromReminder(): Promise<void> {
     } catch {
       /* optional */
     }
-    await cancelLandlineModeReminderScheduled();
+    await clearLandlineModeReminder();
     await AsyncStorage.multiRemove([...SESSION_KEYS]);
   } catch (e) {
     console.warn('turnOffLandlineModeFromReminder failed', e);
@@ -146,7 +164,7 @@ async function applyLandlineReminderAction(actionIdentifier: string): Promise<vo
     actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
   ) {
     if (!NotificationApiManager.isLandlineModeActive()) {
-      await cancelLandlineModeReminderScheduled();
+      await clearLandlineModeReminder();
       return;
     }
     await snoozeLandlineReminder();
