@@ -23,6 +23,12 @@ export const STORAGE_KEYS = {
 
   // Achievement badges — device-local unlock state (no Firestore sync in v1)
   ACHIEVEMENTS: '@landline_achievements',
+
+  // Landline Mode usage totals and recent sessions (device-local)
+  LANDLINE_STATS: '@landline_stats',
+
+  // Per-app screen-time caps (device-local)
+  USAGE_TARGETS: '@landline_usage_targets',
 } as const;
 
 /**

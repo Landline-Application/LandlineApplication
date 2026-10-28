@@ -11,6 +11,7 @@ import android.os.Build
 import android.provider.Settings
 import android.app.usage.UsageStatsManager
 import android.app.usage.UsageStats
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.File
@@ -53,9 +54,6 @@ class UsageStatsManagerModule : Module() {
             val aggregated = mutableMapOf<String, Long>()
             val safeLimit = if (limit <= 0) 10 else limit
             val packageManager = ctx.packageManager
-
-            // Clear old icons before fetching new ones
-            clearIconCache(ctx)
 
             for (stat in stats) {
                 if (stat.packageName == ctx.packageName) continue
@@ -100,6 +98,99 @@ class UsageStatsManagerModule : Module() {
 
             appUsage
         }
+
+        // Per-app totals for each local calendar day. Used by usage targets.
+        AsyncFunction("getDailyAppUsage") { packageNames: List<String>, days: Int, promise: Promise ->
+            val ctx = appContext.reactContext
+            if (ctx == null || !hasUsagePermission(ctx)) {
+                promise.resolve(emptyList<Map<String, Any>>())
+                return@AsyncFunction
+            }
+
+            try {
+                val safeDays = days.coerceIn(1, 90)
+                val requested = packageNames
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() && it != ctx.packageName }
+                    .distinct()
+                if (requested.isEmpty()) {
+                    promise.resolve(emptyList<Map<String, Any>>())
+                    return@AsyncFunction
+                }
+
+                val wanted = requested.toHashSet()
+                val usageStatsManager =
+                    ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+                val end = System.currentTimeMillis()
+                val calendar = Calendar.getInstance()
+                calendar.timeInMillis = end
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                // One extra day so a bucket that starts just before local midnight is included.
+                calendar.add(Calendar.DAY_OF_YEAR, -(safeDays))
+                val start = calendar.timeInMillis
+
+                val stats = usageStatsManager.queryUsageStats(
+                    UsageStatsManager.INTERVAL_DAILY,
+                    start,
+                    end
+                )
+
+                val totalsByPackage = mutableMapOf<String, MutableMap<String, Long>>()
+                if (stats != null) {
+                    for (stat in stats) {
+                        if (stat.packageName !in wanted) continue
+                        val totalTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            stat.totalTimeVisible
+                        } else {
+                            stat.totalTimeInForeground
+                        }
+                        if (totalTime <= 0L) continue
+                        val day = dayKey(stat.firstTimeStamp)
+                        val byDay = totalsByPackage.getOrPut(stat.packageName) { mutableMapOf() }
+                        byDay[day] = (byDay[day] ?: 0L) + totalTime
+                    }
+                }
+
+                val packageManager = ctx.packageManager
+                val result = requested.map { pkg ->
+                    val appName = try {
+                        val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                        packageManager.getApplicationLabel(appInfo).toString()
+                    } catch (_: Exception) {
+                        pkg
+                    }
+                    val iconUri = try {
+                        val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                        val drawable = packageManager.getApplicationIcon(appInfo)
+                        saveIconToCache(ctx, pkg, drawable)
+                    } catch (_: Exception) {
+                        null
+                    }
+                    val dayEntries = (totalsByPackage[pkg] ?: emptyMap()).map { (date, total) ->
+                        mapOf(
+                            "date" to date,
+                            "totalTimeMs" to total
+                        )
+                    }
+                    val entry = mutableMapOf<String, Any>(
+                        "packageName" to pkg,
+                        "appName" to appName,
+                        "days" to dayEntries
+                    )
+                    if (iconUri != null) {
+                        entry["iconUri"] = iconUri
+                    }
+                    entry
+                }
+
+                promise.resolve(result)
+            } catch (e: Exception) {
+                promise.reject("USAGE_DAILY_FAILED", "Failed to read daily app usage: ${e.message}", e)
+            }
+        }
     }
 
     private fun saveIconToCache(context: Context, packageName: String, drawable: Drawable): String? {
@@ -127,13 +218,13 @@ class UsageStatsManagerModule : Module() {
         }
     }
 
-    private fun clearIconCache(context: Context) {
-        try {
-            val cacheDir = File(context.cacheDir, "app_icons")
-            if (cacheDir.exists()) {
-                cacheDir.deleteRecursively()
-            }
-        } catch (_: Exception) {}
+    private fun dayKey(timeMs: Long): String {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = timeMs
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        return "%04d-%02d-%02d".format(year, month, day)
     }
 
     private fun hasUsagePermission(context: Context): Boolean {

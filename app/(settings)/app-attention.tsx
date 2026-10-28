@@ -13,15 +13,18 @@ import {
   View,
 } from 'react-native';
 
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { MaterialIcons } from '@/components/ui/icon-symbol';
 import { StatusIndicator } from '@/components/ui/status-indicator';
 import { COLORS, Radius, Shadows, Spacing, TouchTargets } from '@/constants/theme';
 import { useAppTheme } from '@/contexts/theme-context';
+import { useUsageTargetsStore } from '@/hooks/use-usage-targets-store';
 import NotificationApiManager from '@/modules/notification-api-manager';
 import UsageStatsManager, { AppUsageSummary, UsageWindow } from '@/modules/usage-stats-manager';
+import { haptics } from '@/services/haptics';
+import { usageTargetsMenuSubtitle } from '@/utils/usage-targets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type LoggedNotification = {
@@ -66,6 +69,7 @@ function countLoggedNotificationsByPackage(
 export default function AppAttentionScreen() {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  const usageTargetCount = useUsageTargetsStore((state) => state.targets.length);
   const [hasUsagePermission, setHasUsagePermission] = useState(false);
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('24h');
   const [selectedMetric, setSelectedMetric] = useState<AppAttentionMetric>('screenTime');
@@ -290,6 +294,31 @@ export default function AppAttentionScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <TouchableOpacity
+          style={[
+            styles.targetsLink,
+            isDark && { backgroundColor: darkUi?.surface, borderColor: darkUi?.border },
+          ]}
+          onPress={() => {
+            haptics.light();
+            router.push('/usage-targets' as Href);
+          }}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={`Usage targets. ${usageTargetsMenuSubtitle(usageTargetCount)}`}
+        >
+          <MaterialIcons name="flag" size={22} color={COLORS.primary} />
+          <View style={styles.targetsLinkText}>
+            <Text style={[styles.targetsLinkTitle, isDark && { color: darkUi?.textPrimary }]}>
+              Usage targets
+            </Text>
+            <Text style={[styles.targetsLinkSubtitle, isDark && { color: darkUi?.textMuted }]}>
+              {usageTargetsMenuSubtitle(usageTargetCount)}
+            </Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+        </TouchableOpacity>
+
         {/* Status and Controls Card */}
         <Card variant="elevated" padding="lg" style={styles.controlsCard}>
           {/* Section header row */}
@@ -543,6 +572,31 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+  },
+  targetsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface.card,
+  },
+  targetsLinkText: {
+    flex: 1,
+  },
+  targetsLinkTitle: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 16,
+    color: COLORS.foreground,
+  },
+  targetsLinkSubtitle: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.text.muted,
+    marginTop: 2,
   },
 
   // ── Header ────────────────────────────────────────────────────────────────

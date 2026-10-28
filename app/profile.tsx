@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,8 @@ import {
   achievementsProgressLabel,
   useAchievementsStore,
 } from '@/hooks/use-achievements-store';
+import { statisticsMenuSubtitle, useLandlineStatsStore } from '@/hooks/use-landline-stats-store';
+import { useLandlineStore } from '@/hooks/use-landline-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import { haptics } from '@/services/haptics';
 import { deleteAccountWithEmail } from '@/utils/firebase/auth';
@@ -51,6 +53,14 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, refreshUser, signOut, resetPassword } = useAuth();
   const unlockedBadgeIds = useAchievementsStore((s) => s.unlockedBadgeIds);
+  const totalDurationMs = useLandlineStatsStore((s) => s.totalDurationMs);
+  const statsSessionCount = useLandlineStatsStore((s) => s.sessionCount);
+  const landlineActive = useLandlineStore((s) => s.isActive);
+  const statisticsSubtitle = statisticsMenuSubtitle(
+    totalDurationMs,
+    statsSessionCount,
+    landlineActive,
+  );
   const achievementsSubtitle = achievementsProgressLabel(
     unlockedBadgeIds.length,
     BADGE_CATALOG.length,
@@ -418,6 +428,32 @@ export default function ProfileScreen() {
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuItemTitle}>Achievements</Text>
                   <Text style={styles.menuItemSubtitle}>{achievementsSubtitle}</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Statistics</Text>
+          <Card variant="elevated" padding="none" style={styles.securityCard}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/statistics' as Href);
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Statistics. ${statisticsSubtitle}`}
+            >
+              <View style={styles.menuItem}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="bar-chart" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Statistics</Text>
+                  <Text style={styles.menuItemSubtitle}>{statisticsSubtitle}</Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
               </View>

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { NotebookLogEntry } from '@/components/notifications/notebook-log-view';
 import * as DndManager from '@/modules/dnd-manager';
 import { useAchievementsStore } from '@/hooks/use-achievements-store';
+import { useLandlineStatsStore } from '@/hooks/use-landline-stats-store';
 import NotificationApiManager, {
   consumePendingScheduleSession,
   getScheduleSessionStartMs,
@@ -111,6 +112,11 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
             }).length
           : 0;
         useAchievementsStore.getState().recordSessionEnded({
+          durationMs: pendingSession.endMs - pendingSession.startMs,
+          notificationsBlocked,
+        });
+        useLandlineStatsStore.getState().recordSession({
+          endedAt: pendingSession.endMs,
           durationMs: pendingSession.endMs - pendingSession.startMs,
           notificationsBlocked,
         });
@@ -286,6 +292,11 @@ export const useLandlineStore = create<LandlineModeState>((set, get) => ({
             (n) => n.postTime >= startMs,
           ).length;
           useAchievementsStore.getState().recordSessionEnded({
+            durationMs,
+            notificationsBlocked,
+          });
+          useLandlineStatsStore.getState().recordSession({
+            endedAt: Date.now(),
             durationMs,
             notificationsBlocked,
           });

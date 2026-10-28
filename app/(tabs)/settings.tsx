@@ -31,10 +31,16 @@ import {
   useAchievementsStore,
 } from '@/hooks/use-achievements-store';
 import { useLandlineStore } from '@/hooks/use-landline-store';
+import {
+  statisticsMenuSubtitle,
+  useLandlineStatsStore,
+} from '@/hooks/use-landline-stats-store';
+import { useUsageTargetsStore } from '@/hooks/use-usage-targets-store';
 import { useUsageTutorialStore } from '@/hooks/use-usage-tutorial-store';
 import { usePreferencesStore } from '@/hooks/use-preferences-store';
 import NotificationApiManager, { getLandlineSchedules } from '@/modules/notification-api-manager';
 import { haptics } from '@/services/haptics';
+import { usageTargetsMenuSubtitle } from '@/utils/usage-targets';
 import {
   RETENTION_OPTIONS,
   type RetentionDays,
@@ -66,6 +72,15 @@ export default function SettingsScreen() {
     unlockedBadgeIds.length,
     BADGE_CATALOG.length,
   );
+  const totalDurationMs = useLandlineStatsStore((s) => s.totalDurationMs);
+  const statsSessionCount = useLandlineStatsStore((s) => s.sessionCount);
+  const landlineActive = useLandlineStore((s) => s.isActive);
+  const statisticsSubtitle = statisticsMenuSubtitle(
+    totalDurationMs,
+    statsSessionCount,
+    landlineActive,
+  );
+  const usageTargetCount = useUsageTargetsStore((state) => state.targets.length);
   const { localDisplayName, setLocalDisplayName, reset: resetPreferences } = usePreferencesStore();
   const [displayNameDraft, setDisplayNameDraft] = useState(
     () => usePreferencesStore.getState().localDisplayName,
@@ -496,6 +511,36 @@ export default function SettingsScreen() {
         </TourAnchor>
 
         <View style={styles.section}>
+          <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Statistics</Text>
+          <Card variant="elevated" padding="none" style={styles.card}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                router.push('/statistics' as Href);
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Statistics. ${statisticsSubtitle}`}
+            >
+              <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                <View style={styles.menuItemIcon}>
+                  <MaterialIcons name="bar-chart" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                    Statistics
+                  </Text>
+                  <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                    {statisticsSubtitle}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>Help</Text>
           <Card variant="elevated" padding="none" style={styles.card}>
             <TouchableOpacity
@@ -775,6 +820,33 @@ export default function SettingsScreen() {
         {Platform.OS === 'android' && (
           <TourAnchor id="settings-app-attention" scrollKey="settings" style={styles.section}>
             <Text style={[styles.sectionHeader, isDark && { color: '#FFFFFF' }]}>App Attention</Text>
+            <Card variant="elevated" padding="none" style={styles.card}>
+              <TouchableOpacity
+                onPress={() => {
+                  haptics.light();
+                  router.push('/usage-targets' as Href);
+                }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Usage targets. ${usageTargetsMenuSubtitle(usageTargetCount)}`}
+              >
+                <View style={[styles.menuItem, { paddingHorizontal: Spacing.md }]}>
+                  <View style={styles.menuItemIcon}>
+                    <MaterialIcons name="flag" size={22} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.menuItemContent}>
+                    <Text style={[styles.menuItemTitle, isDark && { color: '#FFFFFF' }]}>
+                      Usage targets
+                    </Text>
+                    <Text style={[styles.menuItemSubtitle, isDark && { color: '#F3F3F3' }]}>
+                      {usageTargetsMenuSubtitle(usageTargetCount)}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={20} color={COLORS.text.muted} />
+                </View>
+              </TouchableOpacity>
+            </Card>
+            <View style={styles.targetsGap} />
             <AppAttentionCard limit={5} showViewMore />
           </TourAnchor>
         )}
@@ -1299,6 +1371,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.xxl,
+  },
+  targetsGap: {
+    height: Spacing.md,
   },
   sectionHeader: {
     fontSize: 18,
