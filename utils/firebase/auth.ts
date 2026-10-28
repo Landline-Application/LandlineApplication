@@ -37,6 +37,49 @@ export {
 export type { FirebaseAuthTypes };
 
 // ---------------------------------------------------------------------------
+// Error helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Type-safe extraction of Firebase Auth error codes.
+ * Replaces the common but unsafe `(error as { code?: string })?.code` pattern.
+ */
+export function getAuthErrorCode(error: unknown): string | null {
+  if (error == null) return null;
+  if (typeof error === 'object' && 'code' in error) {
+    const code = (error as { code?: unknown }).code;
+    return typeof code === 'string' ? code : null;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Session validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Force-refreshes the current user's ID token to confirm the account still
+ * exists (catches deletion from the Firebase console).
+ *
+ * Returns `true` if the session is valid, `false` if the user was deleted.
+ * When `false` is returned the caller should sign-out so that the auth
+ * listener can bootstrap a fresh anonymous session.
+ */
+export async function validateAuthSession(user: FirebaseAuthTypes.User): Promise<boolean> {
+  try {
+    await user.getIdToken(true);
+    return true;
+  } catch (error: unknown) {
+    const code = getAuthErrorCode(error);
+    if (code === 'auth/user-not-found') {
+      return false;
+    }
+    // Network or other transient error — keep the cached session.
+    return true;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Account deletion — email/password
 // ---------------------------------------------------------------------------
 
